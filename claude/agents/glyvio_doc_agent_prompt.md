@@ -55,7 +55,7 @@ The core library is divided into three distinct layers. You must document them a
   - Database Querying:
     - Executing raw SQL via `glyvio_core.queryService.find<T>(query, typedParams)`.
     - Constructing SQL parameters using `glyvio_core.QueryDataType` methods.
-    - Using `glyvio_entity.<Model>.getQueryBuilder()` for building type-safe queries.
+    - Building type-safe queries via `glyvio_core.QueryBuilder.fromEntity(glyvio_structure.AllEntities.<entity>)` — **never** use `glyvio_entity.<Model>.getQueryBuilder()`, which is deprecated and prohibited.
 
 ---
 

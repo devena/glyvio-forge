@@ -11,9 +11,24 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
 
 ## 🎯 Skill Metadata
 
-- **Name**: `create_batch_page`
-- **Description**: Generates a spreadsheet-style bulk/batch editor page with spreadsheet uploads, row validation, database persistence matching custom layouts, routing, and menu registration for a Glyvio plugin.
-- **Audience**: AI agents or developers with write access to a Glyvio plugin codebase.
+```json
+{
+  "name": "create_batch_page",
+  "description": "Generates a spreadsheet-style bulk/batch editor page with spreadsheet uploads, row validation, database persistence matching custom layouts, routing, and menu registration for a Glyvio plugin.",
+  "Audience": "AI agents or developers with write access to a Glyvio plugin codebase.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "entityName":      { "type": "string", "description": "Entity model name in glyvio_entity.* (e.g., Product, StockItem)" },
+      "pluginNamespace": { "type": "string", "description": "Plugin namespace string (e.g., my_plugin)" },
+      "routePath":       { "type": "string", "description": "URL path starting with / (e.g., /products-batch)" },
+      "columns":         { "type": "array", "items": { "type": "object", "properties": { "field": { "type": "string" }, "label": { "type": "string" }, "type": { "type": "string" } } }, "description": "Spreadsheet columns — each entry is { field, label, type } where type is string | number | boolean | entity" },
+      "menuGroup":       { "type": "string", "description": "Menu group key and display name where the page item will appear" }
+    },
+    "required": ["entityName", "pluginNamespace", "routePath", "columns", "menuGroup"]
+  }
+}
+```
 
 ---
 

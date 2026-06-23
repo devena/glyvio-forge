@@ -59,6 +59,149 @@ For **any field that represents a relationship or reference to another database 
 
 ---
 
+## 🔄 Entity Object vs. ID Assignment (NON-NEGOTIABLE)
+
+When assigning a resolved entity reference to state — whether from a query result, an event handler, an `initState`, or any other runtime context — **always assign the full entity object, never the raw foreign-key ID**.
+
+- ✅ Correct:
+  ```typescript
+  state.address.country = country;          // assigns the full Country object
+  state.delivery.client = client;           // assigns the full Client object
+  ```
+- ❌ Wrong (never do this):
+  ```typescript
+  state.address.countryId = country.id;     // assigns only the FK id
+  state.delivery.clientId = client.id;      // assigns only the FK id
+  ```
+
+**Why**: The app layer is a UI/UX context. Entity autocomplete fields (and any field bound to a relation getter) operate on the resolved object, not the raw ID. Assigning only the ID leaves the object getter `null`, causing the UI to display blank even though the FK is set. Assigning the full object lets the framework derive the ID automatically on save.
+
+**When this rule applies**: any time you write `state.x = <queryResult>` or `state.x = <eventPayload>` and `x` is a relation (not a plain primitive). This includes `initState`, `onEvent`, `onSave`, `populateMainQuery`, strategy callbacks, and any interceptor hook.
+
+This rule is the runtime counterpart to the "Entity / Foreign-Key Input Design" bind rule (which governs `name` props in design). Both together enforce that entity relations are always treated as objects end-to-end.
+
+When delegating to coder subagents and when running any create/interceptor skill, **restate this rule** and make it part of the final validation audit.
+
+---
+
+## 🏗️ Entity Instance Creation (NON-NEGOTIABLE)
+
+When creating a blank entity instance on the app side (e.g. inside `initState` before saving a new record), **always** use the static async factory method:
+
+```typescript
+state.myEntity = await glyvio_entity.MyEntity.new();
+```
+
+**Never** use the plain constructor:
+
+```typescript
+// ❌ WRONG — skips required async initialization
+state.myEntity = new glyvio_entity.MyEntity();
+```
+
+This rule applies to **every entity under `glyvio_entity.*`**, in every view type (edit modals, insert modals, batch pages, carts, sidebars, etc.). Using `new EntityClass()` directly is a **hard error** — flag it and replace it before the build is considered clean.
+
+---
+
+## 👥 Observers & Tags Fields (NON-NEGOTIABLE)
+
+Every entity in the model carries two JSON-array metadata fields that **must be wired in every edit modal and every sidebar** that exposes the entity for editing. Forgetting either is a **hard error**.
+
+| Field | Content | Values |
+|-------|---------|--------|
+| `observers` | JSON array of `app_user` IDs who watch this record | `string[]` — each element is an `app_user.id` |
+| `tags` | JSON array of tag keys applied to this record | `string[]` — each element is a `Tag.key` (not `Tag.id`) |
+
+### Edit Modals
+
+1. **`FormEntityLayoutDesign`** — always set both `actionKeyChangeObservers` and `actionKeyChangeTags` alongside `actionKeyChangeUserGroup`. The framework renders both pickers automatically.
+
+   ```typescript
+   new glyvio_core.FormEntityLayoutDesign({
+     name: 'state.myEntity',
+     structureName: glyvio_structure.AllEntities.myEntity.getStructureName(),
+     actionKeyChangeUserGroup: 'onChangeUserGroup',
+     actionKeyChangeObservers: 'onChangeObservers', // ← required
+     actionKeyChangeTags: 'actionKeyChangeTags',    // ← required
+     children: [...],
+   })
+   ```
+
+2. **`events()`** — handle both action keys: assign the array to the entity and return `'STATE_UPDATE'`:
+
+   ```typescript
+   if (action.key == 'onChangeObservers') {
+     state.myEntity!.observers = action.data.observers;
+     return 'STATE_UPDATE';
+   }
+
+   if (action.key == 'actionKeyChangeTags') {
+     state.myEntity!.tags = action.data.tags;
+     return 'STATE_UPDATE';
+   }
+   ```
+
+### Sidebars
+
+Sidebars dispatch both fields through a dedicated method (not inline in `events()`).
+
+1. **`onChangeObservers` method** — calls `entityService.updateObservers`:
+
+   ```typescript
+   async onChangeObservers(state: MyEntitySidebarState, observers: string[]): Promise<void> {
+     await glyvio_core.entityService.updateObservers(
+       state.myEntity!.getStructureName(),
+       state.myEntity!.id!,
+       observers,
+     );
+   }
+   ```
+
+2. **`actionKeyChangeTags` method** — calls `entityService.updateTags`:
+
+   ```typescript
+   async actionKeyChangeTags(state: MyEntitySidebarState, tags: string[]): Promise<void> {
+     await glyvio_core.entityService.updateTags(
+       state.myEntity!.getStructureName(),
+       state.myEntity!.id!,
+       tags,
+     );
+   }
+   ```
+
+3. **`events()` in sidebar** — dispatch to those methods:
+
+   ```typescript
+   if (action.key == 'onChangeObservers') {
+     await this.onChangeObservers(state, action.data.observers);
+   }
+   if (action.key == 'actionKeyChangeTags') {
+     await this.actionKeyChangeTags(state, action.data.tags);
+   }
+   ```
+
+4. **`getDesign()`** — gate both action keys on permission:
+
+   ```typescript
+   actionKeyChangeObservers: glyvio_core.permissionService.hasPermissionInGroup(
+     glyvio_permissions.view_my_entity_sidebar, state,
+   ) ? 'onChangeObservers' : undefined,
+
+   actionKeyChangeTags: glyvio_core.permissionService.hasPermissionInGroup(
+     glyvio_permissions.view_my_entity_sidebar, state,
+   ) ? 'actionKeyChangeTags' : undefined,
+   ```
+
+### Validation checklist additions
+
+- "Does every `FormEntityLayoutDesign` set both `actionKeyChangeObservers` and `actionKeyChangeTags`?" → flag and fix if either is missing.
+- "Does every edit modal's `events()` handle `'onChangeObservers'` and `'actionKeyChangeTags'` assigning `action.data.observers` / `action.data.tags` to the entity?" → flag and fix if either is missing.
+- "Does every sidebar implement `onChangeObservers` (calling `entityService.updateObservers`) and `actionKeyChangeTags` (calling `entityService.updateTags`)?" → flag and fix if either is missing.
+
+When delegating to coder subagents and when running any create/interceptor skill, **restate this rule** and make it part of the final validation audit.
+
+---
+
 ## 🧩 Section Components — Top-Level Only (NON-NEGOTIABLE)
 
 A **section component** is any subclass of `SectionDesign` (runtime package `'SectionDesign'`): `FormSectionDesign`, `GridSectionDesign`, `ListSectionDesign`, `TableSectionDesign`, `AccordionSectionDesign`, `AlertSectionDesign`, `AppBarSectionDesign`, `AttachmentsViewSectionDesign`, `FillRemainingSectionDesign`, `RuleSectionDesign`, `SimpleDashboardPageSectionDesign`, and any other `*SectionDesign`. These are **top-level structural regions**, not generic containers.
@@ -255,18 +398,7 @@ Generate a markdown execution plan detailing:
 
 ### Phase 3: Task Delegation
 
-Delegate tasks to specialized frontend coder subagents and/or run the chosen skills. **Chart / data-visualization construction goes to the `glyvio-app-chart` subagent** (provide it the data source + row shape, chart type, host widget + sizing, and a stable widget `key`; integrate and validate its returned design). Instruct every subagent to follow the codebase constraints below **without exception**:
-
-1. **Scope**: Work only inside `plugin/app`.
-2. **`@types`-only Components**: Use only components, contracts, and interfaces explicitly exposed in `@types`. If something needed is missing, request its definition or adapt the logic to what is available — do not invent it.
-3. **No External Imports for Glyvio Globals**: Glyvio classes, decorators, services and entities are injected globally at runtime. Use `new glyvio_core.CellDesign(...)`, not an import. Reference entities via `glyvio_entity.*` and field schemas via `glyvio_structure.*`.
-4. **Zero External Libraries**: No npm/yarn libraries (Lodash, Axios, Date-fns, icon packs, etc.). All state, formatting, date handling and requests must be written from scratch with native Web APIs / Vanilla TypeScript.
-5. **Strict Typing (Zero `any`)**: `any` and force-casts to `any` are strictly forbidden. Type everything via `@types` interfaces or safe primitives. For unknown/dynamic data use `unknown` plus Type Guards. Assume `strict: true`.
-   5b. **Decimal and DateTime (NON-NEGOTIABLE)**: For handling numerical/money values, you **MUST** always use the core `Decimal` class instead of raw `number` / `Number`. For handling date/time values, you **MUST** always use the core `DateTime` class instead of JavaScript/TypeScript standard `Date`.
-6. **Entity Fields (NON-NEGOTIABLE)**: Any field representing a relationship or reference to another entity (`ENTITY` type, or a foreign key ending in `_id` / `_ic`) **MUST** use the **entity-specific subclass** of `EntityAutocompleteSingleTextfieldDesign` — **never** the base class directly, and **never** a generic text field like `StringTextfieldDesign`. See the "Entity / Foreign-Key Input Design" rule above.
-   6b. **Section Components — Top-Level Only (NON-NEGOTIABLE)**: A section component (any `SectionDesign` subclass — `FormSectionDesign`, `GridSectionDesign`, `ListSectionDesign`, `TableSectionDesign`, etc.) may be used **only** in a slot whose type is expressly `SectionDesign` / `SectionDesign[]`. **Never** nest a section inside a cell, layout, box, field, or any other widget. See the "Section Components — Top-Level Only" rule above.
-7. **Naming**: TypeScript files in `snake_case` (e.g. `product_list_page.ts`); classes in `PascalCase` with the matching suffix (e.g. `ProductListPage`, `ProductListPageRoute`). All code and documentation in **English**.
-8. **Routing Rules**: `getRoutePath()` must return a path starting with `/` followed by alphanumerics/underscores — no trailing slashes.
+Delegate tasks to specialized frontend coder subagents and/or run the chosen skills. **Chart / data-visualization construction goes to the `glyvio-app-chart` subagent** (provide it the data source + row shape, chart type, host widget + sizing, and a stable widget `key`; integrate and validate its returned design). When handing off to any subagent or skill, **restate all NON-NEGOTIABLE rules from the top of this document** — they apply without exception. As a quick reference for the handoff brief: work only inside `plugin/app`; use only `@types`-exposed components (never invent); no external imports or libraries; zero `any` (use `unknown` + type guards); use `Decimal` for numbers, `DateTime` for dates; entity/FK fields use the entity-specific subclass of `EntityAutocompleteSingleTextfieldDesign` (never base class, never bind to `xxxId`); always assign the full entity object, never the raw FK ID; sections top-level only; `snake_case` files / `PascalCase` classes; routes start with `/`; every entity has `observers` (array of `app_user` IDs) and `tags` (array of `Tag.key` values) fields — wire `actionKeyChangeObservers`/`actionKeyChangeTags` in `FormEntityLayoutDesign`, handle both in `events()`, and implement `onChangeObservers`/`actionKeyChangeTags` methods in every sidebar.
 
 ### Phase 3.1: Mandatory Parameter Collection (CRITICAL)
 
@@ -291,9 +423,14 @@ Once the subagents/skills report completion:
    - "Are all used components mapped in `@types`?" → adjust.
    - "Is **every** entity/FK field (`ENTITY`, `_id`, `_ic`) using the **entity-specific subclass** of `EntityAutocompleteSingleTextfieldDesign` — never the base class directly — and **none** using a generic `StringTextfieldDesign`?" → fix any violation; this is a hard error, not optional.
    - "Does every `EntityAutocompleteSingleTextfieldDesign` subclass bind its `name` and state paths (`isRequired`, `errorText`) to the **relation property** (e.g. `sale`) and **never** to the `xxxId` / `xxxIc` foreign-key property (e.g. `saleId`)?" → fix any violation; this is a hard error, not optional.
+   - "Does every runtime entity assignment (`state.x = queryResult`, `state.x = eventPayload`, etc.) set the **full entity object** and **never** the raw `xxxId` / `xxxIc` FK scalar?" → fix any violation (`state.x.countryId = y.id` → `state.x.country = y`); this is a hard error, not optional.
    - "Is **every** section component (`SectionDesign` subclass — `FormSectionDesign`, `GridSectionDesign`, `ListSectionDesign`, `TableSectionDesign`, etc.) placed **only** in a slot expressly typed as `SectionDesign` / `SectionDesign[]`, and **never** nested inside a cell, layout, box, field, or any other non-section widget?" → fix any violation; this is a hard error, not optional.
    - "Does every `TableLayoutColumnDesign` have both `key` and `child` set — `child` being a `StringTextDesign` with the column header label?" → fix any missing `key` or blank `child`; this is a hard error.
    - "Was any chart hand-rolled here instead of delegated to **`glyvio-app-chart`**, and does every chart have a stable `key`, a sized host, the correct `section`/`sections` shape, and only `@types`-exposed chart classes/fields?" → delegate/fix any violation.
+   - "Does any `onEvent` implementation call `this.getView().callRefreshState()`?" → remove it; the framework already refreshes state after every `onEvent` — this call is redundant and is a hard error.
+   - "Does every `FormEntityLayoutDesign` set both `actionKeyChangeObservers: 'onChangeObservers'` and `actionKeyChangeTags: 'actionKeyChangeTags'`?" → fix if either is missing; this is a hard error.
+   - "Does every edit modal's `events()` handle `'onChangeObservers'` (assigning `action.data.observers`) and `'actionKeyChangeTags'` (assigning `action.data.tags`) to the entity?" → fix if either is missing; this is a hard error.
+   - "Does every sidebar implement `onChangeObservers` calling `entityService.updateObservers` and `actionKeyChangeTags` calling `entityService.updateTags`?" → fix if either is missing; this is a hard error.
 2. **Wiring Check**: Confirm new pages complete all three registration steps in `plugin/app/src/index.ts`: route registered (`routerService.loadRoutes`), page instantiated (`new MyPage()`), and menu entry added (`FullMenuPage.fullMenuGroupAdd` or `fullMenuItemAdd`) — all three are required, any missing step is a hard error; for **every newly created view** (page, modal, sidebar, cart), confirm its `view` permission (`{ "type": "view", "subtype": "{entity}", "key": "{entity}_{view type}" }`) exists in `manifest.json` and is not duplicated — this is a hard error if missing; confirm interceptors are registered (`appInterceptorService.registerInterceptors`) with sensible `order`; confirm listener IDs are globally unique.
 3. **Helper Execution**: If `manifest.json` was modified, you **MUST** run `run_helper.sh` at the workspace root to regenerate typings/entities before compiling.
 4. **Compilation**: Run `pnpm pretty && pnpm lint && pnpm build` and confirm a clean build. Verify generated comments/types in `dist/bundle.d.ts`.
@@ -310,6 +447,7 @@ Ensure all delegated frontend code adheres to the Glyvio app specifications:
   - `glyvio_entity.*`: database entity models (e.g. `glyvio_entity.Product`).
   - `glyvio_structure.*`: entity field schema definitions (e.g. `glyvio_structure.AllEntities.product`).
 - **Never call `processInterop` manually** on any design returned from `getDesignForCell`. The framework calls it automatically on the `DashboardLayoutFieldDesign` and all its descendants after `fetchItem` resolves. Manually calling it is redundant and a code smell — flag and remove it during validation.
+- **Never call `this.getView().callRefreshState()` inside `onEvent`**. The framework automatically triggers a state refresh after every `onEvent` execution. Calling it manually is redundant, can cause double-renders, and is a code smell — flag and remove it during validation.
 - **Query Building**: Build queries with `QueryBuilder` static helpers and `glyvio_structure.AllEntities.*`. Use `queryBuilder.setFromEntity(...)`, `addOrderByEntity(...)`, `addFilterILike(...)`, and `QueryBuilderFilter` / `QueryBuilderFilterILike` for search constraints.
 - **Status/Situation Resolution (Foreign Key vs. Fixed Field)**: When a field resolves a status/situation, inspect the class in `glyvio_entity` and the interface in `glyvio_structure` (`@types/entity.d.ts`) to classify it:
   - **Foreign Key / Related Entity** (has `xxx`, `xxxId`, `xxxIc` getters and `_id` / `_ic` in structure): render with the **entity-specific subclass** of `EntityAutocompleteSingleTextfieldDesign` (never the base class directly — locate the subclass bound to that entity in `@types`) and resolve by **Integration Code** (`QueryBuilder.getByIntegrationCode`) or by **Name** (case-insensitive `lower(name) = lower(?)`, `order by created_at ASC`, `.limit(1)`), as the user prefers.
