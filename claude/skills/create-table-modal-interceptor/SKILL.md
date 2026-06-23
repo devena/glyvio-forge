@@ -79,6 +79,18 @@ After completing the Step 0.1 analysis, **immediately write the findings to `.cl
 
 Only after saving the analysis file, present the summary to the user and wait for explicit or implicit confirmation before writing code.
 
+### Step 0.3 — Collect the current row design (only if row modifications are required)
+
+If the task requires modifications to the row layout (i.e., implementing or changing `getDesignForRow`), **before writing any code**, ask the user for the current **row design JSON**.
+
+Prompt the user with a message like:
+
+> "This task requires modifying the table modal row design. Please provide the current `TableLayoutRowDesign` JSON for a sample row. You can obtain it by temporarily adding a `console.log(JSON.stringify(design))` inside a `getDesignForRow` override, then copying the output from the browser console."
+
+- Save the received JSON to `.claude/temp<ModalName>_rowDesign.json`.
+- **Do NOT proceed to Step 1 (code generation) until this JSON is received and saved.**
+- Use this JSON as the ground truth for the row structure, applying the same rules from Step 0.1: use `runtimeClass` for type matching, use `findWidgetByKey` for targeting nodes, and derive all navigation paths exclusively from the JSON content.
+
 ---
 
 ## 📥 Required Input Parameters

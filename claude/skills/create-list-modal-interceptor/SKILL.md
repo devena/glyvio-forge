@@ -79,6 +79,18 @@ After completing the Step 0.1 analysis, **immediately write the findings to `.cl
 
 Only after saving the analysis file, present the summary to the user and wait for explicit or implicit confirmation before writing code.
 
+### Step 0.3 — Collect the current cell design (only if cell modifications are required)
+
+If the task requires modifications to the cell layout (i.e., implementing or changing `getDesignForCell`), **before writing any code**, ask the user for the current **cell design JSON**.
+
+Prompt the user with a message like:
+
+> "This task requires modifying the list modal cell design. Please provide the current `LineCellDesign` JSON for a sample cell. You can obtain it by temporarily adding a `console.log(JSON.stringify(design))` inside a `getDesignForCell` override, then copying the output from the browser console."
+
+- Save the received JSON to `.claude/temp<ModalName>_cellDesign.json`.
+- **Do NOT proceed to Step 1 (code generation) until this JSON is received and saved.**
+- Use this JSON as the ground truth for the cell structure, applying the same rules from Step 0.1: use `runtimeClass` for type matching, use `findWidgetByKey` for targeting nodes, and derive all navigation paths exclusively from the JSON content.
+
 ---
 
 ## 📥 Required Input Parameters
