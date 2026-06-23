@@ -79,6 +79,28 @@ After completing the Step 0.1 analysis, **immediately write the findings to `.cl
 
 Only after saving the analysis file, present the summary to the user and wait for explicit or implicit confirmation before writing code.
 
+### Step 0.3 — Collect the current column and/or cell design (only if those modifications are required)
+
+**Step 0.3a — Column design** (only if `getDesignForColumn` modifications are needed):
+
+Ask the user for the current **column design JSON** (`SimpleKanbanPageColumnDesign`) for a sample column. Prompt:
+
+> "This task requires modifying the Kanban column design. Please provide the current `SimpleKanbanPageColumnDesign` JSON for a sample column. You can obtain it by temporarily adding a `console.log(JSON.stringify(design))` inside a `getDesignForColumn` override, then copying the output from the browser console."
+
+- Save the received JSON to `.claude/temp<KanbanPageName>_columnDesign.json`.
+- **Do NOT proceed to Step 1 until this JSON is received and saved.**
+
+**Step 0.3b — Card cell design** (only if `getDesignForCell` modifications are needed):
+
+Ask the user for the current **card cell design JSON** (`CardCellDesign`) for a sample card. Prompt:
+
+> "This task requires modifying the Kanban card cell design. Please provide the current `CardCellDesign` JSON for a sample card. You can obtain it by temporarily adding a `console.log(JSON.stringify(design))` inside a `getDesignForCell` override, then copying the output from the browser console."
+
+- Save the received JSON to `.claude/temp<KanbanPageName>_cellDesign.json`.
+- **Do NOT proceed to Step 1 until this JSON is received and saved.**
+
+Use these JSONs as ground truth for the column/cell structure, applying the same rules from Step 0.1: use `runtimeClass` for type matching, use `findWidgetByKey` for targeting nodes, and derive all navigation paths exclusively from the JSON content.
+
 ---
 
 ## 📥 Required Input Parameters
