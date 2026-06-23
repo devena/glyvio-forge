@@ -11,9 +11,27 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
 
 ## 🎯 Skill Metadata
 
-- **Name**: `create_grid_page`
-- **Description**: Generates a standard entity grid/gallery page with responsive grid cells, search, sidebar filtering, routing, and menu registration for a Glyvio plugin.
-- **Audience**: AI agents or developers with write access to a Glyvio plugin codebase.
+```json
+{
+  "name": "create_grid_page",
+  "description": "Generates a standard entity grid/gallery page with responsive grid cells, search, sidebar filtering, routing, and menu registration for a Glyvio plugin.",
+  "Audience": "AI agents or developers with write access to a Glyvio plugin codebase.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "entityName":      { "type": "string", "description": "Entity model name in glyvio_entity.* (e.g., Product, Customer)" },
+      "pluginNamespace": { "type": "string", "description": "Plugin namespace string (e.g., my_plugin)" },
+      "routePath":       { "type": "string", "description": "URL path starting with / (e.g., /products)" },
+      "titleField":      { "type": "string", "description": "Primary field displayed on each grid card (e.g., name)" },
+      "subtitleField":   { "type": "string", "description": "Secondary field displayed below the title (e.g., code)" },
+      "imageField":      { "type": "string", "description": "Optional field for thumbnail/avatar image URL" },
+      "sidebarFilters":  { "type": "array", "items": { "type": "string" }, "description": "Field names to expose as sidebar filter controls" },
+      "menuGroup":       { "type": "string", "description": "Menu group key and display name where the page item will appear" }
+    },
+    "required": ["entityName", "pluginNamespace", "routePath", "titleField", "menuGroup"]
+  }
+}
+```
 
 ---
 
@@ -196,28 +214,71 @@ export class <EntityName>GridPage extends glyvio_core.SimpleGridPage<<EntityName
 
   /**
    * Customizes card designs representing single entity grid items.
+   *
+   * IMPORTANT — choose one of the patterns below based on what the card looks like.
+   * Full documentation with visual descriptions and code for each pattern is in
+   * docs/claude/component_catalog.md §15.
+   *
+   * Pattern A — single row: title (expanded) + code/badge on the right.
+   * Pattern B — two rows: title on top, subtitle below.
+   * Pattern C — header row (title + status chip) + detail rows below.
+   * Pattern D — avatar on the left + text column on the right.
+   * Pattern E — title + multiple numeric KPIs (TwoLinesTotalizerBoxDesign) side by side.
+   *
+   * Quick-select rule:
+   *   - Only 1 field to show               → Pattern A
+   *   - Title + subtitle, no status        → Pattern B
+   *   - Has a colored status chip          → Pattern C
+   *   - Entity is a person/contact/user    → Pattern D
+   *   - Has 2+ numeric values to highlight → Pattern E
+   *   - Mix of the above                   → start from the closest pattern and combine.
+   *
+   * The root `child` of a CardCellDesign must ALWAYS be a layout (Row or Column),
+   * never a bare text/chip widget.
+   *
+   * Replace the blueprint below with the chosen pattern from §15.
+   * The snippet shown here is Pattern C as a starting point — swap freely.
    */
   getDesignForCell(state: <EntityName>GridPageState, item: glyvio_entity.<EntityName>): glyvio_core.CardCellDesign {
     return new glyvio_core.CardCellDesign({
       colorTheme: item.deleted ? 'RED' : null,
-      padding: '16',
-      child: new glyvio_core.RowLayoutDesign({
-        crossAlignment: 'CENTER',
+      padding: '12 16',
+      child: new glyvio_core.ColumnLayoutDesign({
         children: [
-          new glyvio_core.RowLayoutFieldDesign({
-            isExpanded: true,
-            key: 'name.cell',
-            child: new glyvio_core.StringTextDesign({
-              key: 'name.text',
-              value: item.<TitleField> ?? 'Unnamed Item',
+          // Header row: title (expanded) + status chip
+          new glyvio_core.ColumnLayoutFieldDesign({
+            key: 'header.cell',
+            child: new glyvio_core.RowLayoutDesign({
+              crossAlignment: 'CENTER',
+              children: [
+                new glyvio_core.RowLayoutFieldDesign({
+                  isExpanded: true,
+                  key: 'name.cell',
+                  child: new glyvio_core.StringTextDesign({
+                    key: 'name.text',
+                    value: item.<TitleField> ?? 'Unnamed Item',
+                    style: 'TITLE_SMALL',
+                  }),
+                }),
+                new glyvio_core.RowLayoutFieldDesign({
+                  visible: item.deleted === true,
+                  key: 'deleted.cell',
+                  child: new glyvio_core.ChipDesign({
+                    label: 'Deleted',
+                    colorTheme: 'RED',
+                  }),
+                }),
+              ],
             }),
           }),
-          new glyvio_core.RowLayoutFieldDesign({
-            visible: item.deleted === true,
-            key: 'deleted.cell',
-            child: new glyvio_core.ChipDesign({
-              label: 'Deleted',
-              colorTheme: 'RED',
+          // Detail row — remove or duplicate for additional fields
+          new glyvio_core.ColumnLayoutFieldDesign({
+            key: 'subtitle.cell',
+            child: new glyvio_core.StringTextDesign({
+              key: 'subtitle.text',
+              value: item.<SubtitleField> ?? '',   // e.g. item.code, item.category?.name
+              style: 'BODY_SMALL',
+              colorTheme: 'GREY',
             }),
           }),
         ],

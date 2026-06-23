@@ -81,7 +81,7 @@ Once the coder subagents report completion:
    - `@AfterCommitInterceptor` handlers do **not** mutate `value` (it is `Readonly`) and do **not** rely on rollback semantics (the transaction is already committed when `handleAfterCommit` runs).
 2. **Helper Execution**: If `manifest.json` has been modified during the planning or execution phases, you **MUST** run the helper script `run_helper.sh` located at the workspace root to regenerate typings and entities.
 3. **Compilation**: Run the build verification command (`pnpm run build:fast` or `pnpm tsc --noEmit`) to verify that the TypeScript compiler passes.
-4. **Verification**: Double-check that all interceptors are imported in the plugin's entrypoint files.
+4. **Verification**: Double-check that every new server file (interceptor, controller, strategy) is registered in `plugin/server/src/index.ts` via `export * from './...'`. There is no `behavior_listeners/` entrypoint — all registrations go in `src/index.ts`.
 
 ---
 
@@ -101,11 +101,10 @@ Ensure all delegated code adheres to the Glyvio Core specifications:
   - `cacheService.evict(key, identifier)` — removes the entry. After eviction, `get` returns `undefined` until a new `put` is made — no auto-reload.
   - Use `'<entityName>'` as the `key` and `'<entityName>:<id>'` as the `identifier` (e.g. `'tag'` / `'tag:abc-123'`).
   - Typical use-site: inside an `@AfterCommitInterceptor` to update or invalidate a cached snapshot after a durable commit.
-- **Query Building**: Always build queries using the static helper functions of `QueryBuilder` (e.g., `QueryBuilder.getByIntegrationCode` or `QueryBuilder.fromEntity`), passing the fixed structure from `glyvio_structure.AllEntities`. Do **NOT** use the static `.getQueryBuilder()` method on the entity model class itself.
+- **Query Building**: Always build queries using the static helper functions of `glyvio_core.QueryBuilder` (e.g., `glyvio_core.QueryBuilder.getByIntegrationCode` or `glyvio_core.QueryBuilder.fromEntity`), passing the fixed structure from `glyvio_structure.AllEntities`. Do **NOT** use the static `.getQueryBuilder()` method on the entity model class itself. Do **NOT** import `QueryBuilder` — it is injected globally under `glyvio_core`.
   _Example:_
   ```typescript
-  import { QueryBuilder } from '../internal/services/query_builder'; // or correct relative path
-  const record = QueryBuilder.getByIntegrationCode<glyvio_entity.TagName>(
+  const record = glyvio_core.QueryBuilder.getByIntegrationCode<glyvio_entity.TagName>(
     glyvio_structure.AllEntities.tagName,
     'INTEGRATION_CODE',
   );
@@ -122,12 +121,12 @@ Ensure all delegated code adheres to the Glyvio Core specifications:
     - In `glyvio_structure.<model>`: You will find corresponding properties ending with `_id` and `_ic` (e.g., `sale_status_id?: string | null;` and `sale_status_ic?: string | null;`).
       _Action_: Ask the user whether they want to query the status/situation by **Name** or by **Integration Code**:
 
-      - _If querying by Integration Code_: Use `QueryBuilder.getByIntegrationCode` on the related entity passing the target integration code, then assign the resolved `.id` to the foreign key ID field.
-      - _If querying by Name_: Query the status entity using `QueryBuilder.fromEntity`, matching on the name field using a case-insensitive check (e.g., using `lower(name) = lower(?)`), ordering by `created_at ASC`, and limiting the result to `1` (using `.limit(1).findFirst()`).
+      - _If querying by Integration Code_: Use `glyvio_core.QueryBuilder.getByIntegrationCode` on the related entity passing the target integration code, then assign the resolved `.id` to the foreign key ID field.
+      - _If querying by Name_: Query the status entity using `glyvio_core.QueryBuilder.fromEntity`, matching on the name field using a case-insensitive check (e.g., using `lower(name) = lower(?)`), ordering by `created_at ASC`, and limiting the result to `1` (using `.limit(1).findFirst()`).
         _Example:_
 
         ```typescript
-        const targetStatus = QueryBuilder.fromEntity<glyvio_entity.SaleTypeStatus>(
+        const targetStatus = glyvio_core.QueryBuilder.fromEntity<glyvio_entity.SaleTypeStatus>(
           glyvio_structure.AllEntities.saleTypeStatus,
         )
           .addFilterRaw('lower(name) = lower(?)', ['concluido'])

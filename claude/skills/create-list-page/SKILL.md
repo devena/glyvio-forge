@@ -11,9 +11,27 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
 
 ## 🎯 Skill Metadata
 
-- **Name**: `create_list_page`
-- **Description**: Generates a standard entity list page with search, sidebar filtering, routing, and menu registration for a Glyvio plugin.
-- **Audience**: AI agents or developers with write access to a Glyvio plugin codebase.
+```json
+{
+  "name": "create_list_page",
+  "description": "Generates a standard entity list page with search, sidebar filtering, routing, and menu registration for a Glyvio plugin.",
+  "Audience": "AI agents or developers with write access to a Glyvio plugin codebase.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "entityName":       { "type": "string", "description": "Entity model name in glyvio_entity.* (e.g., Product, Customer)" },
+      "pluginNamespace":  { "type": "string", "description": "Plugin namespace string (e.g., my_plugin)" },
+      "routePath":        { "type": "string", "description": "URL path starting with / (e.g., /products)" },
+      "titleField":       { "type": "string", "description": "Primary field displayed on each list card (e.g., name)" },
+      "subtitleField":    { "type": "string", "description": "Secondary field displayed below the title (e.g., code)" },
+      "sidebarFilters":   { "type": "array", "items": { "type": "string" }, "description": "Field names to expose as sidebar filter controls" },
+      "mainSearchFields": { "type": "array", "items": { "type": "string" }, "description": "Fields matched when typing in the top search bar" },
+      "menuGroup":        { "type": "string", "description": "Menu group key and display name where the page item will appear" }
+    },
+    "required": ["entityName", "pluginNamespace", "routePath", "titleField", "mainSearchFields", "menuGroup"]
+  }
+}
+```
 
 ---
 
@@ -130,7 +148,12 @@ export class <EntityName>ListPage extends glyvio_core.SimpleListPage<<EntityName
   constructor() {
     super(<EntityName>ListPageRoute);
     this.extensionsManager.registerReport(this);
-    state.userConfigKey = '<EntityName><SnakeCase>_LIST_PAGE';
+  }
+
+  async initState(state: <EntityName>ListPageState): Promise<void> {
+    await super.initState(state);
+    state.userConfigKey = '<ENTITY_NAME_UPPER>_LIST_PAGE';
+    await this.loadUserConfig(state);
   }
 
   /**
@@ -187,7 +210,7 @@ export class <EntityName>ListPage extends glyvio_core.SimpleListPage<<EntityName
           }),
           new glyvio_core.ChipDesign({
             key: 'statusField',
-            label: item.<StatusField> ?? '',,
+            label: item.<StatusField> ?? '',
             colorTheme: `GREEN`,
           }),
         ],
@@ -202,17 +225,19 @@ export class <EntityName>ListPage extends glyvio_core.SimpleListPage<<EntityName
     state: <EntityName>ListPageState,
     queryBuilder: glyvio_core.QueryBuilder<glyvio_entity.<EntityName>>,
   ): void {
-    queryBuilder.setFromEntity(glyvio_structure.AllEntities.<EntityName>);
+    queryBuilder.setFromEntity(glyvio_structure.AllEntities.<entityNameCamelCase>);
     queryBuilder.addOrderByEntity(glyvio_structure.AllEntities.<entityNameCamelCase>.<TitleField>, 'ASC');
 
     // Apply active sidebar filters to query
-    queryBuilder.addFilterILike(glyvio_structure.AllEntities.<entityNameCamelCase>.<SubtitleField>, text);
+    // e.g.: if (state.filtersSidebar?.<filterField1>) {
+    //   queryBuilder.addFilterOperator(glyvio_structure.AllEntities.<entityNameCamelCase>.<filterField1>, state.filtersSidebar.<filterField1>);
+    // }
   }
 
   /**
    * Formats query filter matching the main top search bar input.
    */
-  populateMainFilter(state: <EntityName>ListPageState, text: string): glyvio_core.QueryBuilderFilter {
+  populateMainFilter(_state: <EntityName>ListPageState, text?: string): glyvio_core.QueryBuilderFilter {
      return new glyvio_core.QueryBuilderFilter({
       ors: [
         new glyvio_core.QueryBuilderFilterILike({

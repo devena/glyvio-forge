@@ -118,11 +118,13 @@ Write the implementation following the blueprint below.
 
 ### Step 3: Register/Load the Controller
 
-Ensure the controller file is imported in the server entrypoint (typically `src/index.ts` or `src/behavior_listeners/index.ts`) so the decorator fires at initialization:
+Add an `export *` line in `plugin/server/src/index.ts` so the decorator fires at initialization:
 
 ```typescript
-import './controllers/<controller_id_snake_case>_controller';
+export * from './controllers/<controller_id_snake_case>_controller';
 ```
+
+> All server modules are registered via `export *` in `src/index.ts`; there is no separate `behavior_listeners/` entrypoint.
 
 ### Step 4: Build & Validate
 

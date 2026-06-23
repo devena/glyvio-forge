@@ -79,15 +79,23 @@ Create a new file `src/interceptors/<listener_id_snake_case>.ts` in the server p
 
 ### Step 2: Register/Load the Interceptor
 
-Ensure the interceptor file is imported in the plugin's server entrypoint (typically `src/index.ts` or `src/behavior_listeners/index.ts`) so that the decorator executes during initialization:
+Add an `export *` line in `plugin/server/src/index.ts` so the decorator executes during initialization:
 
 ```typescript
-import './interceptors/<listener_id_snake_case>';
+export * from './interceptors/sync/<listener_id_snake_case>';
 ```
+
+> Sync interceptors live under `interceptors/sync/`. All server modules are registered via `export *` in `src/index.ts`; there is no separate `behavior_listeners/` entrypoint.
 
 ### Step 3: Build & Validate
 
 Compile the codebase using standard workspace scripts (such as `pnpm run build` or `pnpm tsc --noEmit`) to verify that the types resolve correctly.
+
+> ⚠️ **Root `tsc --noEmit` False Positives for Server Code**
+>
+> The root `npx tsc --noEmit` compiles **all** files (app + server) together using the app-layer types from `plugin/app/@types/`, where `QueryBuilder.findFirst()`, `findAll()`, and `Entity.findById()` are typed as `Promise<T>`. Server-side code in `plugin/server/src/` uses `plugin/server/@types/` at build time, where **all these methods are synchronous** (`T | undefined`, `T[]`, etc.).
+>
+> Errors like `Property 'X' does not exist on type 'Promise<...>'` in server files are **expected false positives** from root `tsc` — they are not real compilation errors. The actual server build (via `webpack` with `plugin/server/tsconfig.build.json`) resolves types correctly. Do not attempt to fix them by adding `await`.
 
 ---
 
@@ -127,3 +135,16 @@ export class <InterceptorClassName> extends glyvio_core.SimpleSyncInterceptor<gl
   }
 }
 ```
+
+---
+
+## ✅ Completion Checklist
+
+- [ ] Interceptor file created at `src/interceptors/sync/<listener_id>.ts`.
+- [ ] `export * from './interceptors/sync/<listener_id>'` added in `src/index.ts`.
+- [ ] Listener ID is globally unique (checked against existing interceptors).
+- [ ] No `await` added to synchronous server methods — see false-positive warning above.
+- [ ] No try-catch unless explicitly requested by the user.
+- [ ] Zero `any` or force-casts.
+- [ ] Only used for sync-engine pipeline (ERP/marketplace/external systems) — NOT for regular user saves (use `@BeforeInterceptor` for those).
+- [ ] Build passes (`pnpm run build:fast`).

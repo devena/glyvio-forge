@@ -11,9 +11,26 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
 
 ## 🎯 Skill Metadata
 
-- **Name**: `create_table_page`
-- **Description**: Generates a standard entity table page with spreadsheet-like columns, search, sidebar filtering, routing, and menu registration for a Glyvio plugin.
-- **Audience**: AI agents or developers with write access to a Glyvio plugin codebase.
+```json
+{
+  "name": "create_table_page",
+  "description": "Generates a standard entity table page with spreadsheet-like columns, search, sidebar filtering, routing, and menu registration for a Glyvio plugin.",
+  "Audience": "AI agents or developers with write access to a Glyvio plugin codebase.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "entityName":       { "type": "string", "description": "Entity model name in glyvio_entity.* (e.g., Product, Customer)" },
+      "pluginNamespace":  { "type": "string", "description": "Plugin namespace string (e.g., my_plugin)" },
+      "routePath":        { "type": "string", "description": "URL path starting with / (e.g., /products)" },
+      "columns":          { "type": "array", "items": { "type": "object", "properties": { "field": { "type": "string" }, "label": { "type": "string" } } }, "description": "Table columns — each entry is { field, label }" },
+      "sidebarFilters":   { "type": "array", "items": { "type": "string" }, "description": "Field names to expose as sidebar filter controls" },
+      "mainSearchFields": { "type": "array", "items": { "type": "string" }, "description": "Fields matched when typing in the top search bar" },
+      "menuGroup":        { "type": "string", "description": "Menu group key and display name where the page item will appear" }
+    },
+    "required": ["entityName", "pluginNamespace", "routePath", "columns", "mainSearchFields", "menuGroup"]
+  }
+}
+```
 
 ---
 

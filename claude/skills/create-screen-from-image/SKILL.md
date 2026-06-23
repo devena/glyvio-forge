@@ -36,7 +36,7 @@ If any required parameter is missing, **stop and ask** — never guess.
    mapping "what it looks like" → "which `glyvio_core` class". Keep it open the whole time.
 2. **`@types` / `dist/bundle.d.ts`** — confirm every class you intend to use is actually exported.
    Never instantiate a class that is not in `@types`.
-3. The matching page skill(s) under `docs/claude/skills/create-*-page/` for the final code blueprint.
+3. The matching page skill(s) under `.claude/skills/` (e.g. `.claude/skills/create-list-page/SKILL.md`) for the final code blueprint.
 
 ---
 

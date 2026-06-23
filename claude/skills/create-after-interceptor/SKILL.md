@@ -83,11 +83,13 @@ Create a new file `src/interceptors/<listener_id_snake_case>.ts` in the server p
 
 ### Step 2: Register/Load the Interceptor
 
-Ensure the interceptor file is imported in the plugin's server entrypoint (typically `src/index.ts` or `src/behavior_listeners/index.ts`) so that the decorator executes during initialization:
+Add an `export *` line in `plugin/server/src/index.ts` so the decorator executes during initialization:
 
 ```typescript
-import './interceptors/<listener_id_snake_case>';
+export * from './interceptors/<category>/<listener_id_snake_case>';
 ```
+
+> The folder under `interceptors/` is typically `after/`, `before/`, `queue/`, or `sync/` — match the interceptor type. All server modules are registered via `export *` in `src/index.ts`; there is no separate `behavior_listeners/` entrypoint.
 
 ### Step 3: Build & Validate
 
@@ -153,3 +155,17 @@ export class <InterceptorClassName> extends glyvio_core.SimpleAfterInterceptor<g
   }
 }
 ```
+
+---
+
+## ✅ Completion Checklist
+
+- [ ] Interceptor file created at `src/interceptors/after/<listener_id>.ts`.
+- [ ] `export * from './interceptors/after/<listener_id>'` added in `src/index.ts`.
+- [ ] Listener ID is globally unique (checked against existing interceptors).
+- [ ] No `await` added to synchronous server methods — see false-positive warning above.
+- [ ] No try-catch unless explicitly requested by the user.
+- [ ] Zero `any` or force-casts.
+- [ ] `value` is treated as read-only — never mutate the intercepted entity here (use `@BeforeInterceptor` for mutations).
+- [ ] Business errors thrown via `glyvio_core.GlyvioError` (not raw `throw new Error()`).
+- [ ] Build passes (`pnpm run build:fast`).

@@ -11,9 +11,27 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
 
 ## 🎯 Skill Metadata
 
-- **Name**: `create_calendar_page`
-- **Description**: Generates a standard entity calendar page showing scheduled events, appointments, or tasks with routing, sidebar filtering, and menu registration for a Glyvio plugin.
-- **Audience**: AI agents or developers with write access to a Glyvio plugin codebase.
+```json
+{
+  "name": "create_calendar_page",
+  "description": "Generates a standard entity calendar page showing scheduled events, appointments, or tasks with routing, sidebar filtering, and menu registration for a Glyvio plugin.",
+  "Audience": "AI agents or developers with write access to a Glyvio plugin codebase.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "entityName":      { "type": "string", "description": "Entity model name in glyvio_entity.* (e.g., Visit, Task, Appointment)" },
+      "pluginNamespace": { "type": "string", "description": "Plugin namespace string (e.g., my_plugin)" },
+      "routePath":       { "type": "string", "description": "URL path starting with / (e.g., /visits-calendar)" },
+      "startDateField":  { "type": "string", "description": "DateTime field used as the event start (e.g., scheduledAt)" },
+      "titleField":      { "type": "string", "description": "Field displayed as the event label on the calendar (e.g., name)" },
+      "endDateField":    { "type": "string", "description": "Optional DateTime field for event end/duration (e.g., finishedAt)" },
+      "sidebarFilters":  { "type": "array", "items": { "type": "string" }, "description": "Field names to expose as sidebar filter controls" },
+      "menuGroup":       { "type": "string", "description": "Menu group key and display name where the page item will appear" }
+    },
+    "required": ["entityName", "pluginNamespace", "routePath", "startDateField", "titleField", "menuGroup"]
+  }
+}
+```
 
 ---
 
