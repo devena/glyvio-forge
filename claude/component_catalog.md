@@ -433,6 +433,310 @@ tom claro).
 
 ---
 
+## 15. Padrões de conteúdo de Card (`CardCellDesign`) — `getDesignForCell`
+
+> Esta seção cobre **o que vai dentro do `child`** das células de lista e
+> grade. O padrão de composição interna é o mesmo independentemente da classe
+> externa — o que varia é só o container:
+>
+> | Contexto                    | Classe container   | Skill / uso                                      |
+> | --------------------------- | ------------------ | ------------------------------------------------ |
+> | Grid page                   | `CardCellDesign`   | `create-grid-page` → `getDesignForCell`          |
+> | List page                   | `LineCellDesign`   | `create-list-page` → `getDesignForCell`          |
+> | `ListSectionDesign` estático | `CardCellDesign`  | `cells: [new CardCellDesign({...})]`             |
+> | `ListSectionDesign` dinâmico | `CardCellDesign`  | `interopDesign.childDesign = new CardCellDesign` |
+>
+> `LineCellDesign` e `CardCellDesign` têm a mesma API (`.child`, `.padding`,
+> `.colorTheme`); a diferença é só visual — `LineCellDesign` é mais
+> compacta/flat, sem sombra. Os padrões A-E abaixo aplicam-se ao `.child`
+> de qualquer uma delas.
+>
+> **Regra de ouro**: o `child` nunca deve ser um widget atômico
+> (texto/chip) diretamente — sempre passe por um layout
+> (`RowLayoutDesign` ou `ColumnLayoutDesign`) para manter margem e
+> alinhamento consistentes.
+
+### Padrão A — Linha única (título + badge à direita)
+
+Parece com: título/nome expandindo à esquerda, código ou chip de status
+colado à direita.  
+Use quando: card de leitura rápida com apenas um campo principal e um
+indicador secundário.
+
+```typescript
+getDesignForCell(state: S, item: glyvio_entity.Entity): glyvio_core.CardCellDesign {
+  return new glyvio_core.CardCellDesign({
+    colorTheme: item.deleted ? 'RED' : null,
+    padding: '12 16',
+    child: new glyvio_core.RowLayoutDesign({
+      crossAlignment: 'CENTER',
+      children: [
+        new glyvio_core.RowLayoutFieldDesign({
+          isExpanded: true,
+          key: 'name.cell',
+          child: new glyvio_core.StringTextDesign({
+            key: 'name.text',
+            value: '$S{item.name}',
+          }),
+        }),
+        new glyvio_core.RowLayoutFieldDesign({
+          key: 'code.cell',
+          child: new glyvio_core.StringTextDesign({
+            key: 'code.text',
+            value: '$S{item.code}',
+            colorTheme: 'GREY',
+            style: 'BODY_SMALL',
+          }),
+        }),
+      ],
+    }),
+  });
+}
+```
+
+---
+
+### Padrão B — Duas linhas (título + subtítulo)
+
+Parece com: texto maior no topo, texto menor de detalhe logo abaixo,
+sem elementos à direita.  
+Use quando: card com nome principal + um campo de detalhe (categoria,
+descrição curta, data, etc.).
+
+```typescript
+getDesignForCell(state: S, item: glyvio_entity.Entity): glyvio_core.CardCellDesign {
+  return new glyvio_core.CardCellDesign({
+    colorTheme: item.deleted ? 'RED' : null,
+    padding: '12 16',
+    child: new glyvio_core.ColumnLayoutDesign({
+      children: [
+        new glyvio_core.ColumnLayoutFieldDesign({
+          key: 'name.cell',
+          child: new glyvio_core.StringTextDesign({
+            key: 'name.text',
+            value: '$S{item.name}',
+            style: 'TITLE_SMALL',
+          }),
+        }),
+        new glyvio_core.ColumnLayoutFieldDesign({
+          key: 'subtitle.cell',
+          child: new glyvio_core.StringTextDesign({
+            key: 'subtitle.text',
+            value: '$S{item.category.name}',   // substitua pelo campo de detalhe
+            style: 'BODY_SMALL',
+            colorTheme: 'GREY',
+          }),
+        }),
+      ],
+    }),
+  });
+}
+```
+
+---
+
+### Padrão C — Cabeçalho com chip de status + detalhes em coluna
+
+Parece com: primeira linha com título à esquerda e chip colorido de
+status à direita; abaixo, uma ou mais linhas de texto menor de detalhe.  
+Use quando: entidade com status visível (pedido, tarefa, lead) e
+múltiplos campos informativos secundários.
+
+```typescript
+getDesignForCell(state: S, item: glyvio_entity.Entity): glyvio_core.CardCellDesign {
+  return new glyvio_core.CardCellDesign({
+    colorTheme: item.deleted ? 'RED' : null,
+    padding: '12 16',
+    child: new glyvio_core.ColumnLayoutDesign({
+      children: [
+        // Linha de cabeçalho: título + chip de status
+        new glyvio_core.ColumnLayoutFieldDesign({
+          key: 'header.cell',
+          child: new glyvio_core.RowLayoutDesign({
+            crossAlignment: 'CENTER',
+            children: [
+              new glyvio_core.RowLayoutFieldDesign({
+                isExpanded: true,
+                key: 'name.cell',
+                child: new glyvio_core.StringTextDesign({
+                  key: 'name.text',
+                  value: '$S{item.code} — $S{item.name}',
+                  style: 'TITLE_SMALL',
+                }),
+              }),
+              new glyvio_core.RowLayoutFieldDesign({
+                key: 'status.cell',
+                child: new glyvio_core.ChipDesign({
+                  key: 'status.chip',
+                  label: '$S{item.status.name}',
+                  colorTheme: '$S{item.status.color}',
+                }),
+              }),
+            ],
+          }),
+        }),
+        // Linhas de detalhe
+        new glyvio_core.ColumnLayoutFieldDesign({
+          key: 'detail1.cell',
+          child: new glyvio_core.StringTextDesign({
+            key: 'detail1.text',
+            value: '$S{item.relatedEntity.name}',  // substitua
+            style: 'BODY_SMALL',
+          }),
+        }),
+        new glyvio_core.ColumnLayoutFieldDesign({
+          key: 'detail2.cell',
+          child: new glyvio_core.StringTextDesign({
+            key: 'detail2.text',
+            value: '$D{item.createdAt}',            // substitua
+            style: 'BODY_SMALL',
+            colorTheme: 'GREY',
+          }),
+        }),
+      ],
+    }),
+  });
+}
+```
+
+---
+
+### Padrão D — Avatar + bloco de texto
+
+Parece com: círculo com iniciais ou foto à esquerda; à direita, nome em
+cima e detalhe embaixo.  
+Use quando: card de pessoa, contato, usuário ou qualquer entidade que
+tenha um campo de nome para iniciais.
+
+```typescript
+getDesignForCell(state: S, item: glyvio_entity.Entity): glyvio_core.CardCellDesign {
+  return new glyvio_core.CardCellDesign({
+    colorTheme: item.deleted ? 'RED' : null,
+    padding: '12 16',
+    child: new glyvio_core.RowLayoutDesign({
+      crossAlignment: 'CENTER',
+      children: [
+        // Avatar à esquerda
+        new glyvio_core.RowLayoutFieldDesign({
+          key: 'avatar.cell',
+          child: new glyvio_core.AvatarDesign({
+            key: 'avatar',
+            text: '$S{item.name}',        // usa as iniciais do nome
+            colorTheme: 'BLUE',
+            size: 40,
+            padding: '0 8 0 0',
+          }),
+        }),
+        // Bloco de texto à direita
+        new glyvio_core.RowLayoutFieldDesign({
+          isExpanded: true,
+          key: 'text.cell',
+          child: new glyvio_core.ColumnLayoutDesign({
+            children: [
+              new glyvio_core.ColumnLayoutFieldDesign({
+                key: 'name.cell',
+                child: new glyvio_core.StringTextDesign({
+                  key: 'name.text',
+                  value: '$S{item.name}',
+                  style: 'TITLE_SMALL',
+                }),
+              }),
+              new glyvio_core.ColumnLayoutFieldDesign({
+                key: 'subtitle.cell',
+                child: new glyvio_core.StringTextDesign({
+                  key: 'subtitle.text',
+                  value: '$S{item.role.name}',    // substitua pelo campo de detalhe
+                  style: 'BODY_SMALL',
+                  colorTheme: 'GREY',
+                }),
+              }),
+            ],
+          }),
+        }),
+      ],
+    }),
+  });
+}
+```
+
+---
+
+### Padrão E — Múltiplos KPIs / totalizadores
+
+Parece com: título no topo; abaixo, dois ou mais blocos "Label / Valor"
+lado a lado (geralmente numérico/financeiro).  
+Use quando: card de entidade com métricas numéricas (valor total, saldo,
+quantidade, prazo, etc.) que precisam de destaque visual.
+
+```typescript
+getDesignForCell(state: S, item: glyvio_entity.Entity): glyvio_core.CardCellDesign {
+  return new glyvio_core.CardCellDesign({
+    colorTheme: item.deleted ? 'RED' : null,
+    padding: '12 16',
+    child: new glyvio_core.ColumnLayoutDesign({
+      children: [
+        // Título
+        new glyvio_core.ColumnLayoutFieldDesign({
+          key: 'name.cell',
+          child: new glyvio_core.StringTextDesign({
+            key: 'name.text',
+            value: '$S{item.code} — $S{item.name}',
+            style: 'TITLE_SMALL',
+          }),
+        }),
+        // Linha de KPIs
+        new glyvio_core.ColumnLayoutFieldDesign({
+          key: 'kpis.cell',
+          child: new glyvio_core.RowLayoutDesign({
+            children: [
+              new glyvio_core.RowLayoutFieldDesign({
+                isExpanded: true,
+                key: 'kpi1.cell',
+                child: new glyvio_core.TwoLinesTotalizerBoxDesign({
+                  key: 'kpi1',
+                  label: 'Total',               // substitua pelo rótulo
+                  value: '$N{item.totalValue Formatter="VALUE"}',
+                  colorTheme: 'GREEN',
+                }),
+              }),
+              new glyvio_core.RowLayoutFieldDesign({
+                isExpanded: true,
+                key: 'kpi2.cell',
+                child: new glyvio_core.TwoLinesTotalizerBoxDesign({
+                  key: 'kpi2',
+                  label: 'Saldo',               // substitua pelo rótulo
+                  value: '$N{item.balance Formatter="VALUE"}',
+                  colorTheme: 'BLUE',
+                }),
+              }),
+            ],
+          }),
+        }),
+      ],
+    }),
+  });
+}
+```
+
+---
+
+### Escolha rápida
+
+| Visual dominant no print                          | Padrão |
+| ------------------------------------------------- | ------ |
+| Título + código/badge na mesma linha              | **A**  |
+| Título + subtítulo em duas linhas, sem status     | **B**  |
+| Título + chip de status + detalhes abaixo         | **C**  |
+| Avatar/foto à esquerda + nome + detalhe à direita | **D**  |
+| Título + 2+ valores numéricos em destaque         | **E**  |
+
+> **Misturar padrões**: é válido — ex. Padrão C mas com avatar (adicione
+> um `RowLayoutFieldDesign` antes do título no cabeçalho). Sempre use
+> `ColumnLayoutDesign` como raiz quando há múltiplas linhas; use
+> `RowLayoutDesign` como raiz apenas quando tudo cabe em uma linha só.
+
+---
+
 ## Pendência: imagens de referência
 
 Para o matching ficar **confiável** (comparar recorte do print com a thumbnail),
