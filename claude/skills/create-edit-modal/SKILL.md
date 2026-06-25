@@ -43,6 +43,11 @@ The executing agent MUST strictly adhere to these rules:
 3. **Modal Closing**: Always close the modal using `this.popModal(...)` after completing the saving/cancel workflow.
 4. **No any or force cast**: Do not use `any` or force cast to `any` to resolve type errors. Find another way to solve the problem.
 5. **`events()` — EventReturn rule**: Every new `action.key` handler added to `events()` **must** return `'STATE_UPDATE'` when it mutates state properties directly. Use `'STATE_FREEZED'` only for navigation actions (`pushPage`, `pushModal`, `popModal`). Never return `undefined` from a newly added key — that is a silent no-op.
+6. **Interpolation syntax — use the correct prefix for each type**:
+   - `$S{...}` → String/text values.
+   - `$D{...}` → **DateTime only**. NEVER use for Decimal or numeric fields.
+   - `$N{...}` → Decimal/Number (counts, amounts, any `Decimal` type).
+   - `$T{...}` → Translation/i18n key.
 
 ---
 

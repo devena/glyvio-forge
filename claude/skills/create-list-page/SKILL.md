@@ -60,6 +60,11 @@ The executing agent MUST strictly adhere to these rules:
 2. **Routing Rules**: `getRoutePath()` must return a path starting with `/` followed by alphanumeric characters or underscores (no trailing slashes, no multiple segments unless URL-encoded).
 3. **Data Types & Models**: All referenced model fields must exist under the namespace `glyvio_entity.<EntityName>`.
 4. **No any or force cast**: Do not use `any` or force cast to `any` to resolve type errors. Find another way to solve the problem.
+5. **Interpolation syntax — use the correct prefix for each type**:
+   - `$S{...}` → String/text values.
+   - `$D{...}` → **DateTime only**. NEVER use for Decimal or numeric fields.
+   - `$N{...}` → Decimal/Number (counts, amounts, any `Decimal` type).
+   - `$T{...}` → Translation/i18n key.
 
 ---
 
