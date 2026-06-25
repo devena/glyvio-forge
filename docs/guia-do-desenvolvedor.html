@@ -1,0 +1,1228 @@
+<title>Glyvio Plugin — Guia do Desenvolvedor</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --base: #0D1117;
+    --surface: #161C2D;
+    --card: #1E2840;
+    --border: #2A3A52;
+    --border-light: #1E2840;
+    --mint: #4FFFB0;
+    --mint-dim: #0E2A1E;
+    --mint-text: #2ECC80;
+    --text: #DCE4F0;
+    --text-muted: #6B7FA3;
+    --text-dim: #3E5070;
+    --app: #4A8CF7;
+    --app-bg: #0D1C3A;
+    --app-dim: #162040;
+    --server: #F97316;
+    --server-bg: #2A1200;
+    --server-dim: #2A1800;
+    --env: #A78BFA;
+    --env-bg: #1A1030;
+    --env-dim: #1E1438;
+    --shared: #34D399;
+    --code-bg: #111827;
+    --code-text: #C4F135;
+    --sidebar-w: 248px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--base);
+    color: var(--text);
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* SIDEBAR */
+  nav {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 0 32px;
+    flex-shrink: 0;
+  }
+  nav::-webkit-scrollbar { width: 4px; }
+  nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .nav-logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .nav-logo-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--mint);
+  }
+  .nav-logo-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .nav-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 12px 20px 4px;
+  }
+
+  nav a {
+    display: block;
+    padding: 6px 20px 6px 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    line-height: 1.4;
+  }
+  nav a:hover {
+    color: var(--text);
+    background: var(--card);
+    border-left-color: var(--border);
+  }
+  nav a.active, nav a:focus-visible {
+    color: var(--mint);
+    border-left-color: var(--mint);
+    background: var(--mint-dim);
+  }
+
+  nav a .dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+    margin-top: -1px;
+  }
+
+  /* MAIN */
+  main {
+    flex: 1;
+    overflow-x: hidden;
+    padding: 0 48px 96px;
+    max-width: 900px;
+  }
+
+  /* HERO */
+  .hero {
+    padding: 56px 0 48px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 56px;
+  }
+  .hero-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--mint);
+    margin-bottom: 12px;
+  }
+  .hero h1 {
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: #fff;
+    text-wrap: balance;
+    margin-bottom: 16px;
+  }
+  .hero-desc {
+    font-size: 16px;
+    color: var(--text-muted);
+    max-width: 580px;
+    line-height: 1.7;
+  }
+  .hero-layers {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+  .layer-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+  .layer-pill .icon { font-size: 14px; }
+  .pill-app { background: var(--app-dim); color: var(--app); border: 1px solid rgba(74,140,247,0.25); }
+  .pill-server { background: var(--server-dim); color: var(--server); border: 1px solid rgba(249,115,22,0.25); }
+  .pill-env { background: var(--env-dim); color: var(--env); border: 1px solid rgba(167,139,250,0.25); }
+  .pill-shared { background: #0D2218; color: var(--shared); border: 1px solid rgba(52,211,153,0.25); }
+
+  /* SECTIONS */
+  section {
+    margin-bottom: 64px;
+    scroll-margin-top: 24px;
+  }
+  .section-eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  h2 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: #fff;
+    margin-bottom: 16px;
+    text-wrap: balance;
+  }
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 10px;
+    margin-top: 28px;
+  }
+  p { color: var(--text-muted); margin-bottom: 14px; }
+  p:last-child { margin-bottom: 0; }
+
+  /* LAYER SECTIONS */
+  .layer-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 20px;
+    border-radius: 10px 10px 0 0;
+    border: 1px solid;
+    border-bottom: none;
+  }
+  .layer-header-app { background: var(--app-dim); border-color: rgba(74,140,247,0.3); }
+  .layer-header-server { background: var(--server-dim); border-color: rgba(249,115,22,0.3); }
+  .layer-header-env { background: var(--env-dim); border-color: rgba(167,139,250,0.3); }
+  .layer-header-shared { background: #0D2218; border-color: rgba(52,211,153,0.25); }
+
+  .layer-badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 4px;
+  }
+  .badge-app { background: rgba(74,140,247,0.2); color: var(--app); }
+  .badge-server { background: rgba(249,115,22,0.2); color: var(--server); }
+  .badge-env { background: rgba(167,139,250,0.2); color: var(--env); }
+  .badge-shared { background: rgba(52,211,153,0.15); color: var(--shared); }
+
+  .layer-path {
+    font-size: 12px;
+    font-family: 'SF Mono', 'Consolas', monospace;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+
+  .layer-body {
+    border: 1px solid;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 20px;
+    margin-bottom: 32px;
+  }
+  .layer-body-app { border-color: rgba(74,140,247,0.2); background: rgba(13,28,58,0.4); }
+  .layer-body-server { border-color: rgba(249,115,22,0.15); background: rgba(42,18,0,0.4); }
+  .layer-body-env { border-color: rgba(167,139,250,0.15); background: rgba(26,16,48,0.4); }
+  .layer-body-shared { border-color: rgba(52,211,153,0.15); background: rgba(13,34,24,0.4); }
+
+  /* CODE BLOCKS */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.7;
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    margin: 14px 0;
+  }
+  pre::-webkit-scrollbar { height: 4px; }
+  pre::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  code { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace; }
+  p code, li code {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12.5px;
+    border: 1px solid var(--border);
+  }
+
+  .kw { color: #FF79C6; }
+  .cls { color: #8BE9FD; }
+  .fn { color: #50FA7B; }
+  .str { color: #F1FA8C; }
+  .cmt { color: #6272A4; font-style: italic; }
+  .dec { color: #FFB86C; }
+  .typ { color: #BD93F9; }
+  .num { color: #FF5555; }
+  .prop { color: #8BE9FD; }
+
+  /* FLOW DIAGRAM */
+  .flow {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin: 28px 0;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .flow-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 120px;
+    flex: 1;
+    position: relative;
+  }
+  .flow-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 22px;
+    right: -1px;
+    width: calc(100% - 60px);
+    left: 60px;
+    height: 2px;
+    background: linear-gradient(to right, var(--border), var(--border));
+    z-index: 0;
+  }
+  .flow-node {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    position: relative;
+    z-index: 1;
+    border: 2px solid;
+  }
+  .flow-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    text-align: center;
+    line-height: 1.3;
+    max-width: 90px;
+  }
+  .flow-sub {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 4px;
+    max-width: 90px;
+  }
+
+  /* CARDS GRID */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+    margin: 20px 0;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    transition: border-color 0.15s;
+  }
+  .card:hover { border-color: var(--border-light); }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0; }
+  .card-path {
+    font-size: 11px;
+    font-family: 'SF Mono', monospace;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+
+  /* SKILL TABLE */
+  .skill-table-wrap { overflow-x: auto; margin: 16px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+  thead th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    background: var(--surface);
+  }
+  tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: top;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--card); }
+  td code {
+    background: var(--code-bg);
+    color: var(--mint);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 11.5px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td .layer-badge { display: inline-block; }
+
+  /* CALLOUTS */
+  .callout {
+    border-left: 3px solid;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .callout-mint { border-color: var(--mint); background: var(--mint-dim); color: #8AECBF; }
+  .callout-warn { border-color: var(--server); background: var(--server-bg); color: #FDBA74; }
+  .callout-info { border-color: var(--app); background: var(--app-bg); color: #93C5FD; }
+  .callout-title { font-weight: 700; margin-bottom: 4px; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
+
+  /* LISTS */
+  ul, ol {
+    padding-left: 20px;
+    color: var(--text-muted);
+    line-height: 1.8;
+    font-size: 14px;
+  }
+  ul li, ol li { margin-bottom: 4px; }
+  li code {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+  }
+
+  /* DIVIDER */
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* STEP LIST */
+  .steps { counter-reset: step; list-style: none; padding: 0; margin: 20px 0; }
+  .steps li {
+    counter-increment: step;
+    display: flex;
+    gap: 14px;
+    margin-bottom: 20px;
+    align-items: flex-start;
+  }
+  .steps li::before {
+    content: counter(step);
+    min-width: 28px;
+    height: 28px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--mint);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-title { font-weight: 700; color: var(--text); margin-bottom: 4px; font-size: 14px; }
+  .step-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+  /* AGENT CARD */
+  .agent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+  .agent-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .agent-card-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .agent-card-trigger { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+  .agent-card-layer { margin-top: 8px; }
+
+  /* FOCUS */
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; }
+  }
+
+  @media (max-width: 800px) {
+    body { flex-direction: column; }
+    nav { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); }
+    main { padding: 0 20px 60px; }
+    .agent-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<nav id="sidebar">
+  <div class="nav-logo">
+    <div class="nav-logo-title">Glyvio Plugin</div>
+    <div class="nav-logo-sub">Guia do Desenvolvedor</div>
+  </div>
+
+  <div class="nav-section-label">Introdução</div>
+  <a href="#visao-geral"><span class="dot" style="background:#4FFFB0"></span>Visão Geral</a>
+  <a href="#jornada"><span class="dot" style="background:#4FFFB0"></span>Jornada de uma Feature</a>
+
+  <div class="nav-section-label">Camadas</div>
+  <a href="#app"><span class="dot" style="background:var(--app)"></span>App — Frontend</a>
+  <a href="#server"><span class="dot" style="background:var(--server)"></span>Server — Backend</a>
+  <a href="#environment"><span class="dot" style="background:var(--env)"></span>Environment — IA</a>
+  <a href="#shared"><span class="dot" style="background:var(--shared)"></span>Shared Commons</a>
+
+  <div class="nav-section-label">Infraestrutura</div>
+  <a href="#manifest"><span class="dot" style="background:#F59E0B"></span>Manifesto</a>
+  <a href="#registro"><span class="dot" style="background:#F59E0B"></span>Registro e Descoberta</a>
+  <a href="#build"><span class="dot" style="background:#F59E0B"></span>Build & Release</a>
+
+  <div class="nav-section-label">IA Assistida</div>
+  <a href="#skills"><span class="dot" style="background:#EC4899"></span>Skills Disponíveis</a>
+  <a href="#agentes"><span class="dot" style="background:#EC4899"></span>Agentes Especializados</a>
+</nav>
+
+<main>
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">Documentação Técnica</div>
+    <h1>Glyvio Plugin:<br>Fluxo Completo de Desenvolvimento</h1>
+    <p class="hero-desc">Um guia de referência para programadores sobre a arquitetura em três camadas, os padrões de código de cada camada, e como usar as skills e agentes de IA para acelerar o desenvolvimento.</p>
+    <div class="hero-layers">
+      <span class="layer-pill pill-app"><span class="icon">⬡</span> plugin/app</span>
+      <span class="layer-pill pill-server"><span class="icon">⬡</span> plugin/server</span>
+      <span class="layer-pill pill-env"><span class="icon">⬡</span> plugin/environment</span>
+      <span class="layer-pill pill-shared"><span class="icon">⬡</span> shared/commons</span>
+    </div>
+  </div>
+
+  <!-- VISÃO GERAL -->
+  <section id="visao-geral">
+    <div class="section-eyebrow">Arquitetura</div>
+    <h2>Visão Geral do Sistema</h2>
+    <p>Um plugin Glyvio é um <strong>monorepo</strong> dividido em quatro pacotes independentes, cada um com seu próprio ciclo de build via Webpack. Os três pacotes principais — <code>app</code>, <code>server</code> e <code>environment</code> — representam camadas que rodam em contextos completamente diferentes, mas compartilham tipos via <code>shared/commons</code>.</p>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-title"><span class="layer-badge badge-app">App</span></div>
+        <p class="card-desc">Frontend bundled pelo Webpack. Executa no browser/webview do usuário final. Responsável por telas, modais, filtros, menus e extensões de views existentes do CRM.</p>
+        <div class="card-path">plugin/app/src/</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="layer-badge badge-server">Server</span></div>
+        <p class="card-desc">Lógica de negócio server-side. Interceptors que rodam antes/depois de salvar entidades no banco, controllers HTTP, e strategies de processamento.</p>
+        <div class="card-path">plugin/server/src/</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="layer-badge badge-env">Environment</span></div>
+        <p class="card-desc">Integração com IA (Jeannie). System tools e custom tools que o agente de IA pode invocar. Services com acesso ao banco via SyncClient.</p>
+        <div class="card-path">plugin/environment/src/</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="layer-badge badge-shared">Shared</span></div>
+        <p class="card-desc">Constantes e tipos compartilhados entre camadas: <code>PLUGIN_ID</code>, <code>PLUGIN_NAME</code>, <code>VERSION</code>. Nunca contém lógica de negócio.</p>
+        <div class="card-path">shared/commons/src/</div>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-title">Tipos via @types</div>
+      Cada camada tem uma pasta <code>@types/</code> com arquivos <code>.d.ts</code> gerados (<code>glyvio_core.d.ts</code>, <code>entity.d.ts</code>, <code>permissions.d.ts</code>, etc.). Esses são os contratos de API — nunca os edite manualmente. O TypeScript os lê automaticamente via o <code>tsconfig</code> do workspace.
+    </div>
+  </section>
+
+  <!-- JORNADA -->
+  <section id="jornada">
+    <div class="section-eyebrow">Processo</div>
+    <h2>Jornada Completa de uma Feature</h2>
+    <p>Do requisito ao deploy, toda feature passa por etapas previsíveis. Abaixo o fluxo completo com as decisões e artefatos envolvidos em cada etapa.</p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-node" style="background:#0D2218;border-color:var(--shared);color:var(--shared)">1</div>
+        <div class="flow-label">Manifesto</div>
+        <div class="flow-sub">Entidade, permissão, migração</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-node" style="background:var(--app-dim);border-color:var(--app);color:var(--app)">2</div>
+        <div class="flow-label">App</div>
+        <div class="flow-sub">Tela, modal, rota</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-node" style="background:var(--server-dim);border-color:var(--server);color:var(--server)">3</div>
+        <div class="flow-label">Server</div>
+        <div class="flow-sub">Validações, side effects</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-node" style="background:var(--env-dim);border-color:var(--env);color:var(--env)">4</div>
+        <div class="flow-label">Environment</div>
+        <div class="flow-sub">Ferramentas de IA</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-node" style="background:#1A1200;border-color:#F59E0B;color:#F59E0B">5</div>
+        <div class="flow-label">Build & Release</div>
+        <div class="flow-sub">Lint, build, versão</div>
+      </div>
+    </div>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <div class="step-title">Definir o Manifesto</div>
+          <div class="step-desc">Se a feature precisa de um novo tipo de entidade, adicione a definição em <code>manifest.json</code> dentro de <code>dbVersions</code> (nova versão). Defina os campos, tipos, chaves estrangeiras e permissões necessárias. Use a skill <code>/modify-manifest</code> para guia interativo. Execute <code>run_helper.sh</code> após editar o manifesto para regenerar os tipos.</div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <div class="step-title">Criar a tela no App</div>
+          <div class="step-desc">Escolha o tipo de view: <code>ListPage</code>, <code>TablePage</code>, <code>EditModal</code>, <code>EntityModal</code>, etc. Use a skill correspondente (ex: <code>/create-list-page</code>). Registre a rota em <code>plugin/app/src/index.ts</code>. Se for estender uma tela existente, crie um interceptor de app com <code>/create-list-page-interceptor</code>.</div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <div class="step-title">Adicionar lógica no Server</div>
+          <div class="step-desc">Crie um <code>BeforeInterceptor</code> para validações que devem impedir o save, ou um <code>AfterInterceptor</code> para side effects (notificações, timelines, denormalizações). Use as skills <code>/create-before-interceptor</code> ou <code>/create-after-interceptor</code>. Os interceptors são descobertos automaticamente — não precisa registrá-los em <code>index.ts</code>.</div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <div class="step-title">Expor para a IA (opcional)</div>
+          <div class="step-desc">Se a feature deve ser acessível ao agente Jeannie, crie um <code>SystemTool</code> na camada environment com a skill <code>/create-system-tool</code>. Crie services com a lógica de acesso a dados usando o <code>SyncClient</code> auto-gerado. Tools também são descobertas automaticamente via decoradores.</div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <div class="step-title">Build e Release</div>
+          <div class="step-desc">Rode <code>pnpm lint</code> para checar TypeScript. Execute <code>pnpm build</code> para compilar todas as camadas. Use a skill <code>/release-project</code> para bump de versão, commit automático e push. O CI no GitHub Actions valida o build antes do deploy.</div>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <hr>
+
+  <!-- APP -->
+  <section id="app">
+    <div class="layer-header layer-header-app">
+      <span class="layer-badge badge-app">App</span>
+      <strong style="color:#fff;font-size:17px">Camada Frontend</strong>
+      <span class="layer-path">plugin/app/src/</span>
+    </div>
+    <div class="layer-body layer-body-app">
+      <p>Tudo que o usuário vê e interage. Compilado como bundle CommonJS pelo Webpack e injetado na interface do Glyvio. Nenhuma chamada direta à API — toda comunicação passa pelo <code>glyvio_core</code>.</p>
+
+      <h3>Views Principais</h3>
+      <div class="cards">
+        <div class="card">
+          <div class="card-title">SimpleListPage</div>
+          <p class="card-desc">Lista de entidades com busca, filtros laterais (sidebar), paginação e ações por item (editar, deletar, restaurar).</p>
+          <div class="card-path">views/pages/lists/*.ts</div>
+        </div>
+        <div class="card">
+          <div class="card-title">SimpleTablePage</div>
+          <p class="card-desc">Tabela estilo spreadsheet com colunas editáveis inline. Indicado para dados com muitas colunas numéricas.</p>
+          <div class="card-path">views/pages/tables/*.ts</div>
+        </div>
+        <div class="card">
+          <div class="card-title">SimpleDashboardPage</div>
+          <p class="card-desc">Página de dashboard com KPIs, gráficos e visualizações analíticas. Usa Plotly.js injetado pelo core.</p>
+          <div class="card-path">views/pages/dashboards/*.ts</div>
+        </div>
+        <div class="card">
+          <div class="card-title">SimpleEditModal</div>
+          <p class="card-desc">Formulário de criação/edição de entidade em modal. Com validação, loading state, save e cancel.</p>
+          <div class="card-path">views/modals/edits/*.ts</div>
+        </div>
+        <div class="card">
+          <div class="card-title">SimpleEntityModal</div>
+          <p class="card-desc">Picker/autocomplete para selecionar entidades em campos de formulário. Exibe chips ou linhas de resultado.</p>
+          <div class="card-path">views/modals/entities/*.ts</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Interceptors de App</div>
+          <p class="card-desc">Estendem views existentes do CRM (ex: ClientEditModal) para injetar campos, botões ou comportamentos extras.</p>
+          <div class="card-path">extends/*.ts</div>
+        </div>
+      </div>
+
+      <h3>Padrão de um EditModal</h3>
+<pre><span class="kw">import</span> * <span class="kw">as</span> <span class="cls">glyvio_core</span> <span class="kw">from</span> <span class="str">'glyvio_core'</span>;
+
+<span class="kw">interface</span> <span class="cls">ErpState</span> <span class="kw">extends</span> <span class="cls">glyvio_core</span>.<span class="cls">SimpleEditModalState</span> {
+  name: <span class="typ">string</span>;
+}
+
+<span class="kw">export class</span> <span class="cls">ErpEditModal</span> <span class="kw">extends</span> <span class="cls">glyvio_core</span>.<span class="cls">SimpleEditModal</span>&lt;<span class="cls">ErpState</span>&gt; {
+
+  <span class="fn">initState</span>(): <span class="cls">ErpState</span> {
+    <span class="kw">return</span> { name: <span class="str">''</span>, ...this.<span class="fn">getDefaultState</span>() };
+  }
+
+  <span class="fn">getDesign</span>(): <span class="cls">glyvio_core</span>.<span class="cls">Design</span> {
+    <span class="kw">return new</span> <span class="cls">glyvio_core</span>.<span class="cls">FormSectionDesign</span>({
+      children: [
+        <span class="kw">new</span> <span class="cls">glyvio_core</span>.<span class="cls">FormLayoutFieldDesign</span>({
+          label: <span class="str">'Nome'</span>,
+          design: <span class="kw">new</span> <span class="cls">glyvio_core</span>.<span class="cls">StringTextfieldDesign</span>({
+            value: <span class="kw">this</span>.state.name,
+            onChanged: (v) => <span class="kw">this</span>.<span class="fn">setState</span>({ name: v }),
+          }),
+        }),
+      ],
+    });
+  }
+
+  <span class="kw">async</span> <span class="fn">onSave</span>() {
+    <span class="kw">await</span> <span class="cls">glyvio_core</span>.entityService.<span class="fn">save</span>(<span class="str">'erp'</span>, { name: <span class="kw">this</span>.state.name });
+  }
+}</pre>
+
+      <div class="callout callout-warn">
+        <div class="callout-title">Atenção — Instanciação de Entidades</div>
+        Sempre use <code>await glyvio_entity.Erp.new()</code> para criar instâncias de entidade. Nunca use <code>new glyvio_entity.Erp()</code> — o construtor direto não inicializa corretamente o estado interno do framework.
+      </div>
+
+      <h3>QueryBuilder — Padrão de Consultas</h3>
+<pre><span class="fn">populateQueryBuilder</span>(qb: <span class="cls">QueryBuilder</span>) {
+  qb.<span class="fn">addFilterOperator</span>(<span class="str">'name'</span>, <span class="str">'LIKE'</span>, <span class="kw">this</span>.state.search);
+  qb.<span class="fn">addOrderByEntity</span>(<span class="str">'name'</span>, <span class="str">'ASC'</span>);
+  qb.<span class="fn">addLeftJoinEntity</span>(<span class="str">'client'</span>);   <span class="cmt">// join com entidade relacionada</span>
+
+  <span class="cmt">// ⚠ use o caminho unido, nunca o ID direto</span>
+  qb.<span class="fn">addFilterOperator</span>(<span class="str">'client.status'</span>, <span class="str">'='</span>, STATUS_ACTIVE);
+}</pre>
+
+      <div class="callout callout-mint">
+        <div class="callout-title">Regra de Paths</div>
+        Em interpolações de design, use sempre <code>item.client.name</code> e nunca <code>item.clientId</code>. O Glyvio resolve os objetos joined — o ID direto não está disponível nos campos de display.
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVER -->
+  <section id="server">
+    <div class="layer-header layer-header-server">
+      <span class="layer-badge badge-server">Server</span>
+      <strong style="color:#fff;font-size:17px">Camada Backend</strong>
+      <span class="layer-path">plugin/server/src/</span>
+    </div>
+    <div class="layer-body layer-body-server">
+      <p>Lógica executada no servidor Glyvio. Interceptors são descobertos automaticamente pelo Webpack — sem registro manual. Cada arquivo de interceptor usa decoradores que o framework lê em runtime.</p>
+
+      <h3>BeforeInterceptor — Validações Pré-Save</h3>
+      <p>Executa <em>antes</em> do dado ser gravado. Pode modificar o valor ou lançar um <code>GlyvioError</code> para cancelar o save e exibir mensagem ao usuário.</p>
+<pre><span class="dec">@glyvio_core.BeforeInterceptor</span>({ entity: <span class="str">'sale'</span>, id: <span class="str">'sale-minimum-value'</span> })
+<span class="kw">export class</span> <span class="cls">SaleMinimumValueInterceptor</span>
+  <span class="kw">extends</span> <span class="cls">glyvio_core</span>.<span class="cls">SimpleBeforeInterceptor</span>&lt;<span class="cls">glyvio_entity</span>.<span class="cls">Sale</span>&gt; {
+
+  <span class="kw">async</span> <span class="fn">handleBefore</span>(value: <span class="cls">glyvio_entity</span>.<span class="cls">Sale</span>, ctx: <span class="cls">Context</span>) {
+    <span class="kw">if</span> (value.totalValue &lt; <span class="num">100</span>) {
+      <span class="kw">throw new</span> <span class="cls">glyvio_core</span>.<span class="cls">GlyvioError</span>(<span class="str">'Valor mínimo de R$ 100,00'</span>);
+    }
+    <span class="kw">return</span> value; <span class="cmt">// retornar o valor (possivelmente modificado)</span>
+  }
+}</pre>
+
+      <h3>AfterInterceptor — Side Effects Pós-Save</h3>
+      <p>Executa <em>após</em> commit no banco. Não pode cancelar — use para notificações, audit trail, denormalizações. Acessa o estado anterior via <code>ctx.previousValue</code>.</p>
+<pre><span class="dec">@glyvio_core.AfterInterceptor</span>({ entity: <span class="str">'client'</span>, id: <span class="str">'client-notify-deleted'</span> })
+<span class="kw">export class</span> <span class="cls">ClientNotifyDeletedInterceptor</span>
+  <span class="kw">extends</span> <span class="cls">glyvio_core</span>.<span class="cls">SimpleAfterInterceptor</span>&lt;<span class="cls">glyvio_entity</span>.<span class="cls">Client</span>&gt; {
+
+  <span class="kw">async</span> <span class="fn">handleAfter</span>(value: <span class="cls">glyvio_entity</span>.<span class="cls">Client</span>, ctx: <span class="cls">Context</span>) {
+    <span class="kw">if</span> (!value.deletedAt) <span class="kw">return</span>;  <span class="cmt">// só quando deletado</span>
+
+    <span class="kw">await</span> <span class="cls">crm</span>.<span class="cls">GenerateNotificationStrategy</span>.<span class="fn">pushToQueue</span>({
+      entityId: value.id,
+      message: <span class="str">`Cliente ${value.name} foi removido`</span>,
+    });
+  }
+}</pre>
+
+      <h3>AfterCommitInterceptor — Após Commit Durável</h3>
+      <p>Semelhante ao AfterInterceptor, mas garante que a transação já foi <em>commitada de forma durável</em> antes de executar. Ideal para webhooks, filas externas e emails.</p>
+
+      <h3>Controller — Endpoints HTTP</h3>
+<pre><span class="dec">@glyvio_core.Controller</span>({ path: <span class="str">'/visit-report'</span>, allowPrivateAccess: <span class="kw">true</span> })
+<span class="kw">export class</span> <span class="cls">VisitReportController</span>
+  <span class="kw">extends</span> <span class="cls">glyvio_core</span>.<span class="cls">SimpleController</span>&lt;<span class="cls">Request</span>, <span class="cls">Response</span>&gt; {
+
+  <span class="kw">async</span> <span class="fn">handle</span>(req: <span class="cls">Request</span>): <span class="cls">Promise</span>&lt;<span class="cls">Response</span>&gt; {
+    <span class="kw">const</span> visits = <span class="kw">await</span> <span class="cls">glyvio_core</span>.queryService.<span class="fn">find</span>(<span class="str">'visit'</span>, {
+      where: { userId: req.userId }
+    });
+    <span class="kw">return</span> { html: <span class="fn">renderReport</span>(visits) };
+  }
+}</pre>
+
+      <div class="callout callout-info">
+        <div class="callout-title">Descoberta Automática</div>
+        Interceptors e controllers não precisam ser importados em <code>index.ts</code>. O Webpack usa entry points glob (<code>src/interceptors/**/*.ts</code>) para descobri-los — o decorador registra a classe no runtime do framework automaticamente.
+      </div>
+
+      <h3>constants.ts — UUIDs de Negócio</h3>
+      <p>Centraliza todos os UUIDs de status, grupos de usuário e tipos de entidade. Sempre importe daqui — nunca hardcode UUIDs inline:</p>
+<pre><span class="cmt">// plugin/server/src/constants.ts</span>
+<span class="kw">export const</span> SALE_STATUS = {
+  PROPOSAL:    <span class="str">'uuid-proposta'</span>,
+  NEGOTIATION: <span class="str">'uuid-negociacao'</span>,
+  ACTIVE:      <span class="str">'uuid-ativo'</span>,
+} <span class="kw">as const</span>;</pre>
+    </div>
+  </section>
+
+  <!-- ENVIRONMENT -->
+  <section id="environment">
+    <div class="layer-header layer-header-env">
+      <span class="layer-badge badge-env">Environment</span>
+      <strong style="color:#fff;font-size:17px">Camada IA / Ambiente</strong>
+      <span class="layer-path">plugin/environment/src/</span>
+    </div>
+    <div class="layer-body layer-body-env">
+      <p>Expõe funcionalidades do plugin para o agente de IA Jeannie. Tools são descobertas automaticamente via decoradores — sem registro manual. O acesso ao banco é feito através do <code>SyncClient</code>, um cliente RPC auto-gerado em <code>service.ts</code> (nunca edite esse arquivo).</p>
+
+      <h3>SystemTool — Ferramenta para o Agente</h3>
+<pre><span class="dec">@glyvio_core.SystemTool</span>({
+  id: <span class="str">'devena-daily-briefing'</span>,
+  permission: <span class="cls">Permissions</span>.<span class="prop">TOOL_DAILY_BRIEFING</span>,
+  description: <span class="str">'Retorna o briefing diário do usuário: tarefas, chats pendentes e vendas paradas'</span>,
+})
+<span class="kw">export class</span> <span class="cls">DailyBriefingTool</span> <span class="kw">implements</span> <span class="cls">glyvio_core</span>.<span class="cls">CoreSystemTool</span> {
+  <span class="kw">async</span> <span class="fn">handle</span>() {
+    <span class="kw">const</span> userId = <span class="cls">glyvio_core</span>.<span class="fn">getContext</span>().loggedUserId;
+    <span class="kw">const</span> [tasks, chats, sales] = <span class="kw">await</span> <span class="cls">Promise</span>.<span class="fn">all</span>([
+      <span class="cls">TaskService</span>.<span class="fn">getInstance</span>().<span class="fn">fetchToday</span>(userId),
+      <span class="cls">ChatService</span>.<span class="fn">getInstance</span>().<span class="fn">fetchPending</span>(userId),
+      <span class="cls">SaleService</span>.<span class="fn">getInstance</span>().<span class="fn">fetchStalled</span>(userId),
+    ]);
+    <span class="kw">return</span> <span class="fn">formatMarkdown</span>({ tasks, chats, sales });
+  }
+}</pre>
+
+      <h3>Services — Acesso a Dados (Singleton)</h3>
+<pre><span class="kw">export class</span> <span class="cls">ChatService</span> <span class="kw">extends</span> <span class="cls">BaseService</span> {
+  <span class="kw">private static</span> instance: <span class="cls">ChatService</span>;
+
+  <span class="kw">static</span> <span class="fn">getInstance</span>() {
+    <span class="kw">return</span> (<span class="cls">ChatService</span>.instance ??= <span class="kw">new</span> <span class="cls">ChatService</span>());
+  }
+
+  <span class="kw">async</span> <span class="fn">fetchPending</span>(userId: <span class="typ">string</span>) {
+    <span class="kw">return this</span>.<span class="fn">executeQueryList</span>&lt;<span class="cls">glyvio_entity</span>.<span class="cls">ChatSession</span>&gt;(
+      <span class="str">`SELECT * FROM chat_session WHERE assigned_user_id = ? AND status = 'pending'`</span>,
+      [userId]
+    );
+  }
+}</pre>
+
+      <div class="callout callout-warn">
+        <div class="callout-title">service.ts é Auto-Gerado</div>
+        O arquivo <code>plugin/environment/src/service.ts</code> (SyncClient) é gerado pelo framework Glyvio. Nunca edite manualmente — as alterações serão sobrescritas. Use os métodos <code>jeannieQueryList</code>, <code>jeannieQueryFirst</code>, <code>queryList</code>, <code>queryFirst</code>, <code>putIgnoreId</code> e <code>callTask</code> a partir do <code>BaseService</code>.
+      </div>
+    </div>
+  </section>
+
+  <!-- SHARED -->
+  <section id="shared">
+    <div class="layer-header layer-header-shared">
+      <span class="layer-badge badge-shared">Shared</span>
+      <strong style="color:#fff;font-size:17px">Commons Compartilhado</strong>
+      <span class="layer-path">shared/commons/src/</span>
+    </div>
+    <div class="layer-body" style="border:1px solid rgba(52,211,153,0.15);border-top:none;border-radius:0 0 10px 10px;padding:20px;background:rgba(13,34,24,0.4);">
+      <p>Exporta apenas constantes de identificação do plugin. Importado pelas três camadas via path alias <code>@plugin/commons</code>.</p>
+<pre><span class="cmt">// shared/commons/src/index.ts</span>
+<span class="kw">export const</span> PLUGIN_ID   = <span class="str">'glyvio-plugin-devena'</span>;
+<span class="kw">export const</span> PLUGIN_NAME = <span class="str">'Devena Plugin'</span>;
+<span class="kw">export const</span> VERSION     = process.env.VERSION ?? <span class="str">'0.0.0'</span>;</pre>
+      <p>Não coloque lógica de negócio aqui. Se precisar de uma constante em mais de uma camada, coloque em <code>shared/commons</code>. Se for só para server, use <code>plugin/server/src/constants.ts</code>.</p>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- MANIFESTO -->
+  <section id="manifest">
+    <div class="section-eyebrow">Infraestrutura</div>
+    <h2>O Manifesto (<code>manifest.json</code>)</h2>
+    <p>O arquivo central que define o plugin para o runtime do Glyvio. Toda feature nova que adiciona entidades, permissões ou migrações passa obrigatoriamente por aqui.</p>
+
+    <h3>Estrutura Principal</h3>
+    <div class="cards">
+      <div class="card">
+        <div class="card-title">dependencies</div>
+        <p class="card-desc">Outros plugins que este depende: <code>glyvio_core</code>, <code>crm</code>, <code>jeannie_v2</code>, <code>smtp</code>, <code>whatsappwpp</code>, etc. Define quais <code>@types</code> ficam disponíveis.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">permissions</div>
+        <p class="card-desc">Array de permissões que o plugin declara — views, tools, notificações. Precisa existir aqui antes de ser usado em qualquer camada.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">dbVersions</div>
+        <p class="card-desc">Migrações incrementais do banco de dados. Cada nova versão define entidades novas, campos, chaves estrangeiras ou alterações. Nunca edite uma versão já existente.</p>
+      </div>
+    </div>
+
+<pre><span class="cmt">// Estrutura de uma entidade em dbVersions</span>
+{
+  <span class="str">"version"</span>: <span class="num">3</span>,
+  <span class="str">"entities"</span>: [
+    {
+      <span class="str">"name"</span>: <span class="str">"erp"</span>,
+      <span class="str">"fields"</span>: [
+        { <span class="str">"name"</span>: <span class="str">"name"</span>, <span class="str">"type"</span>: <span class="str">"string"</span>, <span class="str">"required"</span>: <span class="kw">true</span> },
+        { <span class="str">"name"</span>: <span class="str">"clientId"</span>, <span class="str">"type"</span>: <span class="str">"uuid"</span>, <span class="str">"foreignKey"</span>: <span class="str">"client"</span> }
+      ]
+    }
+  ]
+}</pre>
+
+    <div class="callout callout-mint">
+      <div class="callout-title">Workflow com Manifesto</div>
+      Após editar <code>manifest.json</code>, rode <code>run_helper.sh</code> na raiz do projeto. Ele regenera <code>entity.d.ts</code>, <code>glyvio_structure.d.ts</code> e o <code>service.ts</code> da camada environment. Sem isso, o TypeScript não enxerga os novos campos.
+    </div>
+  </section>
+
+  <!-- REGISTRO -->
+  <section id="registro">
+    <div class="section-eyebrow">Infraestrutura</div>
+    <h2>Registro e Descoberta Automática</h2>
+    <p>Cada camada usa um mecanismo diferente de registro. Entender isso evita bugs silenciosos onde uma classe é escrita mas nunca carregada.</p>
+
+    <div class="skill-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Camada</th>
+            <th>Tipo</th>
+            <th>Como é Registrado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="layer-badge badge-app">App</span></td>
+            <td>Rotas / Pages / Modals</td>
+            <td>Registro explícito em <code>index.ts</code> via <code>routerService.loadRoutes()</code></td>
+          </tr>
+          <tr>
+            <td><span class="layer-badge badge-app">App</span></td>
+            <td>Interceptors de App</td>
+            <td>Registro explícito em <code>index.ts</code> via <code>appInterceptorService.registerInterceptors()</code></td>
+          </tr>
+          <tr>
+            <td><span class="layer-badge badge-app">App</span></td>
+            <td>Menu items</td>
+            <td>Registro explícito em <code>index.ts</code> via <code>FullMenuPage.fullMenuGroupAdd()</code></td>
+          </tr>
+          <tr>
+            <td><span class="layer-badge badge-server">Server</span></td>
+            <td>Before / After / AfterCommit Interceptors</td>
+            <td>Descoberta automática — Webpack varre <code>src/interceptors/**/*.ts</code></td>
+          </tr>
+          <tr>
+            <td><span class="layer-badge badge-server">Server</span></td>
+            <td>Controllers</td>
+            <td>Descoberta automática via decorador <code>@Controller</code></td>
+          </tr>
+          <tr>
+            <td><span class="layer-badge badge-env">Env</span></td>
+            <td>SystemTool / CustomTool</td>
+            <td>Descoberta automática via decorador <code>@SystemTool</code> / <code>@CustomTool</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- BUILD -->
+  <section id="build">
+    <div class="section-eyebrow">Infraestrutura</div>
+    <h2>Build &amp; Release</h2>
+
+    <h3>Scripts do Monorepo</h3>
+    <div class="skill-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Comando</th><th>O que faz</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>pnpm build</code></td><td>Install deps + build paralelo de app, server, environment</td></tr>
+          <tr><td><code>pnpm build:fast</code></td><td>Build sem install (mais rápido quando deps já estão instaladas)</td></tr>
+          <tr><td><code>pnpm lint</code></td><td>ESLint + TypeScript check em todas as camadas</td></tr>
+          <tr><td><code>pnpm pretty</code></td><td>Prettier — formata todos os arquivos TS</td></tr>
+          <tr><td><code>./build_all.sh</code></td><td>Build de todos os plugins do monorepo pai</td></tr>
+          <tr><td><code>./release_all.sh</code></td><td>Release de todos os plugins (bump + commit + push)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Processo de Release com a Skill</h3>
+    <p>Use a skill <code>/release-project</code> para automatizar o ciclo completo:</p>
+    <ol class="steps">
+      <li><div><div class="step-title">Build de verificação</div><div class="step-desc">Roda <code>pnpm build</code> para garantir que não há erros de compilação.</div></div></li>
+      <li><div><div class="step-title">Bump de versão</div><div class="step-desc">Incrementa a versão patch no <code>package.json</code> (ex: 0.1.38 → 0.1.39).</div></div></li>
+      <li><div><div class="step-title">Commit automático</div><div class="step-desc">Gera um commit descrevendo o que foi alterado com base no diff.</div></div></li>
+      <li><div><div class="step-title">Push para o remote</div><div class="step-desc">Envia para a branch remota configurada. O CI/CD do GitHub Actions valida antes do deploy.</div></div></li>
+    </ol>
+
+    <div class="callout callout-warn">
+      <div class="callout-title">Antes do Release</div>
+      Sempre rode <code>pnpm lint</code> antes. Erros de TypeScript que escapam do build podem causar comportamentos inesperados em produção. O build com <code>isolatedModules: true</code> não checa tipos — o lint é a barreira.
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- SKILLS -->
+  <section id="skills">
+    <div class="section-eyebrow">IA Assistida</div>
+    <h2>Skills Disponíveis</h2>
+    <p>Skills são comandos que a IA executa para gerar código seguindo os padrões do projeto. Invoque digitando <code>/nome-da-skill</code> no chat.</p>
+
+    <div class="skill-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Skill</th>
+            <th>Camada</th>
+            <th>Quando usar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>/create-list-page</code></td>
+            <td><span class="layer-badge badge-app">App</span></td>
+            <td>Nova página de listagem de entidades com busca e filtros</td>
+          </tr>
+          <tr>
+            <td><code>/create-table-page</code></td>
+            <td><span class="layer-badge badge-app">App</span></td>
+            <td>Nova tabela estilo spreadsheet com colunas inline</td>
+          </tr>
+          <tr>
+            <td><code>/create-edit-modal</code></td>
+            <td><span class="layer-badge badge-app">App</span></td>
+            <td>Formulário de criação/edição de entidade em modal</td>
+          </tr>
+          <tr>
+            <td><code>/create-entity-modal</code></td>
+            <td><span class="layer-badge badge-app">App</span></td>
+            <td>Modal picker/autocomplete para seleção de entidades</td>
+          </tr>
+          <tr>
+            <td><code>/create-sidebar</code></td>
+            <td><span class="layer-badge badge-app">App</span></td>
+            <td>Painel lateral com detalhes de uma entidade selecionada</td>
+          </tr>
+          <tr>
+            <td><code>/create-kanban-page</code></td>
+            <td><span class="layer-badge badge-app">App</span></td>
+            <td>Página kanban com colunas por status</td>
+          </tr>
+          <tr>
+            <td><code>/create-calendar-page</code></td>
+            <td><span class="layer-badge badge-app">App</span></td>
+            <td>Página de calendário com eventos de entidades</td>
+          </tr>
+          <tr>
+            <td><code>/create-send-modal</code></td>
+            <td><span class="layer-badge badge-app">App</span></td>
+            <td>Modal para envio de mensagem/email/notificação</td>
+          </tr>
+          <tr>
+            <td><code>/create-simple-cart</code></td>
+            <td><span class="layer-badge badge-app">App</span></td>
+            <td>Drawer de carrinho para seleção temporária de itens</td>
+          </tr>
+          <tr>
+            <td><code>/create-screen-from-image</code></td>
+            <td><span class="layer-badge badge-app">App</span></td>
+            <td>Reproduz um screenshot/mockup como tela Glyvio</td>
+          </tr>
+          <tr>
+            <td><code>/create-*-interceptor</code> (app)</td>
+            <td><span class="layer-badge badge-app">App</span></td>
+            <td>Estende uma view existente do CRM (ex: <code>/create-list-page-interceptor</code>)</td>
+          </tr>
+          <tr>
+            <td><code>/create-before-interceptor</code></td>
+            <td><span class="layer-badge badge-server">Server</span></td>
+            <td>Validação pré-save que pode cancelar a operação</td>
+          </tr>
+          <tr>
+            <td><code>/create-after-interceptor</code></td>
+            <td><span class="layer-badge badge-server">Server</span></td>
+            <td>Side effect pós-save (notificações, timelines, denorm.)</td>
+          </tr>
+          <tr>
+            <td><code>/create-after-commit-interceptor</code></td>
+            <td><span class="layer-badge badge-server">Server</span></td>
+            <td>Side effect após commit durável (webhooks, filas, emails)</td>
+          </tr>
+          <tr>
+            <td><code>/create-sync-interceptor</code></td>
+            <td><span class="layer-badge badge-server">Server</span></td>
+            <td>Interceptor síncrono para operações de sync</td>
+          </tr>
+          <tr>
+            <td><code>/create-controller</code></td>
+            <td><span class="layer-badge badge-server">Server</span></td>
+            <td>Endpoint HTTP (ex: geração de relatório HTML)</td>
+          </tr>
+          <tr>
+            <td><code>/create-strategy</code></td>
+            <td><span class="layer-badge badge-server">Server</span></td>
+            <td>Lógica de negócio encapsulada e reutilizável</td>
+          </tr>
+          <tr>
+            <td><code>/schedule-queued-operation</code></td>
+            <td><span class="layer-badge badge-server">Server</span></td>
+            <td>Operação deferred/enfileirada (execução assíncrona)</td>
+          </tr>
+          <tr>
+            <td><code>/create-system-tool</code></td>
+            <td><span class="layer-badge badge-env">Env</span></td>
+            <td>Ferramenta que o agente Jeannie pode invocar</td>
+          </tr>
+          <tr>
+            <td><code>/create-custom-tool</code></td>
+            <td><span class="layer-badge badge-env">Env</span></td>
+            <td>Tool customizada para roteamento ou lógica especial de IA</td>
+          </tr>
+          <tr>
+            <td><code>/create-custom-agent</code></td>
+            <td><span class="layer-badge badge-env">Env</span></td>
+            <td>Agente customizado com tools próprias</td>
+          </tr>
+          <tr>
+            <td><code>/modify-manifest</code></td>
+            <td><span class="layer-badge badge-shared">Config</span></td>
+            <td>Adicionar permissões ou migrações no <code>manifest.json</code></td>
+          </tr>
+          <tr>
+            <td><code>/release-project</code></td>
+            <td><span class="layer-badge badge-shared">Config</span></td>
+            <td>Build → bump de versão → commit → push</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- AGENTES -->
+  <section id="agentes">
+    <div class="section-eyebrow">IA Assistida</div>
+    <h2>Agentes Especializados</h2>
+    <p>Além das skills, há agentes de IA especializados para tarefas mais complexas que envolvem múltiplos arquivos ou tomada de decisão arquitetural.</p>
+
+    <div class="agent-grid">
+      <div class="agent-card">
+        <div class="agent-card-name">glyvio-app-coordinator</div>
+        <div class="agent-card-trigger">Use para trabalho completo de UI/UX no frontend: criação de páginas, modais e carts, decisão entre criar ou usar interceptor, registro de rotas e menus, e validação de tipos.</div>
+        <div class="agent-card-layer"><span class="layer-badge badge-app">App</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-card-name">glyvio-app-chart</div>
+        <div class="agent-card-trigger">Especializado em criar e customizar gráficos: cartesiano (linha, barra, área), circular (pizza, rosca), funil e radial. Conhece o design API completo de seções, eixos, paleta e tooltips.</div>
+        <div class="agent-card-layer"><span class="layer-badge badge-app">App</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-card-name">glyvio-server-coordinator</div>
+        <div class="agent-card-trigger">Para lógica de negócio server-side complexa: regras multi-entidade, interceptors encadeados, operações em transação, controllers e alterações no manifesto.</div>
+        <div class="agent-card-layer"><span class="layer-badge badge-server">Server</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-card-name">glyvio-environment-agent</div>
+        <div class="agent-card-trigger">Para trabalho na camada de IA: @Action, @SystemTool, @CustomTool, queries com SyncClient, processamento de attachments, busca por similaridade fuzzy e gestão de secrets.</div>
+        <div class="agent-card-layer"><span class="layer-badge badge-env">Env</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-card-name">glyvio-report-agent</div>
+        <div class="agent-card-trigger">Para dashboards HTML interativos servidos via SimpleController. Trabalha com Plotly.js, propõe layout de KPIs e gráficos a partir de queries SQL, gera preview antes de implementar.</div>
+        <div class="agent-card-layer"><span class="layer-badge badge-server">Server</span></div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-card-name">Plan</div>
+        <div class="agent-card-trigger">Arquiteto de software para planejar implementações complexas antes de escrever código. Use quando a feature afeta múltiplas camadas e há trade-offs a avaliar.</div>
+        <div class="agent-card-layer"><span class="layer-badge badge-shared">Qualquer</span></div>
+      </div>
+    </div>
+
+    <div class="callout callout-mint">
+      <div class="callout-title">Quando usar agente vs. skill</div>
+      Use uma <strong>skill</strong> quando sabe exatamente o que criar — ela gera o arquivo seguindo o padrão. Use um <strong>agente</strong> quando precisa de análise, decisões ou quando a tarefa afeta múltiplos arquivos e camadas ao mesmo tempo.
+    </div>
+  </section>
+</main>
+
+<script>
+  // Highlight active nav link on scroll
+  const sections = document.querySelectorAll('section[id], .hero');
+  const links = document.querySelectorAll('nav a[href^="#"]');
+
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`nav a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => { if (s.id) obs.observe(s); });
+</script>
