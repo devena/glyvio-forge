@@ -1,23 +1,87 @@
-# Skill: Creating a Custom Agent and Custom Tools
+---
+name: create-custom-agent
+description: 'Generates a custom AI Agent (custom_chat_agent) registered in manifest.json, equips it with Custom Tools, and orchestrates its execution via JeannieV2Client.'
+---
 
-This skill describes how to create a new Custom Agent (`custom_chat_agent`) in Glyvio and how to build Custom Tools (`@glyvio_core.CustomTool`) to support it.
+# Agent Skill: Create Custom Agent in Glyvio
 
-## 1. Creating the Custom Agent in `manifest.json`
+This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register a **Custom Agent** (`custom_chat_agent`) in the Glyvio plugin system. Custom Agents are specialized LLM instances equipped with their own system prompts, permissions, and custom tools to perform complex orchestrations, background processing, or multi-step logic (e.g., web scraping, sql execution, calculations).
 
-To create a new agent, you must define it in the `manifest.json` file. **CRITICAL:** Do not hardcode a specific `versionNumber`. You must first read `manifest.json` to find the highest existing `versionNumber`. You can either append your new agent to the `data` array of that highest version block, or create a new block with `highestVersion + 1`.
+> Use this skill when you need an autonomous, specialized entity that executes multi-step workflows, runs local environment-level tools, or maintains conversational memory to complete a specific role.
 
-**Example Implementation (Assuming highest existing version was 51):**
+---
+
+## 🎯 Skill Metadata
 
 ```json
 {
-  "versionNumber": 52, // (Replace with highest_version + 1 based on actual manifest)
+  "name": "create_custom_agent",
+  "description": "Registers a custom_chat_agent in manifest.json, implements any supporting Custom Tools, and orchestrates agent execution in server code.",
+  "Audience": "AI agents or developers with write access to a Glyvio plugin codebase.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "agentId": {
+        "type": "string",
+        "description": "Unique snake_case identifier for the custom agent (e.g., web_scraper_agent, sql_analyst_agent)."
+      },
+      "agentName": {
+        "type": "string",
+        "description": "Human-readable name for the agent (e.g., Extrator de Dados Web, Analista de Vendas)."
+      },
+      "prompt": {
+        "type": "string",
+        "description": "The system prompt defining the agent's identity, guidelines, tools it should use, and expected output format (e.g. JSON schema)."
+      },
+      "userGroupId": {
+        "type": "string",
+        "description": "The target security group for the agent. Defaults to 'core_admin'."
+      }
+    },
+    "required": ["agentId", "agentName", "prompt"]
+  }
+}
+```
+
+---
+
+## 📥 Required Input Parameters
+
+To run this skill, obtain or ask for the following:
+
+1. **Agent ID** (e.g., `web_scraper_agent`): Unique snake_case string used to address this agent in chats.
+2. **Agent Name** (e.g., `Extrator de Dados Web`): Human-readable name displayed in UI.
+3. **System Prompt**: Detailed instruction specifying the agent's behavior, persona, tools it can call, and expected final response layout.
+4. **Tools** (optional): List of environment-level tools (`CustomTool`) the agent can invoke.
+5. **Trigger/Invocation Logic**: How/when this agent is triggered (e.g., on receiving a chat message, via a controller endpoint, or in a database interceptor).
+
+---
+
+## 🚫 Environment Constraints & Rules
+
+1. **Manifest Registration**: Custom agents must be registered via the `"dbVersions"` migration array in `manifest.json`.
+2. **Scope of Custom Tools**: Custom tools are decorated with `@glyvio_core.CustomTool` and must list the `agentId` in their `agentsId` array in order to be visible and callable by that agent.
+3. **No Glyvio Global Imports in Tools**: Just like system tools, custom tools must reference `glyvio_core.*`, `glyvio_entity.*` directly without importing them.
+4. **LLM Invocation Pattern**: Invoke custom agents from server-side code using `new jeannie_v2.JeannieV2Client().custom_chat(...)`. Always pass a unique `sessionId` to maintain memory context if needed.
+
+---
+
+## 📋 Execution Steps
+
+### Step 1: Register the Custom Agent in `manifest.json`
+
+Use the `modify-manifest` skill (or edit manually) to add the agent entry under the `"dbVersions"` block. **First read `manifest.json` to find the highest existing `versionNumber`**, then append a new block or add to the `data` array of the last version.
+
+```json
+{
+  "versionNumber": "<highest_version + 1>",
   "data": [
     {
       "entityName": "custom_chat_agent",
-      "id": "my_custom_agent_id",
+      "id": "<agent_id>",
       "data": {
-        "name": "My New Agent",
-        "prompt": "You are a helpful assistant. Use @baseInstructions@ to include base context. Your goal is to guide the user...",
+        "name": "<Agent Name>",
+        "prompt": "<System instructions for the agent...>\n\n@baseInstructions@",
         "user_group_id": "core_admin"
       }
     }
@@ -25,53 +89,99 @@ To create a new agent, you must define it in the `manifest.json` file. **CRITICA
 }
 ```
 
-_Important:_ The `id` string (e.g., `"my_custom_agent_id"`) acts as the unique identifier for your agent.
+> **`@baseInstructions@`** is a framework placeholder automatically replaced at runtime with Glyvio's standard context (date/time, logged user, company, available tools list). Always append it at the end of the prompt so the agent has access to the base context.
 
-## 2. Creating Custom Tools for the Agent
+After saving `manifest.json`, **run `run_helper.sh`** at the workspace root to regenerate types. The generated agent `id` string (e.g. `"my_sales_agent"`) is what you use in the `agentsId` array of Custom Tools.
 
-A Custom Tool is a piece of code that the custom agent can execute (e.g., retrieving online users, searching products, routing a conversation). These tools are stored in `plugin/environment/src/custom_tools/`.
+### Step 2: Implement Supporting Custom Tools
 
-> [!WARNING] > **Security & Scope Context:** `SystemTool`s are designed for logged-in users and are naturally protected by the UI/messaging session and manifest permissions. In contrast, `CustomAgent`s (and by extension their `CustomTool`s) are invoked via background rules or service calls. They can interact with logged-in users **OR** external clients/unauthenticated users.
-> Because of this, the data access scope inside a Custom Tool must be **strictly controlled**. Never expose sensitive internal data without explicitly validating the context of the user invoking the agent.
+If your agent requires custom functions (like scraping websites, querying APIs, or heavy calculation):
+1. Create a tool file under `plugin/environment/src/custom_tools/<tool_id>.ts`.
+2. Decorate the tool with `@glyvio_core.CustomTool` and list the `<agent_id>` in the `agentsId` array:
+   ```typescript
+   @glyvio_core.CustomTool({
+     id: '<tool_id>',
+     description: '<When and how to call this tool.>',
+     agentsId: ['<agent_id>'],
+   })
+   ```
+3. Implement `CoreCustomTool` and write the handler logic.
 
-**Rules for Custom Tools:**
+> **No `index.ts` registration needed.** The `@glyvio_core.CustomTool` decorator auto-registers the tool at runtime — unlike `@SystemTool`, you do **not** add an import to any entrypoint.
 
-1. File placement: `plugin/environment/src/custom_tools/<tool_name>.ts`
-2. Decorator: Use `@glyvio_core.CustomTool({ id: '...', description: '...', agentsId: ['<id>'] })`
-   - The `description` property is extremely important, as it tells the AI Agent when and how to use the tool.
-   - The `agentsId` array restricts the tool so it is only available to the specific agents listed by their `id`.
-3. Interface: The class must implement `glyvio_core.CoreCustomTool<T>` where `T` is an interface representing the arguments the AI will pass.
+### Step 3: Invoke the Agent in Server Code
 
-**Example Tool Implementation (`available_sales_rep.ts`):**
+Use the `JeannieV2Client` inside a server controller or interceptor to query the custom agent:
 
 ```typescript
-import { UserService } from './services/user_service';
+import { jeannie_v2 } from '@plugin/commons';
 
-export interface AvailableSalesRepListRequest {}
+const result = await new jeannie_v2.JeannieV2Client()
+  .custom_chat({
+    prompt: '<Input request for the agent>',
+    agentId: '<agent_id>',
+    sessionId: crypto.randomUUID(), // Maintain session context or isolate
+    userContext: '<Additional system/user metadata for context>',
+  })
+  .call({
+    environmentId: environmentId,
+  });
+
+// result.response contains the agent's textual/JSON output.
+```
+
+---
+
+## 📄 Code Blueprints (Templates)
+
+### Custom Tool Template
+
+Create under `plugin/environment/src/custom_tools/<tool_name>.ts`:
+
+```typescript
+export interface <ToolName>Request {
+  /**
+   * Describe this field to the LLM.
+   */
+  paramName: string;
+}
 
 @glyvio_core.CustomTool({
-  id: 'available_sales_rep',
-  description: 'Retrieves a list of available sales representatives. Call this tool when you need to present routing options to the user.',
-  agentsId: ['my_custom_agent_id'], // Links this tool to the agent created in the manifest
+  id: '<tool_name>_tool',
+  description: 'Instruction for the agent explaining when to use this tool.',
+  agentsId: ['<agent_id>'],
 })
-export class AvailableSalesRepListTool implements glyvio_core.CoreCustomTool<AvailableSalesRepListRequest> {
-  async handle(_request?: AvailableSalesRepListRequest): Promise<string> {
-    try {
-      const allUsers = await UserService.getInstance().availableUsers();
-      if (!allUsers || allUsers.length === 0) {
-        return 'No sales representatives are currently available. Please inform the user.';
-      }
-      return \`The following sales reps are available: ...\n\nINSTRUCTION: Present these options to the user...\`;
-    } catch (error) {
-      console.error('Error fetching sales reps:', error);
-      return 'Error fetching sales reps.';
+export class <ToolName>Tool implements glyvio_core.CoreCustomTool<<ToolName>Request> {
+  async handle(request?: <ToolName>Request): Promise<string> {
+    // ⚠️ SECURITY: scope every query to the minimum necessary data.
+    // This tool may be invoked by external/unauthenticated users via the agent.
+
+    if (!request?.paramName) {
+      throw new glyvio_core.GlyvioError({ message: 'paramName is required.' });
     }
+
+    // 💡 IMPLEMENT BUSINESS LOGIC HERE (query / compute / persist)
+    const result = `Successfully processed: ${request.paramName}`;
+
+    // End with an LLM instruction so the agent knows how to present the result.
+    return `${result}\n\nInstructions for the LLM: Present this result naturally to the user.`;
   }
 }
 ```
 
-**Key Patterns:**
+---
 
-- Return strings that contain context **and instructions** (`INSTRUCTION: ...`) for the AI. This guides the LLM on what to do next based on the tool's result.
-- Handle exceptions safely using try-catch blocks and log internally using `console.error`. Return user-friendly error messages as strings to the LLM.
-- You do NOT need to register the custom tool in `index.ts`. The `@glyvio_core.CustomTool` decorator allows it to be discovered automatically by the core.
+## ✅ Completion Checklist
+
+- [ ] Custom agent entry added to `manifest.json` under `dbVersions`.
+- [ ] `run_helper.sh` executed after modifying `manifest.json`.
+- [ ] System prompt includes clear task directives, tool usage instructions, and desired output format (e.g. JSON schema).
+- [ ] `@baseInstructions@` appended at the end of the prompt.
+- [ ] Supporting Custom Tools created in `plugin/environment/src/custom_tools/`.
+- [ ] Each Custom Tool lists the correct agent ID string in its `agentsId` decorator array.
+- [ ] Each Custom Tool's `handle` uses `glyvio_core.GlyvioError` for failures (no default try-catch).
+- [ ] Each Custom Tool's `handle` returns a string ending with `Instructions for the LLM: ...`.
+- [ ] Data scope in each tool is restricted to only what the agent's use case requires.
+- [ ] **No** `index.ts` import added for Custom Tools — auto-registered by decorator.
+- [ ] Agent invocation integrated in server controllers or interceptors using `JeannieV2Client`.
+- [ ] Build passes (`pnpm run build:fast`).

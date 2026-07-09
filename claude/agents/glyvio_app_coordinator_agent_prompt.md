@@ -103,6 +103,36 @@ This rule applies to **every entity under `glyvio_entity.*`**, in every view typ
 
 ---
 
+## 🔗 Interop `stateName` Prefix (NON-NEGOTIABLE)
+
+Any `interopDesign` (on `ListSectionDesign`, `TableSectionDesign`, `TableLayoutDesign`, `RowLayoutDesign`/`ColumnLayoutDesign` interop children, etc.) that generates widgets from a state array **must** set `stateName` to the **full dot-path prefixed with `state.`** — e.g. `stateName: 'state.results'`, never `stateName: 'results'`.
+
+- ✅ Correct:
+  ```typescript
+  new glyvio_core.ListSectionDesign({
+    interopDesign: {
+      stateName: 'state.results',
+      variableName: 'item',
+      childDesign: ...,
+    },
+  })
+  ```
+- ❌ Wrong (never do this — missing `state.` prefix):
+  ```typescript
+  interopDesign: {
+    stateName: 'results', // ❌ silently renders empty
+    ...
+  }
+  ```
+
+**Why**: the interop engine resolves `stateName` as a full path expression evaluated against the page's state object (`data.<stateName>`). Without the `state.` prefix the binding fails **silently** — the list/table renders empty with no build error or console warning — making this bug easy to miss in review. `variableName` is only a local alias for the iteration item inside child widgets (e.g. `$S{item.name}`) and never takes the prefix.
+
+**How to apply**: any time you write or review an `interopDesign` block, confirm `stateName` starts with `state.`. Applies to every view family that renders from a state-bound array: list/table/grid pages, sidebars, and any layout using `TableLayoutDesign.interopDesign` or row/column interop children.
+
+When delegating to coder subagents and when running any create/interceptor skill, **restate this rule** and make it part of the final validation audit.
+
+---
+
 ## 👥 Observers & Tags Fields (NON-NEGOTIABLE)
 
 Every entity in the model carries two JSON-array metadata fields that **must be wired in every edit modal and every sidebar** that exposes the entity for editing. Forgetting either is a **hard error**.
@@ -298,7 +328,7 @@ When delegating page creation to a coder subagent or running any `create-*` page
 When the request includes a **screenshot/print of the desired screen**, your goal shifts from "build a reasonable view" to **reproduce the image as faithfully as possible** using only `@types` components. In that case:
 
 - **Run the `create-screen-from-image` skill** rather than jumping straight to a `create-*` skill. It owns the visual-decomposition + spec-approval workflow; the `create-*` skill is then used to emit the code.
-- **`docs/claude/component_catalog.md` is the mapping source of truth** for "what it looks like → which `glyvio_core` class". Consult it for every visual element; it tells you the most specific component for each appearance (e.g. `ChipDesign` for a colored status pill, `HorizontalTotalizerBoxDesign`/`TwoLinesTotalizerBoxDesign` for totalizers, `AvatarDesign`/`UserGroupDesign` for people, the right textfield by data type).
+- **`.claude/component_catalog.md` is the mapping source of truth** for "what it looks like → which `glyvio_core` class". Consult it for every visual element; it tells you the most specific component for each appearance (e.g. `ChipDesign` for a colored status pill, `HorizontalTotalizerBoxDesign`/`TwoLinesTotalizerBoxDesign` for totalizers, `AvatarDesign`/`UserGroupDesign` for people, the right textfield by data type).
 - **Prefer the most specific component** that matches the pixels — never hand-roll with a generic `BoxDesign` + texts what a dedicated design already renders.
 - **Spec before code**: the visual spec (`.claude/temp<Screen>_visual_spec.json`) and analysis must be produced and **confirmed by the user before any code is written**. Every component in the spec must exist in `@types`.
 - **Flag the un-mappable**: if part of the print has no faithful framework component, tell the user — do not fake it with an approximation that drifts from `@types`.
@@ -336,6 +366,7 @@ Map every request to one of these skills. **Each "create" skill has a matching "
 - `create-list-modal` / `create-list-modal-interceptor` — entity search/select list with filters.
 - `create-table-modal` / `create-table-modal-interceptor` — data-table search/select with row actions.
 - `create-send-modal` / `create-send-modal-interceptor` — message sending (email/WhatsApp, attachments, reports).
+- `create-batch-filter-modal` — filter form + results preview (`SimpleBatchFilterEditModal`) that returns the matched entity IDs to the caller via `popActionKey`; use to seed a batch/bulk operation from a filtered selection.
 
 ### Sidebars, Carts & Containers
 
@@ -345,7 +376,7 @@ Map every request to one of these skills. **Each "create" skill has a matching "
 
 ### Screenshot-driven (visual fidelity)
 
-- `create-screen-from-image` — reproduce a **user-provided screenshot (print)** as faithfully as possible. Performs structured visual decomposition, maps each visual element to a concrete design class via `docs/claude/component_catalog.md`, produces an approved visual spec, then delegates to the matching `create-*` page/modal skill. **Use this whenever the user provides an image of the desired screen.**
+- `create-screen-from-image` — reproduce a **user-provided screenshot (print)** as faithfully as possible. Performs structured visual decomposition, maps each visual element to a concrete design class via `.claude/component_catalog.md`, produces an approved visual spec, then delegates to the matching `create-*` page/modal skill. **Use this whenever the user provides an image of the desired screen.**
 
 ### Schema
 
@@ -384,7 +415,7 @@ Before writing any code or plans, inspect the workspace:
    - **New view** (use a `create-*` skill) vs **customization of an existing view** (use a `*-interceptor` skill).
    - **Which view family** (page / modal / sidebar / cart) from the catalog above.
    - **Does it include a chart / data visualization?** If so, the chart construction is delegated to the **`glyvio-app-chart`** subagent; you remain responsible for the host view, its wiring, and validation (see "Specialized Subagents").
-5. **If a screenshot/print was provided** — read the image and perform a top-down **visual decomposition** before classifying: page type → app bar → layout regions → repeated unit (cell/card) → atomic widgets → form/filter fields. Map each node to a concrete design class using `docs/claude/component_catalog.md`, and hand off to `create-screen-from-image` (which gates on an approved visual spec). The page type you read from the image determines the view family and the `create-*` skill.
+5. **If a screenshot/print was provided** — read the image and perform a top-down **visual decomposition** before classifying: page type → app bar → layout regions → repeated unit (cell/card) → atomic widgets → form/filter fields. Map each node to a concrete design class using `.claude/component_catalog.md`, and hand off to `create-screen-from-image` (which gates on an approved visual spec). The page type you read from the image determines the view family and the `create-*` skill.
 
 ### Phase 2: Implementation Planning
 
@@ -431,6 +462,7 @@ Once the subagents/skills report completion:
    - "Does every `FormEntityLayoutDesign` set both `actionKeyChangeObservers: 'onChangeObservers'` and `actionKeyChangeTags: 'actionKeyChangeTags'`?" → fix if either is missing; this is a hard error.
    - "Does every edit modal's `events()` handle `'onChangeObservers'` (assigning `action.data.observers`) and `'actionKeyChangeTags'` (assigning `action.data.tags`) to the entity?" → fix if either is missing; this is a hard error.
    - "Does every sidebar implement `onChangeObservers` calling `entityService.updateObservers` and `actionKeyChangeTags` calling `entityService.updateTags`?" → fix if either is missing; this is a hard error.
+   - "Does every `interopDesign` block set `stateName` with the full `state.` prefix (never a bare field name)?" → fix any violation; this fails silently and is a hard error.
 2. **Wiring Check**: Confirm new pages complete all three registration steps in `plugin/app/src/index.ts`: route registered (`routerService.loadRoutes`), page instantiated (`new MyPage()`), and menu entry added (`FullMenuPage.fullMenuGroupAdd` or `fullMenuItemAdd`) — all three are required, any missing step is a hard error; for **every newly created view** (page, modal, sidebar, cart), confirm its `view` permission (`{ "type": "view", "subtype": "{entity}", "key": "{entity}_{view type}" }`) exists in `manifest.json` and is not duplicated — this is a hard error if missing; confirm interceptors are registered (`appInterceptorService.registerInterceptors`) with sensible `order`; confirm listener IDs are globally unique.
 3. **Helper Execution**: If `manifest.json` was modified, you **MUST** run `run_helper.sh` at the workspace root to regenerate typings/entities before compiling.
 4. **Compilation**: Run `pnpm pretty && pnpm lint && pnpm build` and confirm a clean build. Verify generated comments/types in `dist/bundle.d.ts`.
