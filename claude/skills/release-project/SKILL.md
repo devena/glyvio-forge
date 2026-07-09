@@ -73,7 +73,25 @@ Read the diff output and write a **concise** commit message following these rule
 
 ---
 
-### Step 6 — Commit
+### Step 6 — Update CHANGELOG.md
+
+Prepend an entry to `CHANGELOG.md` at the project root using the **same version and bullet content** written for the commit message in Step 5. If the file does not exist yet, create it with a top-level `# Changelog` heading first.
+
+Entry format (newest on top, right below the `# Changelog` heading):
+
+```markdown
+## v<version> — <YYYY-MM-DD from `date +%F`>
+
+- <bullet 1>
+- <bullet 2>
+```
+
+- If Step 5 produced no bullet list (single-sentence release), use the commit's first line (without the `v<version>: ` prefix) as the single bullet.
+- Stage it: `git add CHANGELOG.md` (it must land in the **same commit** created in Step 7, not a separate one).
+
+---
+
+### Step 7 — Commit
 
 ```bash
 git commit -m "<generated message>"
@@ -93,7 +111,7 @@ EOF
 
 ---
 
-### Step 7 — Push
+### Step 8 — Push
 
 Determine the current branch:
 
@@ -109,13 +127,14 @@ git push origin <current-branch>
 
 ---
 
-### Step 8 — Report to the user
+### Step 9 — Report to the user
 
 Print a short summary:
 
 ```
 ✔ Build ok
 ✔ Version bumped to <version>
+✔ CHANGELOG.md updated
 ✔ Committed: "<first line of commit message>"
 ✔ Pushed to origin/<branch>
 ```
@@ -127,6 +146,6 @@ Print a short summary:
 | Situation | Action |
 |-----------|--------|
 | Build fails | Print full error, abort, do not stage/commit/push |
-| Nothing to commit (`git status` clean after add) | Skip Steps 5-7, inform user there are no changes |
+| Nothing to commit (`git status` clean after add) | Skip Steps 5-8, inform user there are no changes |
 | Push rejected (non-fast-forward) | Print the rejection, do not force-push, ask the user how to proceed |
 | Any other git error | Print the error, stop, ask the user |

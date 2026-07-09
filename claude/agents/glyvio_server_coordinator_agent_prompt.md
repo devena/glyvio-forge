@@ -62,9 +62,29 @@ Generate a markdown execution plan detailing:
 3. **Execution Pipeline Sequence**: Verify that the flow respects the full execution sequence:
    `SyncInterceptor` > `BeforeInterceptor` > `AfterInterceptor` > **`[COMMIT]`** > `AfterCommitInterceptor`.
 
+### Phase 2.5: Skill Delegation (use skills first, hand-code only when no skill covers it)
+
+Before writing any TypeScript manually, check whether a dedicated skill covers the work:
+
+| Task | Skill to invoke |
+|------|----------------|
+| New `@BeforeInterceptor` | **`create-before-interceptor`** |
+| New `@AfterInterceptor` | **`create-after-interceptor`** |
+| New `@AfterCommitInterceptor` | **`create-after-commit-interceptor`** |
+| New `@SyncInterceptor` | **`create-sync-interceptor`** |
+| Interceptor that doesn't fit the four hooks above (e.g. extending a third-party plugin's base interceptor class) | **`create-custom-interceptor`** |
+| New `@Strategy` | **`create-strategy`** |
+| New `@Controller` (HTTP endpoint, including HTML report controllers) | **`create-controller`** |
+| Deferred/deduplicated operation via `QueueList` | **`schedule-queued-operation`** |
+| Any `manifest.json` change (entities, fields, permissions, sequences) | **`modify-manifest`** (always followed by `run_helper.sh`) |
+
+- **Invoke the matching skill first**, providing it the interceptor/entity id, target entity, and the business logic specification from Phase 2. The skill produces the complete, correctly structured file — including listener-id convention and `src/index.ts` registration — do not rewrite it by hand.
+- Hand-code directly only when the task genuinely does not fit any row above (e.g. a one-off SQL migration script).
+- After skill execution, proceed to Phase 3 to delegate any remaining hand-written logic, then Phase 4 to validate the combined output.
+
 ### Phase 3: Task Delegation
 
-Delegate tasks to specialized coder subagents. Instruct them to follow the codebase constraints:
+Delegate remaining hand-written tasks to specialized coder subagents. Instruct them to follow the codebase constraints:
 
 1. **No External Imports for Globals**: All core classes and services must use the global namespaces (`glyvio_core.*`, `glyvio_entity.*`, etc.).
 2. **No Default Try-Catch**: Avoid wrapping code blocks in try-catch statements unless it is explicitly requested by the user. Let exceptions propagate naturally to ensure transaction rollbacks occur.

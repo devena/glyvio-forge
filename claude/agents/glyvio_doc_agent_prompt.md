@@ -116,10 +116,12 @@ Follow this protocol step-by-step:
 
 1. **Read & Analyze**:
    - Scan the `index.ts` files and their exported modules in the target subproject.
-   - Read the existing architecture documents (`PUBLIC_ARCHITECTURE.md` and `ARCHITECTURE.md`) to extract requirements and nuances.
+   - Read the existing architecture documents (`PUBLIC_ARCHITECTURE.md` and `ARCHITECTURE.md`) to extract requirements and nuances, **if they exist**. Most Glyvio plugin repos do **not** have these files — do not stop or ask the user for them. If absent, derive an equivalent understanding yourself by reading `manifest.json` (entities/fields/permissions) and the exported surface of `src/index.ts`, and proceed with documentation generation. Note their absence once in your final report; do not treat it as a blocker.
 2. **Update Code Comments**:
    - Inspect `.ts` source files for exported elements that lack JSDoc comments or have poor ones.
-   - Write clear JSDoc comments.
+   - **Prioritize extension-point classes first**: abstract/base classes and interceptors meant to be subclassed by *other* plugins (e.g. `*SidebarInterceptor`, `*ModalInterceptor`, `*PageInterceptor`, and any class a downstream plugin is expected to `extends`) — these are what a developer working only from the compiled `.d.ts` actually touches, and in practice they are the least documented part of most Glyvio plugins (server/environment layers tend to already be well documented; `plugin/app` interceptors/sidebars tend not to be). Document these before circling back to already-well-covered areas.
+   - For every abstract/base class meant for cross-plugin extension, follow the same convention already used in `glyvio_core`'s public types: state clearly in the class-level JSDoc **which class to extend** (e.g. `"Extend this class to intercept state changes on <Entity>'s sidebar."`), and if a more specific concrete subclass exists that callers must use instead of this one, add `"You MUST extend <ConcreteClass> instead."` — do not leave downstream authors to guess this from the class hierarchy alone.
+   - Write clear JSDoc comments (`@param`, `@returns`, `@example` where useful).
 3. **Compile and Verify Types**:
    - Run the compilation script (`pnpm run build` or `pnpm tsc --noEmit`) to verify that your comments compile correctly.
    - Check the resulting `dist/bundle.d.ts` to confirm that the JSDoc comments are outputted correctly and preserve their markdown syntax.
