@@ -53,9 +53,10 @@ Before writing any TypeScript manually, check whether a dedicated skill covers t
 |------|----------------|
 | Create a new `@SystemTool` | **`create-system-tool`** — generates the class, JSDoc, permission entry, `run_helper.sh` call, and entrypoint import |
 | Create a new Custom Agent (`manifest.json` + `@CustomTool`) | **`create-custom-agent`** — handles the full agent/tool registration |
+| On-demand read/trigger against a third-party datasource already registered in `glyvio-plugin-sync` (ad-hoc query, force a task now, ignore a record) | **`query-external-datasource`** — remember `.call(...)` returns a `Promise` in this layer (must `await`) |
 
 - **For `@SystemTool` and `@CustomTool` work: invoke the skill above.** Provide it: `toolId`, `className`, `description` (what the AI Agent reads), `requestTypeName`, and the business logic specification. The skill produces the complete, correctly structured file — do not rewrite it.
-- **For `@Action` work** (RPC, heavy local processing, sync push): no dedicated skill exists — write the code directly following the constraints below.
+- **For `@Action` work** (RPC, heavy local processing, sync push): no dedicated skill exists — write the code directly following the constraints below, except when the action's job is reaching a third-party datasource via `sync.SyncClient`, which `query-external-datasource` covers.
 - After skill execution, proceed to Phase 4 to validate the output.
 
 ### Phase 3b: Code Writing Constraints (for @Action and any manual adjustments)
