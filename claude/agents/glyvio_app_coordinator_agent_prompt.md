@@ -382,6 +382,10 @@ Map every request to one of these skills. **Each "create" skill has a matching "
 
 - `modify-manifest` — add/edit permissions, entities, fields, sequences (always followed by `run_helper.sh`).
 
+### Data Access
+
+- `query-external-datasource` — read or trigger third-party data (ERPs, marketplaces, external systems) **on demand** from a UI action handler (a button, a modal's action method) via `sync.SyncClient`. Only available if the plugin declares a `sync` dependency in `manifest.json`. **Not** for reacting to inbound synced data (that's `create-sync-interceptor`, server-layer only) and **not** for authoring `dataSources`/`tasks`/`scheduledTasks` config (that's the end user's job via the Sync admin UI's own `sync_config_edit_page.ts`) — this skill only discovers existing names via `getConfig()` and writes call sites against them. `.call(...)` returns a `Promise` in `plugin/app` — remember to `await` it.
+
 ---
 
 ## 🤝 Specialized Subagents

@@ -77,6 +77,7 @@ Before writing any TypeScript manually, check whether a dedicated skill covers t
 | New `@Controller` (HTTP endpoint, including HTML report controllers) | **`create-controller`** |
 | Deferred/deduplicated operation via `QueueList` | **`schedule-queued-operation`** |
 | Any `manifest.json` change (entities, fields, permissions, sequences) | **`modify-manifest`** (always followed by `run_helper.sh`) |
+| On-demand read/trigger against a third-party datasource already registered in `glyvio-plugin-sync` (ad-hoc query, force a task now, ignore a record) — **not** reactive to inbound sync data | **`query-external-datasource`** |
 
 - **Invoke the matching skill first**, providing it the interceptor/entity id, target entity, and the business logic specification from Phase 2. The skill produces the complete, correctly structured file — including listener-id convention and `src/index.ts` registration — do not rewrite it by hand.
 - Hand-code directly only when the task genuinely does not fit any row above (e.g. a one-off SQL migration script).
@@ -113,6 +114,7 @@ Ensure all delegated code adheres to the Glyvio Core specifications:
   - `glyvio_core.*`: main decorators (`@AfterInterceptor`, `@AfterCommitInterceptor`, `@BeforeInterceptor`, `@SyncInterceptor`, `@Strategy`), base classes (`SimpleAfterCommitInterceptor`), types (`AfterCommitInterceptorValue`, `AfterCommitInterceptorContext`), services (`entityService`, `queryService`, `strategyService`, `cacheService`), and queue helpers (`getCurrentQueue()`).
   - `glyvio_entity.*`: database entity models (e.g., `glyvio_entity.AppUser`, `glyvio_entity.Tag`).
   - `glyvio_structure.*`: entity field schema definitions.
+  - `sync.*` (only if the plugin declares a `sync` dependency in `manifest.json`): `SyncClient` for on-demand reads/triggers against a third-party datasource registered in `glyvio-plugin-sync` — see `query-external-datasource`.
 - **Save Operations**: Always use `glyvio_core.entityService.saveEntityWithoutPermission(entity)` inside interceptors for writing supplementary records or related entities.
 - **Queue Operations**: Use `getCurrentQueue()` for scheduling deferred tasks within the current transaction scope. Prevent duplication by checking `.getById(id)` with deterministic IDs.
 - **Cache Operations**: Use `glyvio_core.cacheService` for manual, plugin-controlled caching. This is a **fully manual cache** — no automatic population or reload occurs. The contract is:
