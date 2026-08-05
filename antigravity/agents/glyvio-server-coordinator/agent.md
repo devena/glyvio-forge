@@ -75,6 +75,7 @@ Before writing any TypeScript manually, check whether a dedicated skill covers t
 | New `@Controller` (HTTP endpoint, including HTML report controllers) | **`create-controller`** |
 | Deferred/deduplicated operation via `QueueList` | **`schedule-queued-operation`** |
 | Any `manifest.json` change (entities, fields, permissions, sequences) | **`modify-manifest`** (always followed by `run_helper.sh`) |
+| On-demand read/trigger against a third-party datasource already registered in `glyvio-plugin-sync` (ad-hoc query, force a task now, ignore a record) — **not** reactive to inbound sync data | **`query-external-datasource`** |
 
 - **Invoke the matching skill first**, providing it the interceptor/entity id, target entity, and the business logic specification from Phase 2. The skill produces the complete, correctly structured file — including listener-id convention and `src/index.ts` registration — do not rewrite it by hand.
 - Hand-code directly only when the task genuinely does not fit any row above (e.g. a one-off SQL migration script).
@@ -101,6 +102,12 @@ Once the coder subagents report completion:
 3. **Compilation**: Run the build verification command (`pnpm run build:fast` or `pnpm tsc --noEmit`) to verify that the TypeScript compiler passes.
 4. **Verification**: Double-check that every new server file (interceptor, controller, strategy) is registered in `plugin/server/src/index.ts` via `export * from './...'`. There is no `behavior_listeners/` entrypoint — all registrations go in `src/index.ts`.
 
+### Phase 5: Optional Live Verification via `fork-company-script`
+
+The Glyvio backend supports running a request against a custom, unpublished build of this plugin's server code — without deploying — by forking a temporary company script and pointing individual requests at it. This is validated and working end-to-end against a live backend.
+
+**Invoke the skill `fork-company-script` for this** — it owns the full decision policy (this is operator-driven, never automatic — it only proceeds when the operator explicitly opts in and supplies a server URL, a private/internal JWT, and a `companyId`; otherwise it asks, or skips entirely if the operator just wants the code written), the exact mechanics, and every gotcha found while validating it (`expirationTime` as a lower bound, one forked script per caller identity, the `invalid_custom_script` error shape). Do not reimplement any of that here — the skill is the single source of truth.
+
 ---
 
 ## ⚠️ Reference Architecture Rules
@@ -111,6 +118,7 @@ Ensure all delegated code adheres to the Glyvio Core specifications:
   - `glyvio_core.*`: main decorators (`@AfterInterceptor`, `@AfterCommitInterceptor`, `@BeforeInterceptor`, `@SyncInterceptor`, `@Strategy`), base classes (`SimpleAfterCommitInterceptor`), types (`AfterCommitInterceptorValue`, `AfterCommitInterceptorContext`), services (`entityService`, `queryService`, `strategyService`, `cacheService`), and queue helpers (`getCurrentQueue()`).
   - `glyvio_entity.*`: database entity models (e.g., `glyvio_entity.AppUser`, `glyvio_entity.Tag`).
   - `glyvio_structure.*`: entity field schema definitions.
+  - `sync.*` (only if the plugin declares a `sync` dependency in `manifest.json`): `SyncClient` for on-demand reads/triggers against a third-party datasource registered in `glyvio-plugin-sync` — see `query-external-datasource`.
 - **Save Operations**: Always use `glyvio_core.entityService.saveEntityWithoutPermission(entity)` inside interceptors for writing supplementary records or related entities.
 - **Queue Operations**: Use `getCurrentQueue()` for scheduling deferred tasks within the current transaction scope. Prevent duplication by checking `.getById(id)` with deterministic IDs.
 - **Cache Operations**: Use `glyvio_core.cacheService` for manual, plugin-controlled caching. This is a **fully manual cache** — no automatic population or reload occurs. The contract is:

@@ -104,6 +104,12 @@ Once the coder subagents report completion:
 3. **Compilation**: Run the build verification command (`pnpm run build:fast` or `pnpm tsc --noEmit`) to verify that the TypeScript compiler passes.
 4. **Verification**: Double-check that every new server file (interceptor, controller, strategy) is registered in `plugin/server/src/index.ts` via `export * from './...'`. There is no `behavior_listeners/` entrypoint — all registrations go in `src/index.ts`.
 
+### Phase 5: Optional Live Verification via `fork-company-script`
+
+The Glyvio backend supports running a request against a custom, unpublished build of this plugin's server code — without deploying — by forking a temporary company script and pointing individual requests at it. This is validated and working end-to-end against a live backend.
+
+**Invoke the skill `fork-company-script` for this** — it owns the full decision policy (this is operator-driven, never automatic — it only proceeds when the operator explicitly opts in and supplies a server URL, a private/internal JWT, and a `companyId`; otherwise it asks, or skips entirely if the operator just wants the code written), the exact mechanics, and every gotcha found while validating it (`expirationTime` as a lower bound, one forked script per caller identity, the `invalid_custom_script` error shape). Do not reimplement any of that here — the skill is the single source of truth.
+
 ---
 
 ## ⚠️ Reference Architecture Rules
