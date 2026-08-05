@@ -38,6 +38,20 @@ The executing agent MUST strictly adhere to these rules:
 2. **Strict Routing rules**: `getRoutePath()` must return a path starting with `/` followed by alphanumeric characters or underscores.
 3. **No any or force cast**: Do not use `any` or force cast to `any` to resolve type errors. Find another way to solve the problem.
 4. **`events()` — EventReturn rule**: Every new `action.key` handler added to `events()` **must** return `'STATE_UPDATE'` when it mutates state properties directly. Use `'STATE_FREEZED'` only for navigation actions (`pushPage`, `pushModal`, `popModal`). Never return `undefined` from a newly added key — that is a silent no-op.
+5. **Attachments section — all 4 pieces are required together, never just some (NON-NEGOTIABLE)**: If the cart embeds an `AttachmentsEditSectionRoute` (via `glyvio_core.RuleSectionDesign.fromRoute(...)`) in deferred mode (`saveOnlyOnAction: true`), the host cart itself — not just the section — must ALSO wire the file-picker callback and the save-time flush. Forgetting any one of these four leaves uploads silently broken or never persisted:
+   1. `implements glyvio_core.AttachmentExtensionDelegate<<CartName>CartState>` on the class declaration.
+   2. `this.extensionsManager.registerAttachment(this);` in the constructor.
+   3. `async attachmentOnFilesUploaded(state, files, extras) { await glyvio_core.AttachmentsEditSection.setTempAttachments(this, '<sectionIdentifier>', state, files); }` — forwards uploads picked via the section's own "+" button into its temp state. The `'<sectionIdentifier>'` string must match the `sectionIdentifier` used when embedding the section in `getDesign`.
+   4. In **every** save handler that persists the host entity (a cart may have more than one, e.g. `onSave` that stays open vs `onSaveAndLeave` that closes) — after `entityService.saveList(...)`, flush the section's pending changes:
+      ```typescript
+      const changes = await glyvio_core.AttachmentsEditSection.getChanges(this, '<sectionIdentifier>', state);
+      if (changes) {
+        changes.entityId = state.<entityNameCamelCase>!.id;
+        await glyvio_core.AttachmentsEditSection.saveEntities(changes);
+      }
+      ```
+      This must run in **every** code path that calls `entityService.saveList`/`saveEntity` for the host entity — not just one of several save actions.
+   - See the full "Attachments Section (optional)" recipe below for the matching `initState` seed and `getDesign` embedding — all four pieces plus the seed/embed must be present together for attachments to work end-to-end.
 
 ---
 
@@ -59,6 +73,60 @@ glyvio_core.routerService.loadRoutes([
   YourCartRoute,
 ]);
 ```
+
+### Step 3: (Optional) Attachments Section
+
+Only when the user asks for file/attachment support on the cart's host entity. Deferred mode (`saveOnlyOnAction: true`) is required whenever the entity may not exist yet when the cart opens (new record — client-generated id, not yet persisted) — which is the common case for a create/edit cart. All five pieces below are required together; do not stop after adding the section to `getDesign` — the upload callback and save-time flush are just as essential and easy to forget:
+
+1. **State**: add `attachmentsTemp?: glyvio_core.AttachmentsEditSectionGetChanges;` to `<CartName>CartState`.
+2. **`initState`**: seed the pending-changes bucket, right after `await super.initState(state);`:
+   ```typescript
+   state.attachmentsTemp = { attachmentsTemp: [], attachmentsChanged: [] };
+   ```
+3. **Class declaration + constructor**: implement the delegate and register the extension:
+   ```typescript
+   export class <CartName>Cart
+     extends glyvio_core.SimpleCart<<CartName>CartState>
+     implements glyvio_core.AttachmentExtensionDelegate<<CartName>CartState>
+   {
+     constructor() {
+       super(<CartName>CartRoute);
+       this.extensionsManager.registerAttachment(this);
+     }
+   ```
+4. **Upload callback** (a method on the cart, not just inside the section):
+   ```typescript
+   async attachmentOnFilesUploaded(
+     state: <CartName>CartState,
+     files: glyvio_entity.Attachment[],
+     extras?: unknown,
+   ): Promise<void> {
+     await glyvio_core.AttachmentsEditSection.setTempAttachments(this, 'ATTACHMENT', state, files);
+   }
+   ```
+5. **`getDesign`**: embed the section as the last entry in `design.sectionsDesign`:
+   ```typescript
+   glyvio_core.RuleSectionDesign.fromRoute(
+     new glyvio_core.AttachmentsEditSectionRoute({
+       entityName: glyvio_structure.AllEntities.<entityNameCamelCase>.getStructureName(),
+       entityId: state.<entityNameCamelCase>?.id,
+       saveOnlyOnAction: true,
+       sectionIdentifier: 'ATTACHMENT',
+       tempChanges: state.attachmentsTemp,
+       // trackFieldOnEntity: glyvio_structure.AllEntities.<entityNameCamelCase>.mainAttachment.structureName, // only if the entity has a `mainAttachment` field
+     }),
+   ),
+   ```
+6. **Save control** (rule #5 above): in **every** save handler, after `entityService.saveList(...)`:
+   ```typescript
+   const changes = await glyvio_core.AttachmentsEditSection.getChanges(this, 'ATTACHMENT', state);
+   if (changes) {
+     changes.entityId = state.<entityNameCamelCase>!.id;
+     await glyvio_core.AttachmentsEditSection.saveEntities(changes);
+   }
+   ```
+
+**Final check before considering the attachments section done**: re-read the cart file and confirm all of — state field, `initState` seed, `implements AttachmentExtensionDelegate`, `registerAttachment` in constructor, `attachmentOnFilesUploaded` method, section embed in `getDesign`, and `getChanges`/`saveEntities` in **every** save path — are present. Missing any one is a silent bug (uploads don't attach, or attach but never persist), not a build error — `tsc`/`eslint`/`webpack build` all stay clean either way.
 
 ---
 
