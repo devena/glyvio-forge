@@ -218,6 +218,7 @@ As skills geram código seguindo os padrões do projeto. Invoque no chat com
 | `/create-system-tool`  | Ferramenta invocável pelo agente Jeannie |
 | `/create-custom-tool`  | Tool customizada de roteamento           |
 | `/create-custom-agent` | Agente com tools próprias                |
+| `/format-llm-markdown-output` | Restringe texto markdown gerado por LLM às tags que o `glyvio_app` renderiza |
 
 ### Configuração
 

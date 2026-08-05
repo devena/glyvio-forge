@@ -48,6 +48,19 @@ The executing agent MUST strictly adhere to these rules:
    - `$D{...}` → **DateTime only**. NEVER use for Decimal or numeric fields.
    - `$N{...}` → Decimal/Number (counts, amounts, any `Decimal` type).
    - `$T{...}` → Translation/i18n key.
+7. **Attachments section — all 4 pieces are required together, never just some (NON-NEGOTIABLE)**: If the modal embeds an `AttachmentsEditSectionRoute` (via `glyvio_core.RuleSectionDesign.fromRoute(...)`) in deferred mode (`saveOnlyOnAction: true`), the host modal itself — not just the section — must ALSO wire the file-picker callback and the save-time flush. Forgetting any one of these four leaves uploads silently broken or never persisted:
+   1. `implements glyvio_core.AttachmentExtensionDelegate<<EntityName>EditModalState>` on the class declaration.
+   2. `this.extensionsManager.registerAttachment(this);` in the constructor.
+   3. `async attachmentOnFilesUploaded(state, files, extras) { await glyvio_core.AttachmentsEditSection.setTempAttachments(this, '<sectionIdentifier>', state, files); }` — forwards uploads picked via the section's own "+" button into its temp state. The `'<sectionIdentifier>'` string must match the `sectionIdentifier` used when embedding the section in `getDesign`.
+   4. In `actionSave` (or whichever method persists the entity) — after `entityService.saveList(...)`, flush the section's pending changes:
+      ```typescript
+      const changes = await glyvio_core.AttachmentsEditSection.getChanges(this, '<sectionIdentifier>', state);
+      if (changes) {
+        changes.entityId = state.<entityNameCamelCase>!.id;
+        await glyvio_core.AttachmentsEditSection.saveEntities(changes);
+      }
+      ```
+   - See the full "Attachments Section (optional)" recipe below for the matching `initState` seed and `getDesign` embedding — all four pieces plus the seed/embed must be present together for attachments to work end-to-end.
 
 ---
 
@@ -69,6 +82,60 @@ glyvio_core.routerService.loadRoutes([
   YourEntityEditModalRoute,
 ]);
 ```
+
+### Step 3: (Optional) Attachments Section
+
+Only when the user asks for file/attachment support on the entity. Deferred mode (`saveOnlyOnAction: true`) is required whenever the entity may not exist yet when the modal opens (create flow — client-generated id, not yet persisted) — which is the common case for an edit modal. All five pieces below are required together; do not stop after adding the section to `getDesign` — the upload callback and save-time flush are just as essential and easy to forget:
+
+1. **State**: add `attachmentsTemp?: glyvio_core.AttachmentsEditSectionGetChanges;` to `<EntityName>EditModalState`.
+2. **`initState`**: seed the pending-changes bucket, right after `await super.initState(state);`:
+   ```typescript
+   state.attachmentsTemp = { attachmentsTemp: [], attachmentsChanged: [] };
+   ```
+3. **Class declaration + constructor**: implement the delegate and register the extension:
+   ```typescript
+   export class <EntityName>EditModal
+     extends glyvio_core.SimpleEditModal<<EntityName>EditModalState>
+     implements glyvio_core.AttachmentExtensionDelegate<<EntityName>EditModalState>
+   {
+     constructor() {
+       super(<EntityName>EditModalRoute);
+       this.extensionsManager.registerAttachment(this);
+     }
+   ```
+4. **Upload callback** (a method on the modal, not just inside the section):
+   ```typescript
+   async attachmentOnFilesUploaded(
+     state: <EntityName>EditModalState,
+     files: glyvio_entity.Attachment[],
+     extras?: unknown,
+   ): Promise<void> {
+     await glyvio_core.AttachmentsEditSection.setTempAttachments(this, 'ATTACHMENT', state, files);
+   }
+   ```
+5. **`getDesign`**: embed the section as the last entry in `design.sectionsDesign`:
+   ```typescript
+   glyvio_core.RuleSectionDesign.fromRoute(
+     new glyvio_core.AttachmentsEditSectionRoute({
+       entityName: glyvio_structure.AllEntities.<entityNameCamelCase>.getStructureName(),
+       entityId: state.<entityNameCamelCase>?.id,
+       saveOnlyOnAction: true,
+       sectionIdentifier: 'ATTACHMENT',
+       tempChanges: state.attachmentsTemp,
+       // trackFieldOnEntity: glyvio_structure.AllEntities.<entityNameCamelCase>.mainAttachment.structureName, // only if the entity has a `mainAttachment` field
+     }),
+   ),
+   ```
+6. **Save control** (rule #7 above): in `actionSave`, after `entityService.saveList(...)` and before `popModal`:
+   ```typescript
+   const changes = await glyvio_core.AttachmentsEditSection.getChanges(this, 'ATTACHMENT', state);
+   if (changes) {
+     changes.entityId = state.<entityNameCamelCase>!.id;
+     await glyvio_core.AttachmentsEditSection.saveEntities(changes);
+   }
+   ```
+
+**Final check before considering the attachments section done**: re-read the modal file and confirm all of — state field, `initState` seed, `implements AttachmentExtensionDelegate`, `registerAttachment` in constructor, `attachmentOnFilesUploaded` method, section embed in `getDesign`, and `getChanges`/`saveEntities` in the save handler — are present. Missing any one is a silent bug (uploads don't attach, or attach but never persist), not a build error — `tsc`/`eslint`/`webpack build` all stay clean either way.
 
 ---
 
