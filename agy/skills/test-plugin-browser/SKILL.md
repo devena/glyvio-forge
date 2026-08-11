@@ -28,11 +28,16 @@ Nunca espere a bridge funcionar contra uma company de cliente real — ela é re
 2. **Abrir o Glyvio App (staging, com `ENABLE_AI_BRIDGE=true`) via Playwright MCP**:
    Navegue no browser para a URL de staging do Glyvio App: `https://app-beta.glyvio.com/`.
 
-3. **Injetar o Override e Recarregar o Flutter**:
+3. **Tratamento de Autenticação e Seleção de Empresa**:
+   - Após submeter as credenciais via formulário/DOM:
+     - **Login Incorreto**: Se a URL permanecer em `https://app-beta.glyvio.com/login` ou uma mensagem de erro for exibida na tela, **interrompa a execução imediatamente** e notifique o usuário que as credenciais (e-mail ou senha) são inválidas.
+     - **Sem Empresa (30s)**: Se o login for efetuado com sucesso mas a aplicação parar na tela `https://app-beta.glyvio.com/company-select` e nenhuma empresa estiver disponível em até **30 segundos** (mensagem *"Você tem acesso a 0 empresas"* / sem cartões de empresa), **interrompa a execução imediatamente** e notifique o usuário informando que a conta precisa de acesso a uma empresa no backend.
+
+4. **Injetar o Override e Recarregar o Flutter**:
    Execute via console JS no browser:
    ```javascript
    // Configura o Flutter para buscar o plugin do servidor local de dev
-   await window.__GLYVIO_AI__.setPluginDevOverride('engesolda', 'http://localhost:3000/dist/bundle.js');
+   await window.__GLYVIO_AI__.setPluginDevOverride('business_ai', 'http://localhost:3000/dist/bundle.js');
 
    // Dispara o unload + reload de módulos/rotas (AppRuleService.unloadModules + AppCubit.resetServices)
    await window.__GLYVIO_AI__.reloadPlugins();
@@ -72,9 +77,24 @@ Para navegar e validar, use exclusivamente os métodos abaixo — nunca `page.lo
    await window.__GLYVIO_AI__.getJeannieContext(callbackId);
    ```
 
-6. **Depuração de Erros**:
-   - Monitore os `browser_console_logs` para verificar se algum interceptor ou callback JS disparou exceções.
+6. **Consultar Erros Internos da Aplicação (Cubit.onError)**:
+   ```javascript
+   // Retorna o histórico de erros capturados pelos Cubits (Cubit.onError)
+   await window.__GLYVIO_AI__.getErrors({ callbackId, limit: 10 });
+
+   // Limpar o buffer de erros
+   await window.__GLYVIO_AI__.clearErrors();
+
+   // Registrar listener em tempo real para erros do app
+   window.__GLYVIO_AI__.onAppError((errorEvent) => {
+     console.log('App Error Event:', errorEvent);
+   });
+   ```
+
+7. **Depuração de Erros**:
+   - Monitore os `browser_console_logs` e `window.__GLYVIO_AI__.getErrors()` para verificar exceções nos Cubits e nas chamadas de API.
    - Todo erro da bridge chega como `Error` rejeitado na Promise (não como snapshot silenciosamente vazio) — trate a rejeição, não assuma sucesso.
+   - **Environment Actions em Staging**: O `setPluginDevOverride` substitui o código do frontend no navegador. Se o botão disparar uma `EnvironmentAction` criada localmente que ainda não foi publicada no backend do servidor de staging (`app-beta.glyvio.com`), a requisição POST retornará HTTP 404. O disparo da UI está correto, porém exige o deploy da action no ambiente backend para responder 200 OK.
 
 ---
 
