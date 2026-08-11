@@ -217,7 +217,7 @@ export class <EntityName>GridPage extends glyvio_core.SimpleGridPage<<EntityName
    *
    * IMPORTANT — choose one of the patterns below based on what the card looks like.
    * Full documentation with visual descriptions and code for each pattern is in
-   * docs/claude/component_catalog.md §15.
+   * .claude/references/component_catalog_full.md §15.
    *
    * Pattern A — single row: title (expanded) + code/badge on the right.
    * Pattern B — two rows: title on top, subtitle below.

@@ -1,11 +1,11 @@
 ---
 name: test-plugin-browser
-description: Instruções para o Claude Code / AGY conectar a aplicação Glyvio App publicada ao bundle local do plugin e testar via Browser usando a AI bridge (window.__GLYVIO_AI__), sem depender da árvore de semântica/acessibilidade.
+description: Instruções para o AGY / AGY conectar a aplicação Glyvio App publicada ao bundle local do plugin e testar via Browser usando a AI bridge (window.__GLYVIO_AI__), sem depender da árvore de semântica/acessibilidade.
 ---
 
 # Skill: Conexão e Teste de Plugins contra o Glyvio App Publicado (via AI bridge)
 
-Esta skill guia o **Claude Code** / **AGY** para testar e validar o plugin do cliente (ex: `glyvio-plugin-engesolda`) contra o site do **Glyvio App** publicado (produção/staging), sem depender do código-fonte do Flutter e **sem usar `aria-label`/`role`/snapshot semântico** — a interação é feita lendo o JSON estruturado de design/estado que o próprio app já expõe para a Jeannie.
+Esta skill guia o **AGY** / **AGY** para testar e validar o plugin do cliente (ex: `glyvio-plugin-engesolda`) contra o site do **Glyvio App** publicado (produção/staging), sem depender do código-fonte do Flutter e **sem usar `aria-label`/`role`/snapshot semântico** — a interação é feita lendo o JSON estruturado de design/estado que o próprio app já expõe para a Jeannie.
 
 **Pré-requisito**: `window.__GLYVIO_AI__` sempre existe na página, mas toda chamada é rejeitada com `AI bridge is disabled for this session...` a menos que uma destas duas condições seja verdadeira:
 - o alvo (staging/homologação) foi compilado com `--dart-define=ENABLE_AI_BRIDGE=true`; **ou**
