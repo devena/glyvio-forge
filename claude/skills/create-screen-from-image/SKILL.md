@@ -32,8 +32,8 @@ If any required parameter is missing, **stop and ask** — never guess.
 
 ## 📚 Required Reading (do this first)
 
-1. **`docs/claude/component_catalog.md`** — the visual catalog. This is the ground truth for
-   mapping "what it looks like" → "which `glyvio_core` class". Keep it open the whole time.
+1. **`.claude/component_catalog.md` (and `.claude/references/component_catalog_full.md`)** — the visual catalog. This is
+   the ground truth for mapping "what it looks like" → "which `glyvio_core` class". Keep it open the whole time.
 2. **`@types` / `dist/bundle.d.ts`** — confirm every class you intend to use is actually exported.
    Never instantiate a class that is not in `@types`.
 3. The matching page skill(s) under `.claude/skills/` (e.g. `.claude/skills/create-list-page/SKILL.md`) for the final code blueprint.

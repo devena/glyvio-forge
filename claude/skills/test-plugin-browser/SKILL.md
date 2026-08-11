@@ -26,7 +26,7 @@ Nunca espere a bridge funcionar contra uma company de cliente real — ela é re
    Certifique-se de que o servidor local esteja disponibilizando `http://localhost:3000/dist/bundle.js`.
 
 2. **Abrir o Glyvio App (staging, com `ENABLE_AI_BRIDGE=true`) via Playwright MCP**:
-   Navegue no browser para a URL de staging do Glyvio App.
+   Navegue no browser para a URL de staging do Glyvio App: `https://app.example.com/`.
 
 3. **Injetar o Override e Recarregar o Flutter**:
    Execute via console JS no browser:
