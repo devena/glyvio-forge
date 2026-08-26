@@ -153,10 +153,15 @@ export class <InterceptorClassName> extends glyvio_core.SimpleAfterCommitInterce
 
     // 💡 CALL EXTERNAL SYSTEM / WEBHOOK EXAMPLE:
     // glyvio_core.environmentService.callEnvironmentActionRaw(
-    //   'env-name',
+    //   environmentId,
     //   'action-name',
     //   { id: context.valueId, action },
     // );
+    // ⚠️ 'env-name' is NOT a real value - AfterCommitInterceptorContext has no `environmentId`
+    // field, so it can't be read off `context`. Resolve a real one via
+    // `glyvio_entity.Environment.getQueryBuilder()`, or - if the company can have more than one -
+    // stop and ask the user which one this interceptor should target. Never hardcode a placeholder
+    // like 'env-name' into shipped code.
 
     // 💡 SAVE A SUPPLEMENTARY RECORD (e.g., notification or audit log) EXAMPLE:
     // const notification = new glyvio_entity.Notification();

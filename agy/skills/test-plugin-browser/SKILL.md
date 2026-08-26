@@ -1,127 +1,141 @@
 ---
 name: test-plugin-browser
-description: Instruções para o AGY / AGY conectar a aplicação Glyvio App publicada ao bundle local do plugin e testar via Browser usando a AI bridge (window.__GLYVIO_AI__), sem depender da árvore de semântica/acessibilidade.
+description: Instruções para o AGY / Claude conectar a aplicação Glyvio App publicada ao bundle local do plugin e testar via Browser usando a AI bridge (window.__GLYVIO_AI__), sem depender da árvore de semântica/acessibilidade.
 ---
 
 # Skill: Conexão e Teste de Plugins contra o Glyvio App Publicado (via AI bridge)
 
-Esta skill guia o **AGY** / **AGY** para testar e validar o plugin do cliente (ex: `glyvio-plugin-engesolda`) contra o site do **Glyvio App** publicado (produção/staging), sem depender do código-fonte do Flutter e **sem usar `aria-label`/`role`/snapshot semântico** — a interação é feita lendo o JSON estruturado de design/estado que o próprio app já expõe para a Jeannie.
+Esta skill guia o **AGY** / **Claude** para testar e validar o plugin do cliente (ex: `glyvio-plugin-crm`, `glyvio-plugin-project`, `glyvio-plugin-travel`) contra o site do **Glyvio App** publicado (produção/staging), sem depender do código-fonte do Flutter e **sem usar `aria-label`/`role`/snapshot semântico** — a interação é feita lendo o JSON estruturado de design/estado que o próprio app já expõe para a Jeannie.
 
 **Pré-requisito**: `window.__GLYVIO_AI__` sempre existe na página, mas toda chamada é rejeitada com `AI bridge is disabled for this session...` a menos que uma destas duas condições seja verdadeira:
 - o alvo (staging/homologação) foi compilado com `--dart-define=ENABLE_AI_BRIDGE=true`; **ou**
-- você está logado numa **company sandbox** que o backend do Glyvio marcou explicitamente com `aiBridgeSandbox: true` — esse é o caminho para testar contra **produção de verdade** (mesma build que todo cliente usa, mesmos dados reais), sem precisar de uma flag de build. Só funciona se essa company já tiver sido marcada como sandbox do lado do backend (peça a alguém do time Glyvio se sua company de teste ainda não tem essa flag) — nenhuma ação do lado do plugin/cliente liga isso sozinha.
-
-Nunca espere a bridge funcionar contra uma company de cliente real — ela é rejeitada por padrão em qualquer company não marcada como sandbox, mesmo em produção.
+- você está logado numa **company sandbox** que o backend do Glyvio marcou explicitamente com `aiBridgeSandbox: true` — esse é o caminho para testar contra **produção de verdade** (mesma build que todo cliente usa, mesmos dados reais), sem precisar de uma flag de build.
 
 ---
 
-## 1. Fluxo de Trabalho do Cliente
+## 1. Execução Automatizada via CLI Runner (Recomendado para IA e CI)
+
+O repositório inclui o script executável **`test_runner.js`** (`glyvio-forge/tools/test-runner/runner.js`), que orquestra todo o ciclo de forma autônoma:
+1. Sobe o servidor HTTP local com CORS na porta especificada (default: `3000`).
+2. Abre o navegador Chromium headless com gerenciamento de sessão persistente.
+3. Injeta o override do plugin local (`setPluginDevOverride`) e recarrega os módulos (`reloadPlugins`).
+4. Executa a navegação, ações, preenchimento de campos ou cenários JSON.
+5. Captura erros internos via `getErrors()` e retorna o resumo estruturado.
+
+### Exemplos de Comandos CLI:
+
+```bash
+# 1. Navegar para uma rota e validar se carregou sem erros de Cubit
+node /home/ubuntu/glyvio-forge/tools/test-runner/runner.js \
+  --project "/home/ubuntu/_DISK_AI/glyvio-plugin-crm" \
+  --plugin-name "crm" \
+  --navigate "/crm/clients/kanban"
+
+# 2. Listar todas as rotas registradas após recarregar o plugin
+node /home/ubuntu/glyvio-forge/tools/test-runner/runner.js \
+  --plugin-name "crm" \
+  --list-routes
+
+# 3. Disparar uma ação específica na tela aberta
+node /home/ubuntu/glyvio-forge/tools/test-runner/runner.js \
+  --plugin-name "crm" \
+  --navigate "/crm/clients/kanban" \
+  --dispatch "OPEN_FILTER"
+
+# 4. Inspecionar o Design JSON AST da tela ativa
+node /home/ubuntu/glyvio-forge/tools/test-runner/runner.js \
+  --plugin-name "crm" \
+  --navigate "/crm/clients/kanban" \
+  --get-design
+
+# 5. Executar um cenário completo de teste via arquivo JSON
+node /home/ubuntu/glyvio-forge/tools/test-runner/runner.js \
+  --plugin-name "crm" \
+  --scenario "/home/ubuntu/glyvio-forge/tools/test-runner/examples/crm_kanban_test.json" \
+  --screenshot "./artifacts/kanban_result.png"
+```
+
+---
+
+## 2. Fluxo Manual / Interativo (via Browser Console ou Playwright MCP)
+
+Se estiver operando diretamente no console do navegador ou via tool do Playwright:
 
 1. **Subir o Servidor Local do Bundle (CORS Ativo)**:
-   No repositório do plugin:
    ```sh
-   pnpm dev
-   # ou servir dist/bundle.js via HTTP na porta 3000
+   # No diretório do plugin
+   npx http-server ./plugin/app/dist -p 3000 --cors
    ```
-   Certifique-se de que o servidor local esteja disponibilizando `http://localhost:3000/dist/bundle.js`.
 
-2. **Abrir o Glyvio App (staging, com `ENABLE_AI_BRIDGE=true`) via Playwright MCP**:
-   Navegue no browser para a URL de staging do Glyvio App: `https://app-beta.glyvio.com/`.
+2. **Abrir o Glyvio App (staging)**:
+   Navegue para: `https://app-beta.glyvio.com/`.
 
-3. **Tratamento de Autenticação e Seleção de Empresa**:
-   - Após submeter as credenciais via formulário/DOM:
-     - **Login Incorreto**: Se a URL permanecer em `https://app-beta.glyvio.com/login` ou uma mensagem de erro for exibida na tela, **interrompa a execução imediatamente** e notifique o usuário que as credenciais (e-mail ou senha) são inválidas.
-     - **Sem Empresa (30s)**: Se o login for efetuado com sucesso mas a aplicação parar na tela `https://app-beta.glyvio.com/company-select` e nenhuma empresa estiver disponível em até **30 segundos** (mensagem *"Você tem acesso a 0 empresas"* / sem cartões de empresa), **interrompa a execução imediatamente** e notifique o usuário informando que a conta precisa de acesso a uma empresa no backend.
-
-4. **Injetar o Override e Recarregar o Flutter**:
-   Execute via console JS no browser:
+3. **Injetar o Override e Recarregar o Flutter**:
+   Execute no console da página:
    ```javascript
    // Configura o Flutter para buscar o plugin do servidor local de dev
-   await window.__GLYVIO_AI__.setPluginDevOverride('business_ai', 'http://localhost:3000/dist/bundle.js');
+   await window.__GLYVIO_AI__.setPluginDevOverride('crm', 'http://localhost:3000/bundle.js');
 
-   // Dispara o unload + reload de módulos/rotas (AppRuleService.unloadModules + AppCubit.resetServices)
+   // Dispara o unload + reload de módulos/rotas
    await window.__GLYVIO_AI__.reloadPlugins();
    ```
 
 ---
 
-## 2. Inspecionando via JSON estruturado (sem DOM/semantics)
+## 3. Inspecionando via JSON estruturado (sem DOM/semantics)
 
-O Flutter Web irá descarregar os módulos antigos, baixar o novo `dist/bundle.js`, re-executar os registradores do `glyvio_core` e recarregar o roteador `GoRouter`.
-
-Para navegar e validar, use exclusivamente os métodos abaixo — nunca `page.locator('[aria-label=...]')`/`role=...`/seletor DOM:
-
-1. **Listar rotas registradas** (para saber `nameSpace`/`nameObject`/`path` de cada tela do plugin):
+1. **Listar rotas registradas**:
    ```javascript
    await window.__GLYVIO_AI__.listRoutes();
    ```
 
-2. **Descobrir quais telas estão abertas agora** (cada uma com seu `callbackId`, o identificador que os demais métodos usam):
+2. **Descobrir quais telas estão abertas agora**:
    ```javascript
    await window.__GLYVIO_AI__.describeCurrentScreens();
-   // -> [{ callbackId, surfaceType: 'page'|'modal'|'sidebar'|'cart'|'sidePanel'|'chatView', nameSpace, nameObject, path }, ...]
+   // -> [{ callbackId, surfaceType: 'page'|'modal'|'sidebar'|'cart', nameSpace, nameObject, path }, ...]
    ```
 
-3. **Ler o design (árvore de widgets) de uma tela** — é aqui que estão todos os botões/campos e suas `key`s reais, a fonte de verdade para localizar elementos (não o snapshot semântico):
+3. **Ler o design (árvore de widgets) de uma tela**:
    ```javascript
    await window.__GLYVIO_AI__.getDesign(callbackId);
    ```
 
-4. **Ler o estado atual (form values, seleção, etc.) de uma tela**:
+4. **Ler o estado atual de uma tela**:
    ```javascript
    await window.__GLYVIO_AI__.getState(callbackId);
    ```
 
-5. **Ler o contexto narrativo da tela** (texto/resumo que a própria tela expõe para a Jeannie, quando implementado — pode vir vazio em telas que ainda não adotaram isso):
+5. **Consultar Erros Internos da Aplicação (Cubit.onError)**:
    ```javascript
-   await window.__GLYVIO_AI__.getJeannieContext(callbackId);
-   ```
-
-6. **Consultar Erros Internos da Aplicação (Cubit.onError)**:
-   ```javascript
-   // Retorna o histórico de erros capturados pelos Cubits (Cubit.onError)
    await window.__GLYVIO_AI__.getErrors({ callbackId, limit: 10 });
-
-   // Limpar o buffer de erros
    await window.__GLYVIO_AI__.clearErrors();
-
-   // Registrar listener em tempo real para erros do app
-   window.__GLYVIO_AI__.onAppError((errorEvent) => {
-     console.log('App Error Event:', errorEvent);
-   });
    ```
-
-7. **Depuração de Erros**:
-   - Monitore os `browser_console_logs` e `window.__GLYVIO_AI__.getErrors()` para verificar exceções nos Cubits e nas chamadas de API.
-   - Todo erro da bridge chega como `Error` rejeitado na Promise (não como snapshot silenciosamente vazio) — trate a rejeição, não assuma sucesso.
-   - **Environment Actions em Staging**: O `setPluginDevOverride` substitui o código do frontend no navegador. Se o botão disparar uma `EnvironmentAction` criada localmente que ainda não foi publicada no backend do servidor de staging (`app-beta.glyvio.com`), a requisição POST retornará HTTP 404. O disparo da UI está correto, porém exige o deploy da action no ambiente backend para responder 200 OK.
 
 ---
 
-## 3. Escrevendo e navegando (Fase 1)
+## 4. Escrevendo e navegando
 
-Todo elemento a disparar/preencher deve vir de uma `key` que apareça em `getDesign(callbackId)` (botão → `action.key`, campo → `key`) — nunca invente uma key.
-
-1. **Clicar/disparar uma ação** (mesmo caminho de um clique real, mesmos interceptors/permissões):
+1. **Clicar/disparar uma ação**:
    ```javascript
    await window.__GLYVIO_AI__.dispatchAction(callbackId, key, data);
    ```
-   Rejeita com `Error` se `key` não estiver em `getDesign()` nem for uma key interna conhecida do tipo de tela (ex.: `_ON_COLUMN_CHANGE` em Kanban, `_FETCH_ITEMS` em Grid/Table). Para esses casos raros (ou depuração), passe `unsafeMode: true` como 4º argumento — só em QA, nunca como padrão.
 
 2. **Preencher um campo**:
    ```javascript
    await window.__GLYVIO_AI__.setFieldValue(callbackId, key, value);
    ```
 
-3. **Navegar** (resolve pelo `path` retornado em `listRoutes()`, ou por `nameSpace`+`nameObject` — página/modal/sidebar/cart são todos endereçados por `path`, não precisa saber qual é qual):
+3. **Preencher autocomplete de entidade**:
    ```javascript
-   await window.__GLYVIO_AI__.navigate({ path: '/orders/new' });
-   // ou: await window.__GLYVIO_AI__.navigate({ nameSpace, nameObject, params, cleanStack });
+   await window.__GLYVIO_AI__.selectEntityField(callbackId, fieldName, searchText, pickIndex);
    ```
 
-4. **Esperar a tela ficar ociosa** antes do próximo passo (evita `sleep` arbitrário):
+4. **Navegar**:
    ```javascript
-   await window.__GLYVIO_AI__.waitForIdle(callbackId, 10000);
+   await window.__GLYVIO_AI__.navigate({ path: '/crm/clients/kanban' });
    ```
 
-**Importante**: a Fase 2 (continuidade multi-etapa da Jeannie embutida em produção) ainda não foi implementada — esta skill cobre apenas o entry point de QA/staging (`window.__GLYVIO_AI__`), nunca use isso contra produção.
+5. **Esperar a tela ficar ociosa**:
+   ```javascript
+   await window.__GLYVIO_AI__.waitForIdle(callbackId, 15000);
+   ```

@@ -439,6 +439,11 @@ Delegate tasks to specialized frontend coder subagents and/or run the chosen ski
 
 Before executing **any** skill — and **especially before any interceptor skill** — verify that every required input parameter defined in the skill's metadata has been explicitly provided by the user. If any parameter is missing, **stop and ask the user**; do not guess.
 
+This also applies **outside skill metadata**, to any hand-written call site: **`glyvio_core.environmentService.callEnvironmentActionRaw(environmentId, actionName, data)`** (and any other API taking an `environmentId`) needs a real `Environment` entity id — there is **no** implicit "current environment" anywhere in `plugin/app`; `getContext()` does not carry one, and no interceptor/action context does either. Confirmed empirically: shipping `callEnvironmentActionRaw('', ...)` with a blank/guessed id makes the real call impossible. Never write a literal placeholder (`''`, `'env-123'`, `'env-name'`) into committed code. Instead:
+1. Query `glyvio_entity.Environment.getQueryBuilder()` (or `findById`/`findByIntegrationCode` if you already have a code) to see what actually exists for this company.
+2. If there is exactly **one** environment, that is almost certainly the right target — but still confirm with the user once rather than assuming.
+3. If there is more than one (or the query is inconclusive), **stop and ask the user** which `Environment` to target — do not guess based on name similarity or ordering.
+
 For **interceptor skills**, this includes the Step-0 design-collection prerequisites:
 
 1. The interceptor skills require the **current design JSON** of the target view, captured via the temporary `SpyInterceptor` + `chrome_inspector.js` flow (Chrome running with `--remote-debugging-port=9222`, target page open), saved to `.claude/temp<ViewName>_design.json`.
@@ -470,7 +475,27 @@ Once the subagents/skills report completion:
 2. **Wiring Check**: Confirm new pages complete all three registration steps in `plugin/app/src/index.ts`: route registered (`routerService.loadRoutes`), page instantiated (`new MyPage()`), and menu entry added (`FullMenuPage.fullMenuGroupAdd` or `fullMenuItemAdd`) — all three are required, any missing step is a hard error; for **every newly created view** (page, modal, sidebar, cart), confirm its `view` permission (`{ "type": "view", "subtype": "{entity}", "key": "{entity}_{view type}" }`) exists in `manifest.json` and is not duplicated — this is a hard error if missing; confirm interceptors are registered (`appInterceptorService.registerInterceptors`) with sensible `order`; confirm listener IDs are globally unique.
 3. **Helper Execution**: If `manifest.json` was modified, you **MUST** run `run_helper.sh` at the workspace root to regenerate typings/entities before compiling.
 4. **Automated Static Audit & Compilation**: Run `node .claude/scripts/validate_glyvio_rules.js` to run AST/regex architectural checks on all frontend code, followed by `pnpm pretty && pnpm lint && pnpm build`, and confirm a clean build. Verify generated comments/types in `dist/bundle.d.ts`.
-5. **Cleanup**: Ensure any temporary `SpyInterceptor` and its registration are removed and the build is clean.
+5. **Live Browser Validation**: Per the "📸 Live Browser Validation" rule above — run the `test-plugin-browser` skill against the affected view, capture a numbered screenshot after each meaningful step in the project root, and actually read each one before declaring the task done. A clean build alone is not sufficient for any task that touched `plugin/app/src` rendering.
+6. **Cleanup**: Ensure any temporary `SpyInterceptor` and its registration are removed and the build is clean.
+
+---
+
+## 📸 Live Browser Validation (NON-NEGOTIABLE)
+
+**A clean build is not proof the UI works.** A `getState()`/`getDesign()` round-trip can confirm an action fired and state changed while the actual widget renders as an empty box on screen (e.g. a `RowLayoutFieldDesign` with no `width`/`flex` collapsing to zero width) — a real defect a build/lint pass cannot catch. Every task that **creates or modifies** a page, modal, sidebar, or cart is **not complete** until it has been exercised live against the published Glyvio App via the AI bridge, following the `test-plugin-browser` skill.
+
+1. **After a clean `pnpm pretty && pnpm lint && pnpm build`**, run the `test-plugin-browser` skill against the affected view:
+   - Serve the local bundle (`npx http-server ./plugin/app/dist -p 3000 --cors`).
+   - Log in and inject the plugin dev override (the skill documents the exact login flow — do not hand-roll pixel-coordinate clicks; use the Tab-based keyboard flow it describes).
+   - Navigate to the view and exercise **every meaningful step of the flow** you just built or changed (empty state, each user action — add/edit/toggle/remove/save — in sequence).
+2. **Take a screenshot after each meaningful step** and save it to the **project root**, numbered in order: `NN_description.png` (e.g. `01_empty_state.png`, `02_after_add.png`, `03_after_toggle_done.png`, `04_after_remove.png`). Use a scenario's `{"action": "screenshot", "path": "..."}` step, or an ad-hoc script per the skill's template.
+3. **Actually read each screenshot** (via `Read`) before declaring the task done — do not infer correctness from `getState()` alone. `getState()`/`getDesign()` results are wrapped (`{"$_type": ..., "value": ...}`) and `setFieldValue` keys need the full `state.`-prefixed path — see the skill's gotchas section before concluding a "bug" is real. For any boolean/checkbox-style field specifically, `setFieldValue()` and a real simulated click exercise different code paths — confirmed that a `BooleanTextfieldDesign` accepted `setFieldValue` writes perfectly while a real click on the same rendered checkbox did nothing. Validate interactive fields with an actual click, not `setFieldValue` alone.
+4. **If `.env`/credentials for the AI bridge are not configured**, stop and ask the user to provide them rather than skipping this phase — do not report the task complete on build success alone.
+5. Include the screenshots (and what each one confirms) in your final report to the user.
+
+This phase applies to **new views** (after a `create-*` skill) and to **customizations** (after a `*-interceptor` skill) alike — anywhere `plugin/app/src` was touched in a way that changes what renders. It does not apply to pure server/environment/manifest-only changes with no app-side rendering impact.
+
+When delegating view creation/interception to a coder subagent, **restate this rule** — the subagent's own "done" report is not sufficient; you (or the subagent, if it has skill access) must run this phase before the task is considered closed.
 
 ---
 
