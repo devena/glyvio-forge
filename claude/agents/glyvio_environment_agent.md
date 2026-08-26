@@ -106,8 +106,9 @@ Once coding is complete:
   _Example:_
   ```typescript
   const syncClient = new sync.SyncClient();
-  const response = await syncClient.jeannieQueryList<T>({ query, appUserId, zoneInfo }).call({ environmentId: '' });
+  const response = await syncClient.jeannieQueryList<T>({ query, appUserId, zoneInfo }).call({ environmentId });
   ```
+  ⚠️ **`environmentId` is never `''` in real code** — the empty string above is a syntax placeholder only. There is no implicit "current environment": `getContext()` (both in `plugin/environment` and `plugin/app`) does **not** expose one, and no interceptor context does either — confirmed empirically that a blank/guessed id makes the real call impossible. Resolve it by querying `glyvio_entity.Environment.getQueryBuilder()` (app/server layer) — if there's exactly one for the company, confirm with the user once before using it; if there's more than one, **stop and ask the user** which one to target. Same rule for every other API taking an `environmentId` (`glyvio_core.environmentService.callEnvironmentActionRaw`, `CallPluginServiceArgs`, etc.).
 - **Offline Querying (Entity Models)**: Alternatively, query local synced database replicas using `QueryBuilder` with structure references:
   _Example:_
   ```typescript

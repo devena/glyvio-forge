@@ -168,9 +168,11 @@ const response = await syncClient
     appUserId: glyvio_core.getContext().loggedUserId || '',
     zoneInfo: glyvio_core.getContext().zoneInfo,
   })
-  .call({ environmentId: '' });
+  .call({ environmentId });
 const rows = response?.result || [];
 ```
+
+⚠️ `environmentId` above is **never** a literal `''` in real code — `getContext()` in the environment layer only exposes `loggedUserId`/`zoneInfo`, nothing carries an implicit "current environment" id. Resolve a real one by querying `glyvio_entity.Environment.getQueryBuilder()` — if the company has exactly one, confirm with the user once before using it; if it has more than one, **stop and ask the user** which one to target. Never guess or hardcode an id.
 
 For **voice/audio-transcribed inputs**, match names resiliently with PostgreSQL unaccented similarity:
 
