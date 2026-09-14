@@ -56,6 +56,8 @@ The executing agent MUST strictly adhere to these rules:
    - `$N{...}` → Decimal/Number (counts, amounts, any `Decimal` type).
    - `$T{...}` → Translation/i18n key.
 9. **`interopDesign.stateName` must always be prefixed with `state.`**: Use `stateName: 'state.results'`, never `stateName: 'results'`. The interop engine evaluates `data.<stateName>` where `data` is the full state object, so the prefix is required.
+10. **No favorite-star button by default**: `SimpleBatchFilterEditModal` overrides `getFavoriteButtonEnabled()` to return `false`, so it does not get the automatic "favorite this screen" star button that `CoreView` injects into `appBarDesign.favoriteButton` for most views — a filter/selection popup isn't a top-level screen worth favoriting. This is already handled by the base class; there is nothing to configure.
+11. **Avoid `ChoiceMultipleTextfieldDesign` for a filter field the user re-edits often**: it has a confirmed bug where adding an item throws once the selection already has 1+ items (removal always works). See `component_catalog_full.md`'s `ChoiceMultipleTextfieldDesign` entry. A one-shot filter the user sets and rarely changes is lower risk, but still warn the user if you use it here.
 
 ---
 
@@ -287,4 +289,5 @@ export abstract class <EntityName>BatchFilterModalInterceptor extends glyvio_cor
 
 - **Caller side**: Open the modal by pushing a route with `popActionKey` set. The modal returns `{ ids: string[] }` in `action.data` via `popActionKey`.
 - **Interceptor skill**: To add extra query filters from another plugin, use the `create-batch-filter-modal-interceptor` skill (extends `<EntityName>BatchFilterModalInterceptor`).
-- **Result limit**: The "Search" action always fetches a maximum of 20 records for preview. The "Select" action runs a separate unlimited query and returns all matching IDs — not just the 20 previewed.
+- **Result limit**: The "Search" action always fetches a maximum of 20 records for preview. The "Select" action runs a separate unlimited query and returns all matching IDs — not just the 20 previewed. This means the caller receiving `ids` via `popActionKey` should assume the array can be large (hundreds+) — see the chunking note below before feeding it into a query filter.
+- **Feeding the returned `ids` back into a query — chunk them, don't pass the whole array to one `IN` clause**: when the caller (typically a `SimpleBatchCart`'s "add from filter" handler) re-queries the selected entities by id to add them to a cart, a single `addFilterOperator(entity.id, ids)` with hundreds/thousands of ids risks an oversized SQL `IN` clause. The reference implementation (`glyvio-plugin-core`'s `TaskBatchCart`) solves this with a `private static readonly QUERY_CHUNK_SIZE = 100;` constant and loops over the `ids` array in chunks of that size, running one query per chunk and accumulating results — do the same instead of one unbounded query. See the matching note in `create-simple-batch-cart`'s "Optional: Add From Filter" recipe for the full loop shape.

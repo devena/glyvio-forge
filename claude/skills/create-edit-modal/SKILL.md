@@ -61,6 +61,9 @@ The executing agent MUST strictly adhere to these rules:
       }
       ```
    - See the full "Attachments Section (optional)" recipe below for the matching `initState` seed and `getDesign` embedding — all four pieces plus the seed/embed must be present together for attachments to work end-to-end.
+8. **Favorite-star button is automatic**: `SimpleEditModal` does not override `getFavoriteButtonEnabled()`, so it inherits `CoreView`'s default (`true`) — every edit modal already gets a "favorite this screen" star button injected into `design.appBarDesign.favoriteButton` automatically. Do not set `appBarDesign.favoriteButton` yourself. If this particular modal is never meant to be favorited (e.g. it only ever opens as a step embedded in another flow), override `getFavoriteButtonEnabled(): boolean { return false; }` on the modal class — don't wire anything to enable it, there is nothing else to configure.
+9. **`ChoiceMultipleTextfieldDesign` has a confirmed add-after-selection bug — think twice before using it for an editable multi-select**: the underlying Flutter widget's duplicate check indexes the selection list as if it were a `List<Map>` when it is actually `List<String>`, so **adding an item throws once the selection already has 1+ items** — the user can remove items freely but can never add another after the first. This is a framework bug, not a plugin bug, and there is no app-layer workaround. If the field is genuinely meant to be edited back and forth (not just filled once), warn the user of this limitation or prefer an alternative (`EntityAutocompleteMultipleTextfieldDesign` if the options can be modeled as a pseudo-entity, or individual toggle buttons). See `component_catalog_full.md`'s `ChoiceMultipleTextfieldDesign` entry for the confirmed root cause.
+10. **Tabbed sections (`showSectionsInTabs`) — optional, use only for multi-section forms**: `SimpleEditModalDesign.showSectionsInTabs?: boolean | string` switches `sectionsDesign` from one continuous scroll into a tabbed layout. Every section in `sectionsDesign` needs a `key` (they already do — see rule about the blueprint). By default each section becomes its own tab, titled from that section's own `appBarDesign`. Use `design.tabsDesign?: SimpleCartTabGroupDesign[]` (`{ title: string; sectionKeys: string[] }`) to group multiple section keys under one custom-titled tab instead. Use `design.pinnedSectionKeysTop?: string[]` / `design.pinnedSectionKeysBottom?: string[]` to keep specific section keys (e.g. a summary banner) rendered above/below the tabs on every tab, instead of living inside one — a key can be pinned Top or Bottom, never both, and a pinned key must not also appear in `tabsDesign`. Only turn this on when the form genuinely has multiple distinct sections/steps worth separating — a single-section form should leave `showSectionsInTabs` unset. See "Optional: Tabbed Sections" below for a full example.
 
 ---
 
@@ -136,6 +139,32 @@ Only when the user asks for file/attachment support on the entity. Deferred mode
    ```
 
 **Final check before considering the attachments section done**: re-read the modal file and confirm all of — state field, `initState` seed, `implements AttachmentExtensionDelegate`, `registerAttachment` in constructor, `attachmentOnFilesUploaded` method, section embed in `getDesign`, and `getChanges`/`saveEntities` in the save handler — are present. Missing any one is a silent bug (uploads don't attach, or attach but never persist), not a build error — `tsc`/`eslint`/`webpack build` all stay clean either way.
+
+### Step 4: (Optional) Tabbed Sections
+
+Only when the user asks for the form to be split into tabs (e.g. "General" / "Billing" / "Shipping") instead of one long scroll. Give every entry in `sectionsDesign` a `key`, then configure the modal design:
+
+```typescript
+getDesign(state: <EntityName>EditModalState, design: glyvio_core.SimpleEditModalDesign): void {
+  // ...
+  design.sectionsDesign = [
+    new glyvio_core.FormSectionDesign({ key: 'summary', childDesign: /* ... */ }), // pinned, not a tab
+    new glyvio_core.FormSectionDesign({ key: 'general', childDesign: /* ... */ }),
+    new glyvio_core.FormSectionDesign({ key: 'billing', childDesign: /* ... */ }),
+    new glyvio_core.FormSectionDesign({ key: 'shipping', childDesign: /* ... */ }),
+  ];
+
+  design.showSectionsInTabs = true;
+  design.tabsDesign = [
+    { title: 'General', sectionKeys: ['general'] },
+    { title: 'Billing & Shipping', sectionKeys: ['billing', 'shipping'] },
+  ];
+  // Rendered above the tab strip on every tab instead of inside one:
+  design.pinnedSectionKeysTop = ['summary'];
+}
+```
+
+A section key left out of both `tabsDesign` and the pinned arrays (e.g. if `shipping` weren't listed above) still renders — it just gets its own separate tab, titled from its own `appBarDesign`.
 
 ---
 
@@ -298,6 +327,10 @@ export class <EntityName>EditModal extends glyvio_core.SimpleEditModal<<EntityNa
           actionKeyChangeUserGroup: 'onChangeUserGroup',
           actionKeyChangeObservers: 'onChangeObservers',
           actionKeyChangeTags: 'actionKeyChangeTags',
+          // allowSelect?: boolean — when `false`, disables text selection/copy inside this
+          // layout (and its descendant fields). Defaults to allowing selection; set it
+          // explicitly to `false` only for read-only/display-style forms where copying the
+          // rendered text is undesirable.
           children: [
             // Example of a required String field
             new glyvio_core.FormLayoutFieldDesign({

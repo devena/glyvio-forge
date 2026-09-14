@@ -40,6 +40,7 @@ The executing agent MUST strictly adhere to these rules:
 2. **Strict Routing rules**: `getRoutePath()` must return a path starting with `/` followed by alphanumeric characters or underscores.
 3. **No any or force cast**: Do not use `any` or force cast to `any` to resolve type errors. Find another way to solve the problem.
 4. **`events()` — EventReturn rule**: Every new `action.key` handler added to `events()` **must** return `'STATE_UPDATE'` when it mutates state properties directly. Use `'STATE_FREEZED'` only for navigation actions (`pushPage`, `pushModal`, `popModal`). Never return `undefined` from a newly added key — that is a silent no-op.
+5. **A table/grid-like section embedded inside a sidebar needs its own `userConfigKey`, separate from the sidebar's own**: if a `sectionsDesign` entry renders a `TableLayoutDesign`/`TableSectionDesign` or grid with user-configurable columns/layout (not just the sidebar's own `state.userConfigKey` set in `initState`), that section needs a distinct `userConfigKey` of its own so column/layout preferences persist independently of the sidebar shell. This has been retrofitted after the fact in multiple plugins because it's easy to assume the sidebar-level `userConfigKey` already covers an embedded table — it doesn't cover per-widget config the same way a full `SimpleTablePage` does. Set it explicitly wherever a sidebar embeds a configurable table/grid.
 
 ---
 

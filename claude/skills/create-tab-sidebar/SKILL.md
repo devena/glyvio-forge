@@ -39,6 +39,7 @@ The executing agent MUST strictly adhere to these rules:
 2. **Strict Routing rules**: `getRoutePath()` must return a path starting with `/` followed by alphanumeric characters or underscores.
 3. **No any or force cast**: Do not use `any` or force cast to `any` to resolve type errors. Find another way to solve the problem.
 4. **`events()` — EventReturn rule**: Every new `action.key` handler added to `events()` **must** return `'STATE_UPDATE'` when it mutates state properties directly. Use `'STATE_FREEZED'` only for navigation actions (`pushPage`, `pushModal`, `popModal`). Never return `undefined` from a newly added key — that is a silent no-op.
+5. **A table/grid-like section embedded in a tab's content needs its own `userConfigKey`**: if `sectionsContentDesign` (or a sub-tab route) renders a configurable `TableLayoutDesign`/`TableSectionDesign`/grid, give that section its own `userConfigKey` distinct from the tab sidebar's own — this has been retrofitted after the fact in multiple plugins because the sidebar-level config doesn't automatically cover per-widget table/grid preferences. See the matching rule in `create-sidebar`.
 
 ---
 

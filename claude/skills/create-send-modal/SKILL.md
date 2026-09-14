@@ -39,6 +39,7 @@ The executing agent MUST strictly adhere to these rules:
 3. **Data Types & Models**: All referenced model fields must exist under the namespace `glyvio_entity.<ContextName>`.
 4. **No any or force cast**: Do not use `any` or force cast to `any` to resolve type errors. Find another way to solve the problem.
 5. **`events()` — EventReturn rule**: Every new `action.key` handler added to `events()` **must** return `'STATE_UPDATE'` when it mutates state properties directly. Use `'STATE_FREEZED'` only for navigation actions (`pushPage`, `pushModal`, `popModal`). Never return `undefined` from a newly added key — that is a silent no-op.
+6. **No favorite-star button by default**: `SimpleSendModal` overrides `getFavoriteButtonEnabled()` to return `false`, so it does not get the automatic "favorite this screen" star button that `CoreView` injects into `appBarDesign.favoriteButton` for most views — a send/compose popup isn't a top-level screen worth favoriting. This is already handled by the base class; there is nothing to configure.
 
 ---
 

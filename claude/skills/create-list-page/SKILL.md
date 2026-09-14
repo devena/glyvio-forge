@@ -165,18 +165,19 @@ export class <EntityName>ListPage extends glyvio_core.SimpleListPage<<EntityName
    * Configures the title and sidebar filter UI elements.
    */
   getDesign(state: <EntityName>ListPageState, design: glyvio_core.SimpleListPageDesign): void {
-    design.appBarDesign!.title = '<EntityName> List';
-    design.appBarDesign.putButtonOn(this.extensionsManager.report!.getButton());
+    const appBar = design.appBarDesign as glyvio_core.SimpleAppBarDesign;
+    appBar.title = '<EntityName> List';
+    appBar.putButtonOn(this.extensionsManager.report!.getButton());
 
     // Build sidebar filter components
     design.filterSectionsDesign?.push(
       new glyvio_core.FormSectionDesign({
-        childDesign: new FormLayoutDesign({
+        childDesign: new glyvio_core.FormLayoutDesign({
           columnSize: 280,
           children: [
-            new FormLayoutFieldDesign({
+            new glyvio_core.FormLayoutFieldDesign({
               key: '<filterField1>.formField',
-              child: new StringTextfieldDesign({
+              child: new glyvio_core.StringTextfieldDesign({
                 name: 'state.filtersSidebar.<filterField1>',
                 label: 'Filter Label 1',
               }),
@@ -206,7 +207,7 @@ export class <EntityName>ListPage extends glyvio_core.SimpleListPage<<EntityName
                   value: item.<TitleField> ?? 'Unnamed Item',
                   padding: '0 4',
                 }),
-                new StringTextDesign({
+                new glyvio_core.StringTextDesign({
                   value: item.<SubtitleField> ?? '',
                   style: 'BODY_SMALL',
                 }),

@@ -303,17 +303,21 @@ export class <EntityName>KanbanPage extends glyvio_core.SimpleKanbanPage<
     state: <EntityName>KanbanPageState,
     columnState: <EntityName>KanbanPageColumnState,
     item: glyvio_entity.<EntityName>,
-  ): glyvio_core.CellDesign {
-    return new glyvio_core.EntityBarCellDesign({
+  ): glyvio_core.CardCellDesign {
+    return new glyvio_core.CardCellDesign({
       colorTheme: item.deleted ? 'RED' : `${item.status?.color}_ONLY_BORDER`,
-      header: new glyvio_core.StringTextDesign({
-        key: 'code.text',
-        value: '$S{item.code}',
-        style: 'TITLE_SMALL',
-      }),
-      details: new glyvio_core.ColumnLayoutDesign({
+      padding: '8',
+      child: new glyvio_core.ColumnLayoutDesign({
         key: 'details.layout',
         children: [
+          new glyvio_core.ColumnLayoutFieldDesign({
+            key: 'code.cell',
+            child: new glyvio_core.StringTextDesign({
+              key: 'code.text',
+              value: '$S{item.code}',
+              style: 'TITLE_SMALL',
+            }),
+          }),
           new glyvio_core.ColumnLayoutFieldDesign({
             padding: '8',
             key: 'name.cell',

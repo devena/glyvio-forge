@@ -99,6 +99,25 @@ The executing agent MUST strictly adhere to the following rules:
    ```
    Never hardcode entity name strings directly.
 
+10. **SQL Injection — ALWAYS parameterize `queryService.find`, never string-interpolate a caller-supplied value into the SQL text (NON-NEGOTIABLE)**: `queryService.find<T>(sql, params?)` accepts a second `params` argument specifically so that any value coming from `request.body`, a route param, or any other caller-controlled input is bound safely instead of concatenated into the query string. A real SQL-injection bug was shipped this way in two report controllers of a production plugin (fixed by switching to parameterized calls) — treat this as a hard rule, not a style preference:
+    ```typescript
+    // ✅ Correct — value is bound as a parameter
+    glyvio_core.queryService.find<Row>(
+      `SELECT * FROM sale WHERE company_id = $1 AND created_at >= $2`,
+      [companyId, sinceDate],
+    );
+
+    // ❌ WRONG — never do this with any value that isn't a literal you wrote yourself
+    glyvio_core.queryService.find<Row>(
+      `SELECT * FROM sale WHERE company_id = '${companyId}' AND created_at >= '${sinceDate}'`,
+    );
+    ```
+    Apply this to every template in this skill (A/C/D below) the moment a query stops being a fixed literal string.
+
+11. **Money fields use `Decimal`, never native `Number`/`number` math**: raw `Number()`-based arithmetic on money-bearing fields accumulates floating-point rounding drift (a real bug fixed in a production plugin, alongside an installment generator that was silently losing cents on the remainder). Any field representing currency — totals, prices, installment amounts, discounts — must use the `Decimal` API for all arithmetic, comparisons, and storage; never coerce it through a plain `number` mid-calculation.
+
+12. **Custom controller call sites need the `/${PLUGIN_NAME}/` path prefix — the compiler will not catch a missing one**: the client-side call to a controller registered via `@Controller({ path: '<controllerId>' })` must be addressed as `/${PLUGIN_NAME}/<controllerId>` (or the equivalent helper that prefixes it), not the bare `path` string. A forgotten prefix is a plain string mismatch — no TypeScript error, just a request that 404s or hits the wrong route — so double check the prefix explicitly whenever wiring the caller side of a new controller.
+
 ---
 
 ## 📋 Execution Steps
@@ -154,8 +173,11 @@ export interface <ResponseTypeName> {
 })
 export class <ClassName> extends glyvio_core.SimpleController<void, <ResponseTypeName>[]> {
   handle(_request: glyvio_core.WebRequest<void>): <ResponseTypeName>[] {
+    // 💡 Rule #10: bind every value via `params`, never interpolate it into the SQL string —
+    // even a value read from the current session/request, not just `request.body`.
     return glyvio_core.queryService.find<<ResponseTypeName>>(
-      `SELECT /* columns */ FROM /* table */ WHERE /* conditions */`,
+      `SELECT /* columns */ FROM /* table */ WHERE /* condition */ = $1`,
+      [/* bound value */],
     );
   }
 }
@@ -258,8 +280,10 @@ export interface <DataRow> {
 })
 export class <ClassName> extends glyvio_core.SimpleController<void, string> {
   handle(_request: glyvio_core.WebRequest<void>): string {
+    // 💡 Rule #10: bind every value via `params`, never interpolate it into the SQL string.
     const data = glyvio_core.queryService.find<<DataRow>>(
-      `SELECT /* columns */ FROM /* table */ WHERE /* conditions */`,
+      `SELECT /* columns */ FROM /* table */ WHERE /* condition */ = $1`,
+      [/* bound value */],
     );
 
     return this.buildHtml(data);
@@ -287,7 +311,7 @@ Use the following globally-available services inside controllers. Do NOT import 
 
 | Service                             | Access Path                                                         | Purpose                                  |
 | ----------------------------------- | ------------------------------------------------------------------- | ---------------------------------------- |
-| SQL Query                           | `glyvio_core.queryService.find<T>(sql, params?)`                    | Execute raw SQL and return typed results |
+| SQL Query                           | `glyvio_core.queryService.find<T>(sql, params?)`                    | Execute raw SQL and return typed results — **always pass caller-influenced values via `params`, never interpolated into `sql` (rule #10, non-negotiable)** |
 | Save entity (with permission check) | `glyvio_core.entityService.saveEntity(entity)`                      | Persist a single entity instance         |
 | Save batch (with permission check)  | `glyvio_core.entityService.saveList(queue)`                         | Persist multiple entities atomically     |
 | Save without permission check       | `glyvio_core.entityService.saveEntityWithoutPermission(entity)`     | Internal saves bypassing ACL             |
@@ -314,3 +338,6 @@ Before delivering the code, the agent must verify:
 - [ ] Are business errors thrown with `glyvio_core.GlyvioError`? → Replace any raw `throw new Error()`.
 - [ ] Did I add any try/catch block that was NOT explicitly requested? → Remove it.
 - [ ] Is the controller imported in `src/index.ts` or `src/behavior_listeners/index.ts`? → Add the import.
+- [ ] Does every `queryService.find` call bind caller-influenced values via `params` instead of string-interpolating them into the SQL text? → Fix any violation (rule #10, SQL injection).
+- [ ] Does any money-bearing field use native `Number`/`number` arithmetic instead of `Decimal`? → Replace it (rule #11).
+- [ ] Does the client-side call site for this controller use the `/${PLUGIN_NAME}/<controllerId>` path, not the bare `path` string? → Fix it (rule #12).

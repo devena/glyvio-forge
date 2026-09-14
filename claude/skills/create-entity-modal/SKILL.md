@@ -42,6 +42,7 @@ The executing agent MUST strictly adhere to these rules:
 2. **Modal Closing**: The modal automatically pops/closes returning the selection when tapping a cell. Ensure `popActionKey` is respected.
 3. **No any or force cast**: Do not use `any` or force cast to `any` to resolve type errors. Find another way to solve the problem.
 4. **`events()` — EventReturn rule**: Every new `action.key` handler added to `events()` **must** return `'STATE_UPDATE'` when it mutates state properties directly. Use `'STATE_FREEZED'` only for navigation actions (`pushPage`, `pushModal`, `popModal`). Never return `undefined` from a newly added key — that is a silent no-op.
+5. **No favorite-star button by default**: `SimpleEntityModal` overrides `getFavoriteButtonEnabled()` to return `false`, so it does not get the automatic "favorite this screen" star button that `CoreView` injects into `appBarDesign.favoriteButton` for most views — an entity lookup/selection popup isn't a top-level screen worth favoriting. This is already handled by the base class; there is nothing to configure. Only override `getFavoriteButtonEnabled(): boolean { return true; }` if you have a specific reason to make this particular entity modal individually favoritable (uncommon).
 
 ---
 

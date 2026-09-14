@@ -64,6 +64,21 @@ The executing agent MUST strictly adhere to these rules:
    - `$D{...}` → **DateTime only**. NEVER use for Decimal or numeric fields.
    - `$N{...}` → Decimal/Number (counts, amounts, any `Decimal` type).
    - `$T{...}` → Translation/i18n key.
+7. **`TableLayoutColumnDesign`/`TableLayoutCellDesign` have NO `visible` property (NON-NEGOTIABLE — confirmed, not a typing oversight)**: unlike `RowLayoutFieldDesign`/`ColumnLayoutFieldDesign`/`FormLayoutFieldDesign`, which do expose `visible`, the table-specific column/cell classes don't. A user-toggleable "show/hide this column" feature therefore **cannot** be built by conditionally setting `.visible = false` on a column or cell — that property doesn't exist there, so TypeScript itself will already reject it if you try.
+   - **The trap this leads to**: varying the *length* of `design.columns` (or a row's `cells` array in `getDesignForRow`) reactively based on `state.filtersSidebar` (as opposed to `state.routeParams`, which only changes on a full page remount) breaks the table widget with a column-count-mismatch error — the header row and the data rows must always have the same number of entries, every render.
+   - **The safe pattern**: keep the `columns`/`cells` array length **constant** across every render. To hide a column's content based on a sidebar filter, keep the column slot present but swap its header/cell `child` to a blank placeholder (e.g. an empty `StringTextDesign`) when the field should be hidden, instead of removing the array entry:
+     ```typescript
+     const showEstimate = state.filtersSidebar?.columnFields?.includes('ESTIMATE') ?? true;
+     new glyvio_core.TableLayoutColumnDesign({
+       columnName: 'estimate',
+       width: showEstimate ? 120 : 0,
+       key: 'estimate.column',
+       child: showEstimate
+         ? new glyvio_core.StringTextDesign({ value: 'Estimate' })
+         : new glyvio_core.StringTextDesign({ value: '' }),
+     }),
+     ```
+     and mirror the same ternary in the matching cell inside `getDesignForRow`. Pair a `width: 0` with the blanked content to also collapse the visual space.
 
 ---
 
@@ -106,6 +121,76 @@ glyvio_core.FullMenuPage.fullMenuGroupAdd({
   ],
 });
 ```
+
+---
+
+## 🧩 Optional: Full-Width Stretch & Row Grouping
+
+Two `SimpleTablePageDesign` fields are easy to miss because they aren't part of the
+base blueprint below — reach for them only when the request actually needs them.
+
+- **`design.stretch?: boolean`** — when `true`, the table always fills 100% of the
+  available width instead of allowing horizontal scroll; columns shrink/expand to
+  fit. Set it once in `getDesign`: `design.stretch = true;`.
+
+- **`design.groups?: TableLayoutGroupDesign[]` / `design.groupHeight?: number | string`**
+  — renders a header row above each cluster of rows sharing the same
+  `TableLayoutRowDesign.groupName`. Unlike the nestable `TableLayoutDesign` (which can
+  derive `groups` automatically from `interopDesign.groupDesign`), `SimpleTablePage` has
+  no such auto-derivation — you populate it yourself with three cooperating pieces:
+  1. Add a third generic parameter (a `GS extends SimpleTablePageGroupState`) to the
+     class, defining what one group aggregate looks like.
+  2. Override `refreshGroupsState(state)` to compute the dataset-wide aggregates
+     (independent of pagination — every row matching the current filters, not just the
+     loaded page). Returning `[]` (the default) disables grouping entirely.
+  3. Override `getDesignForGroup(state, groupState)` to turn each aggregate into a
+     `TableLayoutGroupDesign`, and set `groupName` on matching rows in `getDesignForRow`.
+
+  ```typescript
+  export interface <EntityName>TableGroupState extends glyvio_core.SimpleTablePageGroupState {
+    status?: glyvio_entity.<StatusEntity>;
+  }
+
+  export class <EntityName>TablePage extends glyvio_core.SimpleTablePage<
+    <EntityName>TablePageState,
+    glyvio_entity.<EntityName>,
+    <EntityName>TableGroupState
+  > {
+    // ...
+
+    getDesign(state: <EntityName>TablePageState, design: glyvio_core.SimpleTablePageDesign): void {
+      // ...
+      design.groupHeight = 36;
+    }
+
+    async refreshGroupsState(state: <EntityName>TablePageState): Promise<<EntityName>TableGroupState[]> {
+      const groups = await glyvio_core.QueryBuilder.fromEntity<glyvio_entity.<StatusEntity>>(
+        glyvio_structure.AllEntities.<statusEntityCamelCase>,
+      ).findAll();
+      return groups.map((s) => ({ key: s.id!, status: glyvio_entity.<StatusEntity>.fromJson(s)! }));
+    }
+
+    getDesignForGroup(
+      state: <EntityName>TablePageState,
+      groupState: <EntityName>TableGroupState,
+    ): glyvio_core.TableLayoutGroupDesign {
+      return new glyvio_core.TableLayoutGroupDesign({
+        child: new glyvio_core.StringTextDesign({ value: '$S{stateGroup.status.name}' }),
+      });
+    }
+
+    getDesignForRow(state: <EntityName>TablePageState, item: glyvio_entity.<EntityName>): glyvio_core.TableLayoutRowDesign {
+      return new glyvio_core.TableLayoutRowDesign({
+        groupName: item.<statusFieldCamelCase>Id, // must match a group's key
+        cells: [/* ... */],
+      });
+    }
+  }
+  ```
+
+  The returned `TableLayoutGroupDesign` (and its `child` tree) is interpolated against
+  `{ stateGroup: groupState, state }`, so `$S{stateGroup.xxx}` reaches any field on your
+  `GS` entry.
 
 ---
 
