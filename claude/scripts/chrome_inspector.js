@@ -10,16 +10,22 @@ if (!sidebarName) {
   process.exit(1);
 }
 
-const targetFileDir = path.resolve(__dirname, '../.agents/temp');
+const targetFileDir = path.resolve(process.cwd(), '.agents/temp');
+if (!fs.existsSync(targetFileDir)) {
+  fs.mkdirSync(targetFileDir, { recursive: true });
+}
 const targetFilePath = path.join(targetFileDir, `${sidebarName}_design.json`);
 
 // Read package name from package.json
-const packageJsonPath = path.resolve(__dirname, '../package.json');
-const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-const projectName = packageJson.name;
+let projectName = 'unknown';
+const packageJsonPath = path.resolve(process.cwd(), 'package.json');
+if (fs.existsSync(packageJsonPath)) {
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  projectName = packageJson.name;
+}
 
 async function run() {
-  const distDir = path.resolve(__dirname, '../plugin/app/dist');
+  const distDir = path.resolve(process.cwd(), 'plugin/app/dist');
   console.log(`Starting httpster server on port 9998, serving: ${distDir}...`);
 
   const httpster = spawn('npx', ['httpster', '-p', '9998', '-d', distDir, '-c'], {

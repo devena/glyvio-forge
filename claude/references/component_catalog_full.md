@@ -418,6 +418,8 @@ controle.
 | `SimpleBatchCartDesign`           | Carrinho de operação em lote                            | Itens para ação em lote.       | —                    |
 | `CartDesign` / `NativeCartDesign` | Base de carrinho                                        | Base — prefira concretas.      | —                    |
 
+> ⚠️ **`SimpleCartDesign`/`SimpleBatchCartDesign` — `titleOpened` e `subtitleOpened` são `string`, não objetos de design.** As classes Dart correspondentes no `glyvio_app` declaram esses campos como `dynamic`, o que já induziu implementações a atribuir um design (ex.: `SimpleTextDesign`) ou outro valor não-string. O contrato válido é o do `@types`: atribua uma `string` real, com interpolação `$S{...}` quando o título for dinâmico. Regra geral: o tipo que vale é sempre o declarado em `@types`/`dist/bundle.d.ts`, nunca a frouxidão vista no renderizador Flutter.
+
 ---
 
 ## Temas de cor (`colorTheme`)
@@ -808,7 +810,7 @@ cada componente deveria ter uma imagem. Sugestão de fluxo para gerá-las:
 
 1. Renderizar cada design isolado num storybook/página de exemplo do app.
 2. Capturar screenshot por componente em
-   `docs/claude/component_images/<classe>.png`.
+   `docs/component_images/<classe>.png`.
 3. Substituir os marcadores textuais deste catálogo por
    `![ClassName](component_images/ClassName.png)`.
 

@@ -67,7 +67,7 @@ Decomposition order:
 
 ### Phase 3 — Produce the visual spec (gate — must be approved)
 
-Write the decomposition to `.agents/temp<ScreenName>_visual_spec.json` as a component tree. Each node:
+Write the decomposition to `.agents/temp/<ScreenName>_visual_spec.json` as a component tree. Each node:
 
 ```jsonc
 {
@@ -93,7 +93,7 @@ Rules for the spec:
 - Map colors to `colorTheme`, text sizes to `style` (Material scale), spacing to `padding`,
   alignment to `mainAlignment`/`crossAlignment`.
 
-Then write a short human summary to `.agents/temp<ScreenName>_visual_analysis.md`:
+Then write a short human summary to `.agents/temp/<ScreenName>_visual_analysis.md`:
 
 - chosen page type + skill,
 - the per-element mapping table (visual element → component → rationale),

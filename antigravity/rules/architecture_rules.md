@@ -1,6 +1,6 @@
 # Regras Arquiteturais e Gotchas Críticos do Glyvio
 
-Este documento reúne as diretrizes não-negociáveis e os gotchas de runtime confirmados na arquitetura Glyvio (camadas `app`, `server` e `environment`). Devem ser seguidas rigorosamente por desenvolvedores e agentes de IA (`agy`).
+Este documento reúne as diretrizes não-negociáveis e os gotchas de runtime confirmados na arquitetura Glyvio (camadas `app`, `server` e `environment`). Devem ser seguidas rigorosamente por desenvolvedores e agentes de IA.
 
 ---
 
@@ -64,3 +64,10 @@ Estes comportamentos não aparecem no `.d.ts` e foram confirmados em execução 
    - Nomes de ícones (`SimpleIconDesign.name`) são strings livres sem checagem de tipos em tempo de compilação. Confirme visualmente via captura de tela (`test-plugin-browser`).
 4. **Colisão de Rotas em `navigate()`:**
    - Se uma Page e um Modal compartilharem o mesmo path (ex.: `/sale-table`), use `navigate({ nameSpace, nameObject })` para desambiguar e garantir que a view pretendida seja aberta.
+5. **`dynamic` no Dart não afrouxa o tipo no TypeScript (confirmado em campo):**
+   - O contrato que você escreve é o declarado em `@types` / `dist/bundle.d.ts` (`glyvio-plugin-core`), **nunca** o tipo que aparece na classe Dart correspondente do `glyvio_app`. Um campo `dynamic` no renderizador Flutter continua sendo `string` (ou o que `@types` disser) do lado TS.
+   - **Caso concreto já ocorrido:** `SimpleCartDesign.titleOpened`/`subtitleOpened` e `SimpleBatchCartDesign.titleOpened`/`subtitleOpened` são `dynamic` no Dart e **`string` puro** no `@types`. Atribua sempre uma `string` real — com interpolação (`$S{...}`) se precisar de valor dinâmico — nunca um objeto de design, um número ou `null` contando com a frouxidão do Dart.
+     - ✅ `design.titleOpened = 'Carrinho de Compras';`
+     - ✅ `design.titleOpened = $S{state.cartLabel};`
+     - ❌ `design.titleOpened = new glyvio_core.SimpleTextDesign({ ... });`
+   - Vale ao consultar os dois repositórios em paralelo: `glyvio-plugin-core` é o contrato que você programa; `glyvio_app` é só o renderizador. Frouxidão em um não implica frouxidão no outro.
