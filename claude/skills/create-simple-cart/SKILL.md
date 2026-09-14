@@ -52,6 +52,7 @@ The executing agent MUST strictly adhere to these rules:
       ```
       This must run in **every** code path that calls `entityService.saveList`/`saveEntity` for the host entity — not just one of several save actions.
    - See the full "Attachments Section (optional)" recipe below for the matching `initState` seed and `getDesign` embedding — all four pieces plus the seed/embed must be present together for attachments to work end-to-end.
+5. **Tabbed sections (`showSectionsInTabs`) — optional, use only for multi-section carts**: `SimpleCartDesign.showSectionsInTabs?: boolean | string` switches `sectionsDesign` from one continuous scroll into a tabbed layout. Every section in `sectionsDesign` needs a `key`. By default each section becomes its own tab, titled from that section's own `appBarDesign`. Use `design.tabsDesign?: SimpleCartTabGroupDesign[]` (`{ title: string; sectionKeys: string[] }`) to group multiple section keys under one custom-titled tab instead. Use `design.pinnedSectionKeysTop?: string[]` / `design.pinnedSectionKeysBottom?: string[]` to keep specific section keys (e.g. cart totals/actions) rendered above/below the tabs on every tab, instead of living inside one — a key can be pinned Top or Bottom, never both, and a pinned key must not also appear in `tabsDesign`. Only turn this on when the cart genuinely has multiple distinct sections worth separating — a single-section cart should leave `showSectionsInTabs` unset.
 
 ---
 
@@ -181,6 +182,8 @@ export class <CartName>Cart extends glyvio_core.SimpleCart<<CartName>CartState> 
    */
   getDesign(state: <CartName>CartState, design: glyvio_core.SimpleCartDesign): void {
     design.titleOpened = '<CartName> Cart';
+    // 💡 Optional: discreet subtitle rendered below titleOpened in the cart's fixed top header.
+    // design.subtitleOpened = 'Manage your selected items';
     design.icon = 'fa_shoppingCart';
     design.sectionsDesign = [
       // Sections for rendering cart items

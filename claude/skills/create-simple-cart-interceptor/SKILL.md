@@ -222,3 +222,12 @@ export class <InterceptorClassName> extends <TargetBaseInterceptorClass> {
   }
 }
 ```
+
+---
+
+## ⚠️ Known Limitations
+
+- **`SimpleCartListener<S>` has no generic `events()`/custom-action hook.** The available hooks are exactly `getDesign`, `onAddItemToCart`, `onRemoveItemFromCart`, `getStatusItemOfCart`, and `populateJeannieContext` — there is no `onEvent(state, key, data)` equivalent to intercept an arbitrary new `action.key` from outside the cart's own file. This is different from some other interceptor families in this codebase (e.g. richer cart-like interceptors that do expose a generic `onEvent` hook) — don't assume every cart family has one just because a similar one does.
+  - **Practical effect**: if the task is "add a brand-new button/action to an existing `SimpleCart` from another plugin" (not just react to items being added/removed, or tweak the design), a `SimpleCartListener` subclass **cannot** do it — there is no hook that receives a new `action.key` and lets you handle it. `getDesign` can add a button to the UI, but nothing in this interceptor can wire up what happens when it's tapped, since the cart's own `events()` method is what actually resolves an `action.key`, and interceptors don't get a say in it.
+  - **What actually works**: either (a) own the cart's file directly and add the handler in its own `events()`, or (b) if the goal is bulk-adding items from elsewhere, use the existing `onAddItemToCart`/`getStatusItemOfCart`/cart-button protocol (`CartButtonDesign`) instead of inventing a new action key — most "trigger something from an interceptor" needs can be reshaped into one of these instead of requiring a new hook.
+  - Before promising a new custom action on an existing cart purely via an interceptor, check whether the target cart's base interceptor class genuinely exposes a generic event hook (search its `.d.ts` for `onEvent`) — if it's `SimpleCartListener`, it doesn't, and the task needs to be redirected to the cart's own file or reshaped as above.

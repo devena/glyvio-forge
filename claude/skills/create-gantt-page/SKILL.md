@@ -452,7 +452,7 @@ new glyvio_core.SimpleGanttBarDependencyDesign({
 
 ---
 
-## ⚠️ Known Gaps (as of this skill's authoring)
+## ⚠️ Known Gaps
 
-- No `create-gantt-page-interceptor` counterpart exists yet — to customize an *existing* Gantt page from another plugin, extend `glyvio_core.SimpleGanttPageInterceptor<S, E, GS>` directly (hooks: `getDesign`, `getDesignForGroup`, `getDesignForBar`, `populateQueryBuilder`, `populateMainFilter`, `populateIntervalFilter`, `onBarChange`, `populateJeannieContext`) and register it the same way any other page interceptor is registered. If this pattern gets used often, factor a dedicated skill out of this note.
+- To customize an *existing* Gantt page from another plugin, use the `create-gantt-page-interceptor` skill (extends `glyvio_core.SimpleGanttPageInterceptor<S, E, GS>`; hooks: `getDesign`, `getDesignForGroup`, `getDesignForBar`, `populateQueryBuilder`, `populateMainFilter`, `populateIntervalFilter`, `onBarChange`, `populateJeannieContext`).
 - No automatic critical-path/scheduling calculation — this page type only displays bars and persists manual drag/resize. Any "does rescheduling A also push back B" logic is on the consuming plugin.

@@ -1,6 +1,6 @@
 ---
 name: glyvio-app-chart
-description: Use for creating or editing charts (data visualizations) in the app layer. Invoke when building or customizing cartesian (line/bar/column/area/spline + stacked), circular (pie/doughnut), funnel, pyramid, or radial-bar charts using the `glyvio_core` chart design classes. Knows the full chart design API (sections, axes, palette, legend, tooltips, data labels, markers) and how to feed it from raw query rows via the `generateSections*FromRawData` helpers. Designed to be portable: it can build charts in any project that exposes only this agent and the project's `dist/bundle.d.ts` (`@types`).
+description: Use for creating or editing charts (data visualizations) in the app layer. Invoke when building or customizing cartesian (line/bar/column/area/spline/scatter/bubble/step/waterfall/range + stacked/stacked-100), circular (pie/doughnut), funnel, pyramid, radial-bar, gauge, heatmap, or radar/spider charts using the `glyvio_core` chart design classes. Knows the full chart design API (sections, axes, palette, legend, tooltips, data labels, markers) and how to feed it from raw query rows via the `generateSections*FromRawData` helpers. Designed to be portable: it can build charts in any project that exposes only this agent and the project's `dist/bundle.d.ts` (`@types`).
 tools: Read, Grep, Glob, Edit, Write, Bash, Skill, TodoWrite
 model: opus
 ---
@@ -63,15 +63,20 @@ Only keep multiple charts in the **same** field when they are genuinely one comp
 
 ## 🎛️ Chart Type Decision Guide
 
-| You want to show…                                       | Use                                                                                                 | Section field                      |
-| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| Trends over time / X→Y series, multiple series, stacked | **`CartesianChartDesign`** (`LINEAR`, `SPLINE`, `AREA`, `SPAREA`, `BAR`, `COLUMN`, and `STACKED_*`) | `sections: [...]` (one per series) |
-| Part-to-whole, share of total                           | **`CircularChartDesign`** (`PIE`, `DOUGHUNT`)                                                       | `sections: [...]` (usually one)    |
-| Stages of a process that shrink (sales pipeline)        | **`FunnelChartDesign`**                                                                             | `section: {...}` (single)          |
-| Ranked proportions as a pyramid                         | **`PyramidChartDesign`**                                                                            | `section: {...}` (single)          |
-| Progress toward a max as concentric bars (gauges)       | **`RadialChartDesign`**                                                                             | `sections: [...]`                  |
+| You want to show…                                                                                | Use                                                                                                                            | Section field                       |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Trends over time / X→Y series, multiple series, scatter/bubble, ranges, waterfall, stacked      | **`CartesianChartDesign`** (`LINEAR`, `SPLINE`, `AREA`, `SPAREA`, `BAR`, `COLUMN`, `SCATTER`, `BUBBLE`, `STEP_LINE`, `STEP_AREA`, `WATERFALL`, `RANGE_*`, `STACKED_*`, `STACKED_100_*`) | `sections: [...]` (one per series) |
+| Part-to-whole, share of total                                                                    | **`CircularChartDesign`** (`PIE`, `DOUGHNUT` / `DOUGHUNT`)                                                                     | `sections: [...]` (usually one)     |
+| Stages of a process that shrink (sales pipeline)                                                 | **`FunnelChartDesign`**                                                                                                        | `section: {...}` (single)           |
+| Ranked proportions as a pyramid                                                                  | **`PyramidChartDesign`**                                                                                                       | `section: {...}` (single)           |
+| Progress toward a max as concentric bars (compare each category's share of a max)                | **`RadialChartDesign`**                                                                                                        | `sections: [...]`                   |
+| A single number against its acceptable scale (SLA, goal attainment, occupancy dial)              | **`GaugeChartDesign`**                                                                                                         | `ranges: [...]` (no series)         |
+| A matrix of two categories by intensity (weekday × hour activity, cohort retention, correlation) | **`HeatmapChartDesign`**                                                                                                       | `section: {...}` (single)           |
+| Compare series across 3+ categorical axes at once (scorecard, capability comparison)             | **`RadarChartDesign`**                                                                                                         | `sections: [...]`                   |
 
-> ⚠️ The doughnut enum value is spelled **`'DOUGHUNT'`** (framework spelling) — use it verbatim.
+> ℹ️ Both **`'DOUGHNUT'`** and legacy `'DOUGHUNT'` are accepted for doughnut charts. Prefer `'DOUGHNUT'`.
+>
+> ⚠️ `RadialChartDesign` and `GaugeChartDesign` are both circular dials but answer different questions: radial answers "how much does each category have" (one bar per category, via `sections`); gauge answers "where does this one number fall inside what is acceptable" (one needle/arc, via `value` + `ranges`, no series at all). Don't reach for a single-section `RadialChartDesign` when the real ask is an SLA/goal dial — use `GaugeChartDesign`.
 
 ---
 
@@ -81,12 +86,14 @@ All classes live under `glyvio_core.*`, with `runtimePackage = 'ChartDesign'` an
 
 ### Shared base fields — `ChartDesign` (inherited by ALL chart types)
 
+> ⚠️ `key` comes from the underlying `WidgetDesign`, and `title`/`padding`/`xType`/`yType` are re-declared on **every concrete subclass** rather than truly inherited (each subclass exposes its own `xType`/`yType` alias, e.g. `CartesianChartDataType`) — in practice you set them the same way on any chart's constructor. **`GaugeChartDesign` is the one exception: it has no `xType`/`yType` at all** (it plots a bare `value`, not X/Y series) — don't pass them there.
+
 ```ts
 key?: string;                                  // stable identifier — always set it
-title?: string;                                // chart title text
+title?: string;                                // chart title text (all types except none — see note above)
 padding?: string;                              // 'ALL' | 'H V' | 'L T R B', e.g. '8' | '8 8' | '8 8 8 8'
-xType?: ChartDataType;                         // how X values are parsed (see below)
-yType?: ChartDataType;                         // how Y values are parsed
+xType?: ChartDataType;                         // how X values are parsed (see below) — absent on GaugeChartDesign
+yType?: ChartDataType;                         // how Y values are parsed — absent on GaugeChartDesign
 palette?: string[];                            // series colors, hex, e.g. ['#2196F3', '#4CAF50']
 backgroundColor?: string;                      // hex, e.g. '#FFFFFF'
 borderColor?: string;                          // hex
@@ -101,7 +108,10 @@ legendTextStyle?: ChartTextStyle;
 showTooltip?: boolean;                         // default true
 showDataLabel?: boolean;                       // default true (cartesian defaults false at chart level)
 onTapAction?: glyvio_core.Action;
+minimal?: boolean;                             // sparkline mode: draws only the plot, nothing else
 ```
+
+> ℹ️ **`minimal` (sparkline mode)**: use it when the chart lives inside a table cell, a card, or a KPI where the surrounding context (title, axes, legend, data labels, padding) is already written next to it and would eat the little room there is without adding anything new. Title, legend, data labels and markers default to off in this mode but can still be turned on explicitly — e.g. a single marker dot on the last value of a sparkline line is a common, useful exception.
 
 `ChartDataType = 'BOOLEAN' | 'DATE' | 'DECIMAL' | 'INTEGER' | 'TEXT' | 'TIMESTAMP'`
 (each chart exposes its own alias: `CartesianChartDataType`, `CircularChartDataType`, … — identical values).
@@ -111,7 +121,14 @@ onTapAction?: glyvio_core.Action;
 ### Shared nested types
 
 ```ts
-ChartDataPoint = { x: unknown; y: unknown; color?: string; label?: string };
+ChartDataPoint = { x: any; y: any; color?: string; label?: string; y2?: any };
+// y2: the upper value of a range series ('RANGE_COLUMN', 'RANGE_BAR', 'RANGE_AREA'),
+// where y is the lower one. Ignored by every other section type. ex: y: 18, y2: 31
+//
+// Note: x/y/y2 are typed `any` in the framework's own declaration (they accept whatever
+// xType/yType parses them as). This does NOT relax Core Constraint #4 for code you write —
+// still source these values from a declared row `interface`, never introduce a hand-written
+// `any` of your own when building the point.
 
 ChartTextStyle = { color?: string; size?: number; weight?: ChartFontWeight; italic?: boolean };
 ChartFontWeight = 'normal' | 'bold' | 'w100' | 'w300' | 'w400' | 'w500' | 'w600' | 'w700' | 'w900';
@@ -145,6 +162,7 @@ ChartAxisDesign = {
 sections?: CartesianChartSectionDesign[];   // one entry per series
 xAxis?: ChartAxisDesign;
 yAxis?: ChartAxisDesign;
+secondaryYAxis?: ChartAxisDesign;           // secondary Y axis on right side (alias yAxisSecondary)
 showMarkers?: boolean;                      // default true
 
 CartesianChartSectionDesign = {
@@ -159,12 +177,21 @@ CartesianChartSectionDesign = {
   legendIconType?: ChartLegendIconType;
   marker?: ChartMarkerDesign;
   dataLabel?: ChartDataLabelDesign;
+  useSecondaryAxis?: boolean; // bind this series to secondaryYAxis
 };
 
 CartesianChartSectionType =
-  'AREA' | 'BAR' | 'COLUMN' | 'LINEAR' | 'SPAREA' | 'SPLINE'
-  | 'STACKED_AREA' | 'STACKED_BAR' | 'STACKED_COLUMN' | 'STACKED_LINEAR';
+  'AREA' | 'BAR' | 'BUBBLE' | 'COLUMN' | 'LINEAR' | 'RANGE_AREA' | 'RANGE_BAR' | 'RANGE_COLUMN'
+  | 'SCATTER' | 'SPAREA' | 'SPLINE' | 'STEP_AREA' | 'STEP_LINE' | 'WATERFALL'
+  | 'STACKED_AREA' | 'STACKED_BAR' | 'STACKED_COLUMN' | 'STACKED_LINEAR'
+  | 'STACKED_100_AREA' | 'STACKED_100_BAR' | 'STACKED_100_COLUMN' | 'STACKED_100_LINEAR';
 ```
+
+- `SCATTER` / `BUBBLE`: unconnected points (bubble additionally sizes each point — check the `.d.ts` for the exact sizing field before relying on it).
+- `RANGE_AREA` / `RANGE_BAR` / `RANGE_COLUMN`: a band between two values per point — set both `y` (lower) and `y2` (upper) on each `ChartDataPoint`.
+- `STEP_LINE` / `STEP_AREA`: value holds constant between points instead of interpolating linearly — use for tiered/step-changing values (e.g. price tiers, inventory levels).
+- `WATERFALL`: sequential cumulative deltas (e.g. starting balance → gains/losses → ending balance).
+- `STACKED_100_*`: like `STACKED_*` but normalized so each stack always sums to 100% — use when the story is "share of the whole at each X", not the absolute stacked total.
 
 ### 2. `CircularChartDesign`
 
@@ -172,14 +199,14 @@ CartesianChartSectionType =
 sections?: CircularChartSectionDesign[];
 
 CircularChartSectionDesign = {
-  type: CircularChartSectionType;   // 'PIE' | 'DOUGHUNT'  (RADIAL also accepted)
+  type: CircularChartSectionType;   // prefer 'PIE' | 'DOUGHNUT'  (legacy 'DOUGHUNT' and 'RADIAL' also accepted — avoid 'RADIAL' here, use RadialChartDesign instead)
   label: string;
   data?: ChartDataPoint[];
   explode?: boolean;                // slices separate from center (doughnut default true, pie false)
   opacity?: number;
   dataLabel?: ChartDataLabelDesign;
 };
-CircularChartSectionType = 'DOUGHUNT' | 'PIE' | 'RADIAL';
+CircularChartSectionType = 'DOUGHNUT' | 'DOUGHUNT' | 'PIE' | 'RADIAL';
 ```
 
 ### 3. `FunnelChartDesign`
@@ -229,6 +256,78 @@ RadialChartSectionDesign = {
 RadialCornerStyle = 'BOTH_CURVE' | 'BOTH_FLAT' | 'START_CURVE' | 'END_CURVE';
 ```
 
+### 6. `GaugeChartDesign`
+
+Plots a **single number** against its scale — goal attainment, SLA, occupancy. Unlike every other chart type it has **no `sections`/`section`**: it takes a bare `value` plus colored `ranges`.
+
+```ts
+value?: number | string;   // the value the needle points at and prints at center; supports interop formulas, e.g. '{{atingimento}}'
+min?: number | string;     // start of the scale, default 0
+max?: number | string;     // end of the scale, default 100
+label?: string;            // small caption under the center value (unit/period/target); supports interop
+ranges?: GaugeRangeDesign[]; // colored bands of the arc; with none, the arc fills from min up to value instead
+valueAxis?: ChartAxisDesign; // labelFormat here formats the center number and both scale ends
+startAngle?: number;       // degrees clockwise from 3 o'clock, default 180 (puts start at 9 o'clock)
+sweepAngle?: number;       // arc coverage in degrees, default 180 (bottom-open semicircle); 270 = cockpit dial, 360 + showNeedle:false = progress ring
+thickness?: number;        // arc stroke width; scales with available space when absent
+showValue?: boolean;       // print the value at center, default true
+showTicks?: boolean;       // label scale ends + band boundary ticks, default true
+showNeedle?: boolean;      // draw the needle, default true
+
+GaugeRangeDesign = {
+  from: number;    // band start, same unit as value
+  to: number;      // band end, same unit as value
+  color?: string;  // hex; defaults to the palette color at this band's position
+  label?: string;  // band name; only NAMED bands are listed in the legend
+};
+```
+
+> The band containing the value also colors the center number, so the reading says "where" before it says "how much". The gauge's `showLegend` defaults to **off** (small widget, the center-value color already communicates the band) — set `showLegend: true` to list named ranges.
+
+### 7. `HeatmapChartDesign`
+
+Plots a matrix where **color — not position — carries the value**: every point has a column (`x`), a row (`y`), and an intensity (`value`). Use for weekday × hour activity, cohort retention, or a correlation matrix.
+
+```ts
+section?: HeatmapChartSectionDesign;  // SINGLE section, not an array
+xAxis?: ChartAxisDesign;   // the column axis
+yAxis?: ChartAxisDesign;   // the row axis
+valueAxis?: ChartAxisDesign; // the intensity scale: min/max/labelFormat — pin min/max so the color ramp means the same thing across refreshes
+colorScale?: string[];     // color ramp from lowest to highest value, hex, e.g. ['#FFFFFF', '#07D79C']; when absent, derived from the palette's first color in 3 opacity steps
+
+HeatmapChartSectionDesign = {
+  label: string;
+  data?: HeatmapChartDataPoint[];
+};
+HeatmapChartDataPoint = { x: any; y: any; value?: number; label?: string };
+```
+
+> `showDataLabel` is off by default for heatmaps — a large matrix turns into a blur of numbers and the value is one hover away. Turn it on only for a small matrix.
+
+Static helper: `HeatmapChartDesign.generateSectionFromRawData(data, xConfig: { key, label? }, yConfig: { key, label? }, valueConfig: { key, label? }): HeatmapChartSectionDesign` — a **single** section, matching the funnel/pyramid helper shape, not the array-returning cartesian/circular/radial ones.
+
+### 8. `RadarChartDesign` (spider chart)
+
+Compares series over the **same set of categorical axes**: each category becomes a spoke, each series a closed polygon. Use for a scorecard, capability comparison, or a survey across dimensions. Needs **at least 3 categories** — fewer and there is no polygon to close (empty state).
+
+```ts
+sections?: RadarChartSectionDesign[];
+xAxis?: ChartAxisDesign;   // the categorical axis (the spokes)
+yAxis?: ChartAxisDesign;   // the value axis (the rings) — set min/max so two radars stay comparable; left alone, the outer ring is just the largest value in the data
+showMarkers?: boolean;     // markers on the vertices, default true
+
+RadarChartSectionDesign = {
+  type?: RadarChartSectionType; // 'LINE' (outline only) or 'AREA' (filled); every series shares ONE mark — the first section's type applies to the whole chart
+  label: string;
+  data?: ChartDataPoint[];
+  color?: string;
+  legendIconType?: ChartLegendIconType;
+};
+RadarChartSectionType = 'AREA' | 'LINE';
+```
+
+Static helper: `RadarChartDesign.generateSectionsFromRawData(data, xConfig: { key, label? }, yConfig: { key, label? }, sectionConfig?: { key, type?: RadarChartSectionType, label?, labelKey? }): RadarChartSectionDesign[]` — same array-of-sections shape as cartesian/circular.
+
 ### Static helpers — build sections from raw query rows
 
 Prefer these over hand-building `data` arrays when you have flat result rows.
@@ -248,10 +347,21 @@ CartesianChartDesign.generateSectionsFromRawData(
   },
 ): CartesianChartSectionDesign[];
 
+// Cartesian — build sections from wide-format rows (each metric in its own column):
+CartesianChartDesign.generateSectionsFromColumns(
+  data,                                   // any[] of rows (e.g. [{ month: 'Jan', revenue: 100, target: 90 }])
+  { key: 'month' },                       // xConfig
+  [                                       // columnConfigs (one per series):
+    { key: 'revenue', label: 'Faturamento', type: 'COLUMN', color: '#07D79C' },
+    { key: 'target', label: 'Meta', type: 'SPLINE', color: '#EB933B', useSecondaryAxis: true },
+  ],
+): CartesianChartSectionDesign[];
+
 CircularChartDesign.generateSectionsFromRawData(/* same shape; section type defaults to 'PIE' */);
 RadialChartDesign.generateSectionsFromRawData(/* same shape; no type on radial sections */);
+RadarChartDesign.generateSectionsFromRawData(/* same shape; sectionConfig has no typeKey, only type */);
 
-// Funnel / Pyramid — a SINGLE section:
+// Funnel / Pyramid / Heatmap — a SINGLE section (note: no "s" in the method name):
 FunnelChartDesign.generateSectionFromRawData(
   data, { key: 'stage' }, { key: 'count', incremented?: boolean }, // incremented = running cumulative sum
 ): FunnelChartSectionDesign;
@@ -259,6 +369,13 @@ FunnelChartDesign.generateSectionFromRawData(
 PyramidChartDesign.generateSectionFromRawData(
   data, { key: 'level' }, { key: 'amount' },
 ): PyramidChartSectionDesign;
+
+HeatmapChartDesign.generateSectionFromRawData(
+  data, { key: 'weekday' }, { key: 'hour' }, { key: 'count' }, // xConfig, yConfig, valueConfig
+): HeatmapChartSectionDesign;
+
+// GaugeChartDesign has no generate*FromRawData helper — it has no sections to build;
+// set `value`/`min`/`max`/`ranges` directly (see the reference above).
 ```
 
 > Confirm the exact helper signatures in the project's `.d.ts` before relying on optional params like `typeKey` / `incremented`.
@@ -281,13 +398,16 @@ DashboardLayoutDesign = {
 // One block per chart — the unit you split into "whenever possible".
 DashboardLayoutFieldDesign = {
   key?: string;                     // stable per-chart key
-  rows?: number | string;          // grid row span → drives the chart's height
+  rows?: number | string;          // grid row span → drives the chart's height (ignored when autoHeight is set)
   columns?: number | string;       // grid column span → drives the chart's width
   child?: WidgetDesign;            // ← the chart goes here (single widget)
   padding?: string;
   visible?: boolean | string;      // boolean or dynamic expression, e.g. '{{state.show}}'
+  autoHeight?: boolean | string;   // when true, tile height follows its own content instead of a fixed row span — `rows` is then ignored
 };
 ```
+
+> `autoHeight` is an alternative to a fixed `rows` span for cases where the chart's natural content height should drive the tile (e.g. a `minimal`/sparkline chart, or a chart paired with a caption in one composite field). For a normal standalone chart, prefer an explicit `rows`/`columns` span — it stays the cleanest, most predictable way to size a chart that "expands to fill".
 
 ---
 
@@ -387,7 +507,7 @@ const statusChart = new glyvio_core.CircularChartDesign({
   showDataLabel: true,
   sections: [
     {
-      type: 'DOUGHUNT',
+      type: 'DOUGHNUT', // prefer 'DOUGHNUT' over the legacy 'DOUGHUNT' spelling (both are accepted)
       label: 'Status',
       explode: false,
       data: [
@@ -425,12 +545,12 @@ const funnel = new glyvio_core.FunnelChartDesign({
 });
 ```
 
-### D. Radial gauge
+### D. Radial bar comparison (multiple categories, each a share of a max)
 
 ```ts
 const radial = new glyvio_core.RadialChartDesign({
-  key: 'goal_progress_chart',
-  title: 'Goal Progress',
+  key: 'team_progress_chart',
+  title: 'Team Progress',
   xType: 'TEXT',
   yType: 'DECIMAL',
   sections: [
@@ -440,15 +560,84 @@ const radial = new glyvio_core.RadialChartDesign({
       gap: '15%',
       cornerStyle: 'BOTH_CURVE',
       data: [
-        { x: 'Sales', y: 78, color: '#2563eb' },
-        { x: 'Support', y: 54, color: '#0891b2' },
+        { x: 'Sales', y: 78, color: '#07D79C' },
+        { x: 'Support', y: 54, color: '#2299EA' },
       ],
     },
   ],
 });
 ```
 
-### E. Dashboard with one chart per `DashboardLayoutFieldDesign` (preferred layout)
+### E. Gauge (single value against its acceptable scale)
+
+```ts
+const gauge = new glyvio_core.GaugeChartDesign({
+  key: 'sla_gauge_chart',
+  title: 'Atingimento da Meta',
+  value: '{{atingimento}}', // interop formula pulling a single number from state
+  min: 0,
+  max: 100,
+  label: '% da meta',
+  ranges: [
+    { from: 0, to: 50, color: '#E8605B', label: 'Crítico' },
+    { from: 50, to: 80, color: '#DCBC33', label: 'Atenção' },
+    { from: 80, to: 100, color: '#07D79C', label: 'Bom' },
+  ],
+});
+```
+
+### F. Heatmap (weekday × hour intensity matrix)
+
+```ts
+interface AttendanceRow {
+  weekday: string;
+  hour: number;
+  count: number;
+}
+
+const rows: AttendanceRow[] = /* from query / state */ [];
+
+const heatmap = new glyvio_core.HeatmapChartDesign({
+  key: 'attendance_heatmap_chart',
+  title: 'Atendimentos',
+  xType: 'TEXT',
+  yType: 'INTEGER',
+  colorScale: ['#FFFFFF', '#07D79C'],
+  section: glyvio_core.HeatmapChartDesign.generateSectionFromRawData(
+    rows,
+    { key: 'weekday' },
+    { key: 'hour' },
+    { key: 'count' },
+  ),
+});
+```
+
+### G. Radar (scorecard across several dimensions)
+
+```ts
+const radar = new glyvio_core.RadarChartDesign({
+  key: 'vendor_scorecard_chart',
+  title: 'Scorecard',
+  xType: 'TEXT',
+  yType: 'INTEGER',
+  yAxis: { min: 0, max: 10 },
+  sections: [
+    {
+      type: 'AREA',
+      label: 'Atual',
+      color: '#07D79C',
+      data: [
+        { x: 'Preço', y: 8 },
+        { x: 'Suporte', y: 6 },
+        { x: 'Prazo', y: 9 },
+        { x: 'Qualidade', y: 7 },
+      ],
+    },
+  ],
+});
+```
+
+### H. Dashboard with one chart per `DashboardLayoutFieldDesign` (preferred layout)
 
 Each chart is its own grid item — the field's `rows`/`columns` span gives it size; no wrapping box needed.
 
@@ -518,8 +707,8 @@ Once the chart is built and wired, run the same disciplined validation the coord
    - "Did I use `any` or a force-cast anywhere?" → refactor to a declared row `interface` / `unknown` + type guards.
    - "Did I `import` any external library or `import` a Glyvio global instead of `new glyvio_core.*`?" → remove; use the global namespace.
    - "Is **every** chart class, section type, and field I used actually present in the project's `dist/bundle.d.ts`?" → if any is absent, the project is on a different version — trust the `.d.ts`, fix the code, and tell the user about the mismatch.
-   - "Did I use the correct **`sections` (array)** vs **`section` (single)** shape for the chosen chart type (funnel/pyramid = `section`; cartesian/circular/radial = `sections`)?" → fix any mismatch.
-   - "Are all enum/string literals spelled **exactly** as the reference (e.g. doughnut = `'DOUGHUNT'`, section types, `cornerStyle`, legend/marker enums)?" → correct any drift.
+   - "Did I use the correct section shape for the chosen chart type — **`sections` (array)** for cartesian/circular/radial/radar, **`section` (single)** for funnel/pyramid/heatmap, or **no sections at all** (`value` + `ranges`) for gauge?" → fix any mismatch.
+   - "Are all enum/string literals spelled **exactly** as the reference (e.g. doughnut prefers `'DOUGHNUT'` — legacy `'DOUGHUNT'` also accepted —, section types, `cornerStyle`, legend/marker enums)?" → correct any drift.
    - "Do `xType` / `yType` match the real data (`TEXT` for categories, `DATE`/`TIMESTAMP` for time, `INTEGER`/`DECIMAL` for numeric)?" → fix mismatches that would mis-parse values.
    - "Did I hand-roll grouping/aggregation that a `generateSections*FromRawData` helper already does?" → replace with the helper where it removes hand-rolled logic.
 2. **Host Wiring Check**: confirm the chart has a **stable `key`**; that it is mounted in a real host via the field's **`child`** property (cell `getDesign` return, `DashboardLayoutFieldDesign.child` / other layout field `child`, or interceptor `findWidgetByKey(key)` override — **never** custom recursion, hardcoded indices, or a non-existent `design` property); that the host provides an explicit **height/size constraint** (charts expand to fill — a `DashboardLayoutFieldDesign` `rows`/`columns` span is the cleanest source); and that the host is reachable from a rendered view. When more than one chart is involved, confirm they are **split into separate `DashboardLayoutFieldDesign` items** rather than crammed into one cell, unless they form one composite unit. A chart is a `WidgetDesign` — verify it is placed in a **widget** slot, **never** in a slot expressly typed as `SectionDesign` / `SectionDesign[]`, and never wrap it in a `SectionDesign` to host it.
@@ -532,7 +721,7 @@ Once the chart is built and wired, run the same disciplined validation the coord
 ## ✅ Self-Correction Checklist
 
 - [ ] Chart class + section fields all confirmed present in the project's `.d.ts`.
-- [ ] Correct `sections` (array) vs `section` (single) for the chosen type.
+- [ ] Correct section shape for the chosen type: `sections` (array) for cartesian/circular/radial/radar, `section` (single) for funnel/pyramid/heatmap, or `value`+`ranges` (no sections) for gauge.
 - [ ] `xType` / `yType` match the real data (`TEXT` for categories, `DATE`/`TIMESTAMP` for time, numeric for values).
 - [ ] Row type is a declared `interface`; zero `any`; no force-casts.
 - [ ] No external libs; no `import` of Glyvio globals (`new glyvio_core.*`).
@@ -540,7 +729,7 @@ Once the chart is built and wired, run the same disciplined validation the coord
 - [ ] Chart is mounted via the field's **`child`** property (not a non-existent `design` property).
 - [ ] Multiple charts are split into **one `DashboardLayoutFieldDesign` per chart** (separate items whenever possible), unless they are one composite unit.
 - [ ] Chart sits in a **widget** slot — never in a `SectionDesign` slot, and never wrapped in a `SectionDesign`.
-- [ ] Doughnut spelled `'DOUGHUNT'`; enum/string literals match the reference exactly.
+- [ ] Doughnut spelled `'DOUGHNUT'` (preferred; legacy `'DOUGHUNT'` also accepted); enum/string literals match the reference exactly.
 - [ ] Used `generateSections*FromRawData` where it removes hand-rolled grouping.
 - [ ] `run_helper.sh` executed **iff** `manifest.json` was modified.
 - [ ] Temporary scaffolding removed; clean `pretty` + `lint` + `build`; charts render with sample data.

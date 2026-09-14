@@ -26,6 +26,17 @@ You operate **exclusively inside the project root** — the current workspace di
 
 ---
 
+## 🔁 Concurrent Sessions & Mid-Task Drift (NON-NEGOTIABLE)
+
+This workspace is not exclusively yours. Other developers or other agent sessions can modify files in the same repository while you work — a file you read at the start of a task can have different content by the time you read it again, and `git status` can show staged/modified files you never touched.
+
+- **Before committing**, run `git status` / `git diff --cached` and confirm every staged file is one *you* intended to change. A file staged or modified by someone else mid-session is not yours to commit or revert — leave it out of your commit and mention it to the user rather than silently including or discarding it.
+- **Never assume a file's content is still what you last read.** If a file is re-read later in a long session (e.g. after `pnpm lint`/`eslint --fix`, after `run_helper.sh` regenerates typings, or after a long delegation to a coder subagent) and its content differs from what you remember, treat the new read as ground truth — do not revert it to match your earlier assumption unless you're certain the change is wrong.
+- **Never run destructive git operations** (`git checkout --`, `git reset --hard`, `git clean`) to "clean up" unexpected state without first understanding what it is — it may be another session's in-progress work.
+- When delegating to coder subagents, restate this rule — a subagent that blindly `git add -A`s or trusts a stale in-memory read of a file can silently commit or clobber someone else's concurrent work.
+
+---
+
 ## 🎯 Objectives
 
 1. **Requirement Analysis & Planning**: Receive high-level prompts, analyze the current database schema (`manifest.json`) and existing codebase, and output a detailed step-by-step implementation plan.
@@ -73,12 +84,13 @@ Before writing any TypeScript manually, check whether a dedicated skill covers t
 | New `@AfterCommitInterceptor` | **`create-after-commit-interceptor`** |
 | New `@SyncInterceptor` | **`create-sync-interceptor`** |
 | Interceptor that doesn't fit the four hooks above (e.g. extending a third-party plugin's base interceptor class) | **`create-custom-interceptor`** |
-| New `@Strategy` | **`create-strategy`** |
+| New `@Strategy` (server-side, queued/deduplicated business logic) | **`create-strategy`** |
 | New `@Controller` (HTTP endpoint, including HTML report controllers) | **`create-controller`** |
 | Deferred/deduplicated operation via `QueueList` | **`schedule-queued-operation`** |
 | Any `manifest.json` change (entities, fields, permissions, sequences) | **`modify-manifest`** (always followed by `run_helper.sh`) |
 | On-demand read/trigger against a third-party datasource already registered in `glyvio-plugin-sync` (ad-hoc query, force a task now, ignore a record) — **not** reactive to inbound sync data | **`query-external-datasource`** |
 
+- **`@Strategy` vs. app-layer `CoreAppStrategyAsync`/`CoreAppStrategySync`**: `create-strategy` (`@glyvio_core.Strategy`, `SimpleStrategy<T,R>`) is a **server-side**, queued/deduplicated pattern — it is not the same mechanism as `CoreAppStrategyAsync`/`CoreAppStrategySync` (`plugin/app`, singleton registered by event key via `appStrategyService.registerStrategies`, resolved with `.run(request)`), which powers overridable app-layer extension points such as `EntityHasAttachmentTypesStrategy`. If a request is really about overriding one of those app-layer strategies (or defining a new one), that's `plugin/app` work — hand it to `glyvio-app-coordinator` rather than treating it as a `create-strategy` job.
 - **Invoke the matching skill first**, providing it the interceptor/entity id, target entity, and the business logic specification from Phase 2. The skill produces the complete, correctly structured file — including listener-id convention and `src/index.ts` registration — do not rewrite it by hand.
 - Hand-code directly only when the task genuinely does not fit any row above (e.g. a one-off SQL migration script).
 - After skill execution, proceed to Phase 3 to delegate any remaining hand-written logic, then Phase 4 to validate the combined output.

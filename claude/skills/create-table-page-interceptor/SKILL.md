@@ -124,6 +124,7 @@ The executing agent MUST strictly adhere to these rules:
 6. **Determine Parent Class**:
    - Search the `.d.ts` declaration files for the abstract interceptor class associated with the target route (where `getListenerRoute()` returns the target route class).
    - If a class contains the JSDoc comment `"You MUST extend this instead."`, you **must** extend this class instead of the standard parent class. Never invent a parent interceptor.
+7. **`TableLayoutColumnDesign`/`TableLayoutCellDesign` have NO `visible` property (NON-NEGOTIABLE)**: do not attempt `targetWidget.visible = false` on a column or cell found via `findWidgetByKey` — that property doesn't exist on these two classes (unlike `RowLayoutFieldDesign`/`FormLayoutFieldDesign`, which do have it), and TypeScript will reject it. More importantly, changing the *length* of `design.columns` or a row's `cells` array reactively (e.g. based on sidebar filter state rather than only on a full remount via `routeParams`) breaks the table widget with a column-count-mismatch error — header and row cell counts must stay identical across every render. To conditionally hide a column from an interceptor, keep the column/cell slot present and swap its `child` to a blank placeholder instead of removing it from the array or trying to toggle `visible`. See `create-table-page`'s matching rule for the full pattern.
 
 ---
 
