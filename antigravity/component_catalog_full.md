@@ -109,6 +109,10 @@ dominante** do print.
 > | Card com 2 KPIs inline + progress bars (≤ 4)   | **2**  | **6**     | Meia largura. Sobe para `rows:4` só com 5+ itens empilhados.                              |
 > | Gráfico cartesiano (`CartesianChartDesign`)    | **3**  | **6–8**   | `rows:4` apenas se o card tem header + rodapé com métricas extras.                        |
 > | Gráfico circular/donut (`CircularChartDesign`) | **3**  | **4–6**   | `rows:4` só com legenda vertical longa (5+ itens). Emparelha bem com `cols:7` cartesiano. |
+> | Gauge (`GaugeChartDesign`)                      | **2**  | **3–4**   | Widget pequeno; combina bem lado a lado com KPIs.                                         |
+> | Radial (`RadialChartDesign`)                   | **3**  | **4–6**   | Tamanho parecido com donut; várias barras concêntricas cabem em espaço médio.             |
+> | Heatmap (`HeatmapChartDesign`)                 | **4**  | **8–12**  | Precisa de mais largura — matriz comprimida vira ilegível. `rows:5` para 6+ linhas/dias.  |
+> | Radar (`RadarChartDesign`)                     | **4**  | **6**     | Prefira proporção quase quadrada (`rows`≈`columns`) para não distorcer a teia.            |
 > | Progress bars + legenda (≤ 4 itens)            | **3**  | **4–6**   | Complemento de donut na mesma linha.                                                      |
 > | Tabela com ≤ 5 linhas de dados                 | **3**  | **6**     | Meia largura. Use `cols:12` apenas se a tabela tem 7+ colunas.                            |
 > | Tabela com 6–10 linhas / 7+ colunas            | **4**  | **12**    | Largura total. `rows:5` somente para tabelas muito densas (10+ linhas).                   |
@@ -186,7 +190,7 @@ Layouts não têm aparência própria; eles **arranjam** filhos. Escolha pela
 | Componente                     | Parece com                                              | Use quando                                            | Props-chave                                               |
 | ------------------------------ | ------------------------------------------------------- | ----------------------------------------------------- | --------------------------------------------------------- |
 | `BoxDesign`                    | Retângulo/container com cor, padding, borda, clicável   | Container genérico estilizado. Base de muitos outros. | `colorTheme`, `padding`, `borderRadius`, `child`, `onTap` |
-| `SizedBoxDesign`               | Box com largura/altura fixas (ou espaçador vazio)       | Forçar dimensão ou criar espaço.                      | `width`, `height`, `child`                                |
+| `SizedBoxDesign`               | Box com largura/altura fixas (ou espaçador vazio)       | Forçar dimensão ou criar espaço.                      | `width`, `height`, `child`, `tooltip`                     |
 | `ChipDesign`                   | Etiqueta pequena arredondada com fundo colorido + texto | Status, tag, badge curto.                             | `label`, `colorTheme`, `style`, `onTap`                   |
 | `TagsDesign`                   | Conjunto de tags editáveis de uma entidade              | Campo de tags ligado a entidade.                      | `name`, `entityId`, `actionKeyChangeTags`                 |
 | `DotDesign`                    | Pequeno círculo colorido (bolinha de status)            | Indicador de status compacto.                         | `colorTheme`, `size`                                      |
@@ -277,6 +281,7 @@ controle.
 | `MarkdownTextfieldDesign`                                               | Editor markdown                                   | Texto rico editável.                                    |
 | `HtmlTextfieldDesign`                                                   | Editor HTML/rich text                             | Conteúdo HTML editável.                                 |
 | `MentionsTextfieldDesign` (+ `MentionsTextfieldOption`)                 | Campo com @menções                                | Comentários com menção a usuários.                      |
+| `IconChoiceTextfieldDesign`                                             | Campo com botão de sufixo para escolher um ícone  | Selecionar/exibir um ícone (ex.: ícone de categoria, menu). Usa `suffixAction` (`ActionButtonDesign`) para abrir o seletor. |
 | `TextFieldDesign`                                                       | Base de campo (helpers `isRequired`, `errorText`) | Base — prefira concretas.                               |
 
 ---
@@ -318,13 +323,57 @@ controle.
 
 ## 12. Gráficos (charts) — `charts/`
 
-| Componente                                                                                | Parece com                                 | Use quando                             |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------ | -------------------------------------- |
-| `CartesianChartDesign` (+ `...SectionDesign`, `CartesianChartDataType`, `...SectionType`) | Gráfico de eixos X/Y: barras, linhas, área | Séries temporais/comparações em eixos. |
-| `CircularChartDesign` (+ `...SectionDesign`, `CircularChartDataType`, `...SectionType`)   | Pizza / rosca (donut)                      | Composição percentual.                 |
-| `FunnelChartDesign` (+ `...SectionDesign`, `FunnelChartDataType`)                         | Funil (etapas decrescentes)                | Conversão por etapa.                   |
-| `PyramidChartDesign` (+ `...SectionDesign`, `PyramidChartDataType`)                       | Pirâmide                                   | Hierarquia/proporção em camadas.       |
-| `ChartDesign`                                                                             | Base de gráfico                            | Base — prefira concretas.              |
+> 🆕 **API de charts atualizada** — 4 tipos novos (`RadialChartDesign`,
+> `GaugeChartDesign`, `HeatmapChartDesign`, `RadarChartDesign`), além de modo
+> `minimal` (sparkline), paleta de marca e helpers estáticos
+> `generateSections*FromRawData` / `generateSectionsFromColumns` para montar
+> `sections`/`section` direto de linhas de query. **Para instanciar ou editar
+> qualquer gráfico, delegue ao agente/skill `glyvio-app-chart`** — ele carrega
+> o contrato completo da API (todos os campos, tipos de seção, paleta de
+> marca, exemplos por tipo). Este catálogo cobre só o reconhecimento visual
+> (print → classe).
+
+| Componente                                                                                | Parece com                                                                                         | Use quando                                                                                                                       |
+| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `CartesianChartDesign` (+ `...SectionDesign`, `CartesianChartDataType`, `...SectionType`) | Gráfico de eixos X/Y: barras, linhas, área, dispersão/bolha, degraus, faixas, waterfall, empilhado | Séries temporais/comparações em eixos; uma entrada em `sections` por série.                                                     |
+| `CircularChartDesign` (+ `...SectionDesign`, `CircularChartDataType`, `...SectionType`)   | Pizza / rosca (donut)                                                                                | Composição percentual (parte do todo).                                                                                           |
+| `FunnelChartDesign` (+ `...SectionDesign`, `FunnelChartDataType`)                         | Funil (etapas decrescentes)                                                                          | Conversão por etapa (pipeline). `section` **único**, não array.                                                                 |
+| `PyramidChartDesign` (+ `...SectionDesign`, `PyramidChartDataType`)                       | Pirâmide                                                                                             | Proporção ranqueada em camadas. `section` **único**, não array.                                                                 |
+| `RadialChartDesign` 🆕 (+ `...SectionDesign`)                                             | Barras circulares concêntricas (várias "rosquinhas" de progresso)                                   | Comparar a % de um máximo atingida por várias categorias ao mesmo tempo — uma barra por categoria via `sections`.               |
+| `GaugeChartDesign` 🆕                                                                     | Velocímetro/mostrador com ponteiro ou arco colorido e valor central                                 | Um único número contra sua escala aceitável (SLA, meta, ocupação). **Sem `sections`** — usa `value` + `ranges`. Ver aviso abaixo. |
+| `HeatmapChartDesign` 🆕 (+ `...SectionDesign`)                                            | Matriz colorida (mapa de calor) — cor, não posição, carrega o valor                                | Duas categorias cruzadas por intensidade (dia×hora, retenção por coorte, correlação). `section` **único**, não array.           |
+| `RadarChartDesign` 🆕 (+ `...SectionDesign`) — também chamado "spider chart"              | Teia/radar com eixos irradiando do centro, um polígono por série                                    | Comparar séries em 3+ dimensões categóricas ao mesmo tempo (scorecard). Precisa de 3+ categorias.                               |
+| `ChartDesign`                                                                             | Base de gráfico                                                                                      | Base — prefira concretas.                                                                                                        |
+
+> ⚠️ **`RadialChartDesign` × `GaugeChartDesign` — não confundir.** Ambos são
+> discos circulares, mas respondem perguntas diferentes: radial responde
+> "quanto cada categoria tem" (uma barra por categoria, via `sections`);
+> gauge responde "onde este único número cai dentro do aceitável" (um
+> ponteiro/arco, via `value` + `ranges`, sem série nenhuma). Print com **um**
+> medidor de ponteiro e faixas coloridas (verde/amarelo/vermelho) →
+> `GaugeChartDesign`. Print com **várias** barras circulares concêntricas
+> (uma por categoria/pessoa/time) → `RadialChartDesign`.
+>
+> ⚠️ **`GaugeChartDesign` × `GaugueKpiDesign`** (§11, KPIs) — medidor pequeno
+> embutido num card de KPI simples, sem faixas nomeadas → `GaugueKpiDesign`.
+> Use `GaugeChartDesign` quando o gráfico precisa de faixas (`ranges`)
+> coloridas/nomeadas ou de mais controle visual (ângulo, ponteiro, ticks).
+>
+> ℹ️ **Modo `minimal` (sparkline)** — todo chart aceita `minimal: true` para
+> desenhar só o traçado, sem título/eixos/legenda/tooltip ao redor. Use quando
+> o gráfico mora dentro de uma célula de tabela, um card pequeno ou um KPI, e
+> o contexto (título, unidade) já está escrito ao lado.
+>
+> ℹ️ **Doughnut**: prefira o literal `'DOUGHNUT'` no `type` de
+> `CircularChartSectionDesign` (o legado `'DOUGHUNT'` ainda é aceito, mas não
+> use em código novo).
+>
+> ℹ️ **Métodos estáticos `generateSections*FromRawData` /
+> `generateSectionsFromColumns`** — prefira estes helpers a montar
+> `data: ChartDataPoint[]` na mão quando os dados vierem de linhas de query.
+> Ex.: `CartesianChartDesign.generateSectionsFromRawData(rows, xConfig, yConfig, sectionConfig)`.
+> `Funnel`/`Pyramid`/`Heatmap` usam a variante singular `generateSectionFromRawData`
+> (uma única `section`, sem "s").
 
 ---
 

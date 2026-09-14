@@ -147,6 +147,10 @@ Rose:    #e11d48
 
 ### Plotly Configuration
 
+- Load Plotly from the CDN in `<head>`, pinned to a recent version — do not leave it unpinned:
+  ```html
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+  ```
 - Always use:
   ```javascript
   const baseLayout = {
@@ -222,20 +226,42 @@ export class <ClassName> extends glyvio_core.SimpleController<void, string> {
    ```
 7. **`allowPublicAccess` default**: Set to `false` unless the user explicitly requests a public report endpoint.
 
+### External-user (shareable-link) reports
+
+When the report must be reachable via a plain link handed to someone **outside** the internal Glyvio app shell (a client, a stakeholder, a portal user) rather than opened from inside the app by a logged-in employee — e.g. `GET {host}/custom/external/report/{companyId}/<report_id>?auth_token=<jwt>` — extend `glyvio_core.ExternalSimpleController<T, string>` instead of `SimpleController`, with:
+
+```typescript
+@glyvio_core.Controller({
+  path: '<report_id>',
+  allowPrivateAccess: false,
+  allowPublicAccess: false,
+  allowExternalUserAccess: true,
+})
+export class <ClassName> extends glyvio_core.ExternalSimpleController<RequestType, string> {
+  handle(request: glyvio_core.WebRequest<RequestType>, externalUser: glyvio_entity.ExternalUser): string {
+    // resolve/scope data to `externalUser` before querying, then return buildHtml(data) as usual
+  }
+}
+```
+
+The `buildHtml`, design-rules, and script-architecture rules below are identical either way — only the base class, the constructor flags, and the `handle` signature (extra `externalUser` parameter) change. Follow the `external-user-api` skill for how `ExternalUser` maps to a business identity and for multi-tenant scoping — never assume that mapping, ask if it isn't already established in the project. Default to plain `SimpleController` (private, internal) unless the user's request is explicitly about an externally-shared link.
+
 ---
 
 ## 📄 Reference Example
 
-The following is a real-world example of a report controller already implemented in this project. Use it as the canonical style reference:
+The following is a real-world report controller matching every rule above — same background/card/Poppins/fadeUp system, same `baseLayout`/`config`, same two-script-block structure. Use it as the canonical style reference (it happens to be an external-user report per its own project's requirements; the HTML/CSS/JS body is what to copy — the base class is independent, see above):
 
-**File**: `plugin/server/src/examples/generate_sales_report_controller.ts`
+**File**: `glyvio-plugin-project/plugin/server/src/controllers/report_project_overview_controller.ts` (in the `nossos` plugin set)
 
 Key patterns to replicate:
 
-- The SQL query runs inside `handle()` and its result is passed to `buildHtml()`.
+- The SQL query (or a shared data-gathering service) runs inside `handle()` and its result is passed to `buildHtml()`.
 - The `buildHtml()` method returns a complete `<!DOCTYPE html>` string.
 - The data is embedded via `const rawData = ${JSON.stringify(data)};` in the first script block.
-- The second script block processes `rawData` entirely client-side using Plotly.
+- The second script block processes `rawData` entirely client-side using Plotly, with a shared `baseLayout`/`config` object reused across every `Plotly.newPlot(...)` call.
+
+If that file isn't reachable from the current project, treat the `Mandatory Design Rules` and `Controller Architecture Rules` sections above as the complete, self-contained spec — do not block on finding a local example file.
 
 ---
 
@@ -248,7 +274,7 @@ Before delivering any code, verify:
 - [ ] Are the two `<script>` blocks separated (data injection vs. Plotly logic)?
 - [ ] Does `rawData` in the preview HTML contain 5–10 rows from the user's sample?
 - [ ] Is there a typed interface for the SQL result rows (no `any`)?
-- [ ] Is the controller extending `glyvio_core.SimpleController<void, string>`?
+- [ ] Is the controller extending `glyvio_core.SimpleController<void, string>` (or `glyvio_core.ExternalSimpleController<T, string>` with `allowExternalUserAccess: true` when this is a shareable-link report for an external user)?
 - [ ] Is the controller registered in the entrypoint (`src/index.ts`)?
 - [ ] Are KPI cards animated with `fadeUp` and staggered delays?
 - [ ] Does the chart color palette match the defined colors?
