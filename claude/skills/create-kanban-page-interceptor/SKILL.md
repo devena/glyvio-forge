@@ -21,7 +21,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
 
 ### Step 0 — Collect the current design JSON using SpyInterceptor
 
-1. Determine the temp file path: `.claude/temp<KanbanPageName>_design.json` (e.g., `TaskKanbanPage_design.json`).
+1. Determine the temp file path: `.agents/temp/<KanbanPageName>_design.json` (e.g., `TaskKanbanPage_design.json`).
 2. Check if that file already exists. If it does, remove/delete the file from disk and proceed with the collection flow normally to capture a fresh design.
 3. Create and register a temporary **SpyInterceptor** in the plugin:
    - Create a file `src/interceptors/views/spy_interceptor.ts`.
@@ -43,14 +43,14 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
      }
      ```
    - Register it temporarily in `src/index.ts`.
-   - Run `pnpm build` via `run_command` to compile the codebase with the temporary `SpyInterceptor`.
+   - Run `pnpm build` via the `Bash` tool to compile the codebase with the temporary `SpyInterceptor`.
 4. Retrieve the design JSON using the browser inspection script:
    - Ask the user to make sure Chrome is running with remote debugging enabled (`--remote-debugging-port=9222`) and that the target page is open/active.
-   - Run the script `.claude/scripts/chrome_inspector.js` via `run_command` to connect to Chrome, automatically wait for `window.__finalDesign` to be populated, and save the retrieved JSON to `.claude/temp<KanbanPageName>_design.json`.
+   - Run the script `.claude/scripts/chrome_inspector.js` via the `Bash` tool to connect to Chrome, automatically wait for `window.__finalDesign` to be populated, and save the retrieved JSON to `.agents/temp/<KanbanPageName>_design.json`.
      _Command:_ `node .claude/scripts/chrome_inspector.js <KanbanPageName>` (e.g., `node .claude/scripts/chrome_inspector.js TaskKanbanPage`).
      _(Note: This script automatically starts an `httpster` server on port 9998 with CORS enabled serving `plugin/app/dist` beforehand, injects the localStorage rules for `app_rule_plugins` and `USER_PREFERENCE`, reloads the page to apply them, and automatically reconnects to continue polling.)_
-5. Once the design JSON is collected and saved to `.claude/temp<KanbanPageName>_design.json`, remove the temporary `SpyInterceptor` and its registration from the codebase, and run `pnpm build` again to clean up the compiled distribution.
-6. If Chrome debugging is not available or fails, fallback to asking the user to send the **current design JSON** of the page (obtained from `page.getDesignRaw(state)` or the console) in the next message, or to save it manually to `.claude/temp<KanbanPageName>_design.json`.
+5. Once the design JSON is collected and saved to `.agents/temp/<KanbanPageName>_design.json`, remove the temporary `SpyInterceptor` and its registration from the codebase, and run `pnpm build` again to clean up the compiled distribution.
+6. If Chrome debugging is not available or fails, fallback to asking the user to send the **current design JSON** of the page (obtained from `page.getDesignRaw(state)` or the console) in the next message, or to save it manually to `.agents/temp/<KanbanPageName>_design.json`.
 7. Do NOT proceed to Step 0.1 until the JSON is saved to disk.
 
 ### Step 0.1 — Interpret the design JSON (read-only)
@@ -69,7 +69,7 @@ Rules:
 
 ### Step 0.2 — Save the analysis summary
 
-After completing the Step 0.1 analysis, **immediately write the findings to `.claude/temp<KanbanPageName>_analysis.md`** using the `Write` tool. Include:
+After completing the Step 0.1 analysis, **immediately write the findings to `.agents/temp/<KanbanPageName>_analysis.md`** using the `Write` tool. Include:
 
 1. The target section/widget `runtimeClass` and `key`.
 2. The full navigation path to each target node (dot-path string).
@@ -87,7 +87,7 @@ Ask the user for the current **column design JSON** (`SimpleKanbanPageColumnDesi
 
 > "This task requires modifying the Kanban column design. Please provide the current `SimpleKanbanPageColumnDesign` JSON for a sample column. You can obtain it by temporarily adding a `console.log(JSON.stringify(design))` inside a `getDesignForColumn` override, then copying the output from the browser console."
 
-- Save the received JSON to `.claude/temp<KanbanPageName>_columnDesign.json`.
+- Save the received JSON to `.agents/temp/<KanbanPageName>_columnDesign.json`.
 - **Do NOT proceed to Step 1 until this JSON is received and saved.**
 
 **Step 0.3b — Card cell design** (only if `getDesignForCell` modifications are needed):
@@ -96,7 +96,7 @@ Ask the user for the current **card cell design JSON** (`CardCellDesign`) for a 
 
 > "This task requires modifying the Kanban card cell design. Please provide the current `CardCellDesign` JSON for a sample card. You can obtain it by temporarily adding a `console.log(JSON.stringify(design))` inside a `getDesignForCell` override, then copying the output from the browser console."
 
-- Save the received JSON to `.claude/temp<KanbanPageName>_cellDesign.json`.
+- Save the received JSON to `.agents/temp/<KanbanPageName>_cellDesign.json`.
 - **Do NOT proceed to Step 1 until this JSON is received and saved.**
 
 Use these JSONs as ground truth for the column/cell structure, applying the same rules from Step 0.1: use `runtimeClass` for type matching, use `findWidgetByKey` for targeting nodes, and derive all navigation paths exclusively from the JSON content.

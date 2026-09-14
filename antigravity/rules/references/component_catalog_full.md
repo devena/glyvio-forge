@@ -418,6 +418,8 @@ controle.
 | `SimpleBatchCartDesign`           | Carrinho de operação em lote                            | Itens para ação em lote.       | —                    |
 | `CartDesign` / `NativeCartDesign` | Base de carrinho                                        | Base — prefira concretas.      | —                    |
 
+> ⚠️ **`SimpleCartDesign`/`SimpleBatchCartDesign` — `titleOpened` e `subtitleOpened` são `string`, não objetos de design.** As classes Dart correspondentes no `glyvio_app` declaram esses campos como `dynamic`, o que já induziu implementações a atribuir um design (ex.: `SimpleTextDesign`) ou outro valor não-string. O contrato válido é o do `@types`: atribua uma `string` real, com interpolação `$S{...}` quando o título for dinâmico. Regra geral: o tipo que vale é sempre o declarado em `@types`/`dist/bundle.d.ts`, nunca a frouxidão vista no renderizador Flutter.
+
 ---
 
 ## Temas de cor (`colorTheme`)

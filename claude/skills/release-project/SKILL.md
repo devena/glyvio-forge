@@ -1,11 +1,23 @@
 ---
 name: release-project
-description: Builds the project, bumps the patch version, commits all changes with an auto-generated message describing what changed, and pushes to the remote branch.
+description: 'Releases the current project end-to-end: builds, bumps the patch version in package.json, updates CHANGELOG.md, commits every pending change with an auto-generated message, and pushes to origin. Invoke this whenever the user asks to version, release or publish the project — in any phrasing, in Portuguese or English: "atualizar a versão", "atualiza a versão", "atualizar versao", "sobe a versão", "subir a versão", "nova versão", "incrementar a versão", "bump da versão", "versionar", "fazer um release", "publicar o projeto", "release", "deploy", "bump version", "ship it". Any request that amounts to "comita o que está pendente, incrementa a versão e faz push" is this skill — do not perform the commit/bump/push by hand instead.'
 ---
 
 # Skill: Release Project
 
-Execute this skill whenever the user asks to release, publish, versionar, or deploy the current project.
+Execute this skill whenever the user asks to release, publish, version or deploy the current project.
+
+**Trigger phrases** (não exaustivo — qualquer formulação equivalente conta):
+
+| Português | English |
+| --- | --- |
+| "atualizar a versão" / "atualiza a versão" | "update the version" |
+| "sobe a versão" / "subir a versão" | "bump the version" |
+| "nova versão" / "incrementar a versão" | "new version" / "bump version" |
+| "versionar" / "fazer um release" | "release" / "ship it" |
+| "publicar o projeto" | "publish" / "deploy" |
+
+Se o pedido significa **"comita o que está pendente, incrementa a versão e faz push"**, é esta skill — execute os passos abaixo em vez de fazer commit/bump/push à mão, para que build, CHANGELOG e mensagem de commit não sejam pulados.
 
 ---
 

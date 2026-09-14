@@ -1,0 +1,19 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      # Falha se claude/, antigravity/ ou agy/ estiverem dessincronizados com src/.
+      - name: Saída sincronizada com src/
+        run: node build.js --check

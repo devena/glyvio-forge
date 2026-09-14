@@ -204,9 +204,11 @@ Layouts não têm aparência própria; eles **arranjam** filhos. Escolha pela
 | `QRCodeDesign`                 | QR code quadrado                                        | Exibir um QR code.                                    | `width`, `height`, `colorTheme`                           |
 | `HorizontalTotalizerBoxDesign` | Linha "Label: Valor" lado a lado (totalizador)          | Totalizador compacto inline.                          | `label`, `value`, `colorTheme`                            |
 | `TwoLinesTotalizerBoxDesign`   | Cartão com label em cima e valor grande embaixo         | KPI/totalizador em duas linhas.                       | `label`, `value`, `colorTheme`, `width`                   |
-| `EntityLinksDesign`            | Lista de links/chips para entidades relacionadas        | Mostrar/remover vínculos a entidades.                 | `links`, `actionKeyRemoveLink`                            |
+| `EntityLinksDesign`            | Lista de links/chips para entidades relacionadas        | Mostrar/remover vínculos polimórficos a outras entidades (ver skill `create-entity-links-section`). | `links`, `actionKeyRemoveLink`                            |
 | `ObserversDesign`              | Avatares de observadores/seguidores                     | Lista de observadores de um registro.                 | `name`, `entityId`                                        |
 | `NotFoundBoxDesign`            | Estado vazio ("nada encontrado") com ícone/texto        | Empty state.                                          | —                                                         |
+
+> ⚠️ **`ChipDesign`/status colorido — evite condicionais Handlebars aninhadas dentro de `label`/`value` interpolados.** Um `{{#if}}...{{else}}{{#if}}...{{/if}}{{/if}}` complexo dentro de uma string interpolada de chip já renderizou o texto literal `"ERROR ON PROCESS PARSE"` para o usuário final em produção — sem erro em build/dev, só na renderização real. Prefira computar o label/cor final em `refreshState`/`getDesign` (uma variável TypeScript comum, com `if`/`switch` de verdade) e só então interpolar o valor já resolvido (`$S{state.computedLabel}`), em vez de montar a lógica condicional dentro da própria string de template.
 
 ---
 
@@ -273,7 +275,7 @@ controle.
 | `RangeDateTimeTextfieldDesign`                                          | Intervalo de data/hora                            | Filtro por período com hora.                            |
 | `RangeNumberTextfieldDesign`                                            | Intervalo numérico (min–max)                      | Filtro por faixa de valor.                              |
 | `ChoiceSingleTextfieldDesign` (+ `ChoiceSingleTextfieldOption`)         | Dropdown/seletor de uma opção fixa                | Escolha única entre opções fixas (não-entidade).        |
-| `ChoiceMultipleTextfieldDesign`                                         | Multi-seleção de opções fixas                     | Várias opções fixas.                                    |
+| `ChoiceMultipleTextfieldDesign` ⚠️                                      | Multi-seleção de opções fixas                     | Várias opções fixas — **ver bug confirmado abaixo antes de usar.** |
 | `EntitySelectTextfieldDesign`                                           | Seletor (dropdown) de entidade                    | Selecionar entidade de lista curta.                     |
 | `EntityAutocompleteSingleTextfieldDesign`                               | Autocomplete de 1 entidade (com chip)             | **FK/entidade única** — use a **subclasse específica**. |
 | `EntityAutocompleteMultipleTextfieldDesign`                             | Autocomplete de várias entidades (chips)          | Várias entidades relacionadas.                          |
@@ -283,6 +285,19 @@ controle.
 | `MentionsTextfieldDesign` (+ `MentionsTextfieldOption`)                 | Campo com @menções                                | Comentários com menção a usuários.                      |
 | `IconChoiceTextfieldDesign`                                             | Campo com botão de sufixo para escolher um ícone  | Selecionar/exibir um ícone (ex.: ícone de categoria, menu). Usa `suffixAction` (`ActionButtonDesign`) para abrir o seletor. |
 | `TextFieldDesign`                                                       | Base de campo (helpers `isRequired`, `errorText`) | Base — prefira concretas.                               |
+
+> ⚠️ **Bug confirmado em `ChoiceMultipleTextfieldDesign`**: o widget Flutter subjacente
+> (`TextFieldsChoiceWidget._addValue`) compara o novo valor contra a lista já selecionada
+> indexando cada item como se fosse um `Map` (`item['key']`), mas a lista interna é na
+> verdade `List<String>` — isso lança um erro de tipo em **toda tentativa de adicionar**
+> um item assim que a seleção já tem 1+ itens. Remover funciona normalmente
+> (`_remValue` não tem esse bug); só adicionar depois do primeiro item está quebrado.
+> Efeito prático: o usuário consegue remover itens da seleção, mas nunca voltar a
+> adicionar. Antes de usar este componente para qualquer seleção que o usuário vá
+> editar (não só preencher uma vez), avise o usuário desse limite ou prefira outro
+> padrão (ex.: `EntityAutocompleteMultipleTextfieldDesign` se as opções puderem virar
+> uma pseudo-entidade, ou botões individuais de toggle). Reportado e confirmado em
+> `glyvio-plugin-project` (filtro `cardFields` do Kanban) em 2026-09.
 
 ---
 
@@ -402,6 +417,8 @@ controle.
 | `SimpleCartDesign`                | Drawer de carrinho de itens                             | Seleção temporária de itens.   | `create-simple-cart` |
 | `SimpleBatchCartDesign`           | Carrinho de operação em lote                            | Itens para ação em lote.       | —                    |
 | `CartDesign` / `NativeCartDesign` | Base de carrinho                                        | Base — prefira concretas.      | —                    |
+
+> ⚠️ **`SimpleCartDesign`/`SimpleBatchCartDesign` — `titleOpened` e `subtitleOpened` são `string`, não objetos de design.** As classes Dart correspondentes no `glyvio_app` declaram esses campos como `dynamic`, o que já induziu implementações a atribuir um design (ex.: `SimpleTextDesign`) ou outro valor não-string. O contrato válido é o do `@types`: atribua uma `string` real, com interpolação `$S{...}` quando o título for dinâmico. Regra geral: o tipo que vale é sempre o declarado em `@types`/`dist/bundle.d.ts`, nunca a frouxidão vista no renderizador Flutter.
 
 ---
 
@@ -793,7 +810,7 @@ cada componente deveria ter uma imagem. Sugestão de fluxo para gerá-las:
 
 1. Renderizar cada design isolado num storybook/página de exemplo do app.
 2. Capturar screenshot por componente em
-   `agy/docs/component_images/<classe>.png`.
+   `docs/component_images/<classe>.png`.
 3. Substituir os marcadores textuais deste catálogo por
    `![ClassName](component_images/ClassName.png)`.
 

@@ -53,6 +53,9 @@ The executing agent MUST strictly adhere to these rules:
    ```
 7. **Header title — use `titleOpened`/`subtitleOpened`; treat `appBarDesign` as buttons-only (NON-NEGOTIABLE)**: `design.titleOpened` (plus the optional `design.subtitleOpened`) is the header shown for **every** cart type and is always present on `SimpleBatchCartDesign`. `design.appBarDesign` is `AppBarDesign | undefined` — it may be absent, and real plugins in this codebase are inconsistent about whether they also set `appBarDesign.title`/`.subtitle` on it. To keep new carts consistent:
    - **Always** set `design.titleOpened` (and `design.subtitleOpened` when a secondary line is useful) — never rely on `appBarDesign.title` as the only place the title is set.
+   - **Both are `string`, never a design object.** `SimpleBatchCartDesign.titleOpened`/`.subtitleOpened` are declared `string` in `@types`; the Dart/Flutter class in `glyvio_app` types them `dynamic`, which has already misled implementations into assigning something else. The TS contract binds — use `$S{...}` interpolation when the value must be dynamic.
+     - ✅ `design.titleOpened = 'Batch Stock Edit';` / `design.titleOpened = $S{state.cartLabel};`
+     - ❌ `design.titleOpened = new glyvio_core.SimpleTextDesign({ ... });`
    - Only touch `design.appBarDesign` when you need to add **toolbar action buttons** (e.g. "add from filter", "add new row") — guard it for `undefined`, and cast to `glyvio_core.SimpleAppBarDesign` only if you need `.subtitle` or `.putButtonOn(...)` (the base `AppBarDesign` type only exposes `.title`/`.buttons`):
      ```typescript
      const appBar = design.appBarDesign as glyvio_core.SimpleAppBarDesign | undefined;
@@ -201,6 +204,7 @@ export class <CartName>BatchCart extends glyvio_core.SimpleBatchCart<<CartName>B
    * Configures the layout and general parameters of the batch cart design.
    */
   getDesign(state: <CartName>BatchCartState, design: glyvio_core.SimpleBatchCartDesign): void {
+    // ⚠️ titleOpened/subtitleOpened are plain `string` in @types — never a design object.
     design.titleOpened = '<CartName> Batch Cart';
     // 💡 Optional: discreet line rendered below titleOpened in the cart's fixed top header.
     // design.subtitleOpened = 'Bulk edit and import <EntityName> records';
