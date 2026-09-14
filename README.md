@@ -51,6 +51,18 @@ pnpm lint
 Após editar `manifest.json`, rode `./run_helper.sh` na raiz para regenerar
 `entity.d.ts`, `glyvio_structure.d.ts` e `service.ts`.
 
+> **`@types`/`dist/bundle.d.ts` são sempre gerados e ficam fora do git**
+> (`.gitignore` os exclui em todos os plugins). Isso significa que, se em algum
+> ponto for necessário editar esses arquivos manualmente como stopgap — por
+> exemplo, para desbloquear um build enquanto uma alteração de manifesto de
+> outro plugin ainda não foi publicada — **esse patch manual não deixa
+> nenhum rastro no git**: some no próximo `run_helper.sh`/checkout limpo, e o
+> próximo agente que ler o repositório não tem como saber que ele existiu. A
+> regra padrão continua sendo **nunca editar esses arquivos manualmente**; se
+> um stopgap desse tipo for genuinamente necessário, documente-o explicitamente
+> para o usuário na conversa (não apenas no arquivo gerado) e trate como
+> temporário até a publicação real do dependency resolver o gap.
+
 ---
 
 ## Jornada de Desenvolvimento de uma Feature
@@ -83,7 +95,12 @@ glyvio_core.appInterceptorService.registerInterceptors([{
 `SimpleCalendarPage`.
 
 > **Atenção:** Sempre use `await glyvio_entity.Erp.new()` para instanciar
-> entidades — nunca `new glyvio_entity.Erp()`.
+> entidades — nunca `new glyvio_entity.Erp()`. **Única exceção confirmada**: um
+> fluxo de upload de anexo pode legitimamente pré-gerar uma instância via
+> construtor bruto só para obter um `id` antes de repassá-la a um método de
+> persistência especializado (ex.: `attachFromTemp`) que já ignora
+> `entityService` por completo — fora desse caso específico, a regra continua
+> absoluta.
 >
 > Em interpolações de design, use o caminho joined: `item.client.name`, nunca
 > `item.clientId`.
@@ -178,6 +195,45 @@ descritivo → push. O CI no GitHub Actions valida o build antes do deploy.
 
 ---
 
+## Gotchas Confirmados do QueryBuilder
+
+Nenhum destes aparece no `.d.ts` — todos foram confirmados por falha real em
+tempo de execução, não inferidos dos tipos. Leia antes de tratar um
+comportamento estranho do `QueryBuilder` como bug do plugin.
+
+- **`findAll()` ignora `.limit()`/`.offset()` silenciosamente** — só `.find()`
+  de fato pagina. Um bug real que passou despercebido até a tabela ter mais de
+  ~15 registros de teste; não há sinal do compilador.
+- **Self-join sem alias explícito falha, às vezes silenciosamente na UI**: um
+  join de uma entidade contra ela mesma (ex.: `parentTask`, `parentCategory`)
+  sem alias lança `table name specified more than once` no servidor — mas o
+  erro pode nunca chegar ao usuário; a tela (lista ou edição) simplesmente
+  renderiza vazia, sem nenhum aviso visível.
+- **`.findAll()`/select padrão em entidade cross-plugin pode quebrar em
+  relações não registradas**: chamar `.findAll()` numa entidade como `Client`
+  a partir de um plugin consumidor pode lançar
+  `Cannot read property 'structureName' of undefined`, porque o select padrão
+  percorre toda relação declarada e nem toda relação está registrada no
+  runtime desse plugin. Corrija restringindo os campos:
+  `setFromEntity(AllEntities.x, { fields: [...] })` só com os campos
+  escalares necessários.
+- **`addLeftJoinEntity(fieldFrom, { fieldsForeign })` derruba o getter
+  `<relation>Id` do lado "from" se `id` não estiver em `fieldsForeign`** —
+  inclua `id` explicitamente sempre que precisar do FK id depois do join.
+- **`'user'` como `aliasTableForeign` quebra a query** — `USER` é palavra
+  reservada no Postgres; escolha outro alias.
+- **Relação "array de ids" guardado como campo `JSON`/`jsonb` não tem um
+  helper típado no QueryBuilder** — a única forma confirmada de filtrar por
+  contenção é `addFilterRaw` com o operador `@>` do Postgres, ex.:
+  ```typescript
+  qb.addFilterRaw('client.mailing_lists @> to_jsonb(?::text)', [mailingListId]);
+  ```
+  Trate isso como o idiom sancionado para esse formato de relação (array de
+  ids num campo JSON, sem entidade de junção própria) até que exista um
+  helper de primeira classe equivalente.
+
+---
+
 ## Skills de IA Disponíveis
 
 As skills geram código seguindo os padrões do projeto. Invoque no chat com
@@ -196,8 +252,16 @@ As skills geram código seguindo os padrões do projeto. Invoque no chat com
 | `/create-calendar-page`       | Página de calendário com eventos        |
 | `/create-send-modal`          | Modal de envio de mensagem/email        |
 | `/create-simple-cart`         | Drawer de carrinho/seleção temporária   |
+| `/create-simple-batch-cart`   | Drawer de carrinho em lote (spreadsheet-like) |
+| `/create-entity-links-section`| Seção "Vínculos" polimórfica num sidebar existente |
 | `/create-screen-from-image`   | Reproduz um screenshot como tela Glyvio |
 | `/create-*-interceptor` (app) | Estende view existente do CRM           |
+
+### Extensibilidade (App)
+
+| Skill                  | Quando usar                                                                 |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `/create-app-strategy`  | Cria ou sobrescreve uma app-layer strategy (`CoreAppStrategyAsync`/`Sync`, ex: `EntityHasAttachmentTypesStrategy`) — diferente do `/create-strategy` (server) |
 
 ### Server (Backend)
 

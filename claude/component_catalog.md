@@ -26,6 +26,6 @@
 - **Totalizadores / Métricas**: `HorizontalTotalizerBoxDesign` ou `TwoLinesTotalizerBoxDesign`
 - **Pessoas / Usuários**: `AvatarDesign` ou `UserGroupDesign`
 - **Layouts**: `RowLayoutDesign` (horizontal), `ColumnLayoutDesign` (vertical), `TableLayoutDesign` (grade)
-- **Gráficos**: `CartesianChartDesign`, `CircularChartDesign`, `FunnelChartDesign`, `PyramidChartDesign`, `RadialChartDesign` (delegar a `glyvio-app-chart`)
+- **Gráficos**: `CartesianChartDesign`, `CircularChartDesign`, `FunnelChartDesign`, `PyramidChartDesign`, `RadialChartDesign`, `GaugeChartDesign`, `HeatmapChartDesign`, `RadarChartDesign` (delegar a `glyvio-app-chart`)
 
 > 📖 **Consulte a documentação completa**: Para props específicas, hierarquia de componentes e código de exemplo, leia [`references/component_catalog_full.md`](./references/component_catalog_full.md).

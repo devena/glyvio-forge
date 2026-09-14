@@ -133,6 +133,25 @@ When delegating to coder subagents and when running any create/interceptor skill
 
 ---
 
+## 🔁 Concurrent Sessions & Mid-Task Drift (NON-NEGOTIABLE)
+
+This workspace is not exclusively yours. Other developers or other agent sessions can modify files in the same repository while you work — a file you read at the start of a task can have different content by the time you read it again, and `git status` can show staged/modified files you never touched.
+
+- **Before committing**, run `git status` / `git diff --cached` and confirm every staged file is one *you* intended to change. A file staged or modified by someone else mid-session is not yours to commit or revert — leave it out of your commit and mention it to the user rather than silently including or discarding it.
+- **Never assume a file's content is still what you last read.** If a file is re-read later in a long session (e.g. after running `pnpm lint`/`eslint --fix`, after a build, or after a long delegation to a subagent) and its content differs from what you remember, treat the new read as ground truth — do not revert it to match your earlier assumption unless you're certain the change is wrong.
+- **Never run destructive git operations** (`git checkout --`, `git reset --hard`, `git clean`) to "clean up" unexpected state without first understanding what it is — it may be another session's in-progress work.
+- When delegating to coder subagents, restate this rule — a subagent that blindly `git add -A`s or trusts a stale in-memory read of a file can silently commit or clobber someone else's concurrent work.
+
+---
+
+## 🔤 `dynamic` (Dart) vs. Typed `string` (TS) Fields
+
+Many design fields that accept interpolation (`$S{...}`, `$T{...}`, `{{#if}}...{{/if}}`) are typed `dynamic` on the Dart/Flutter renderer side (`glyvio_app`) but `string` (or a narrow union) on the TypeScript authoring side (`@types` / `dist/bundle.d.ts`). This is not a mismatch to "fix" — the TS side is what a plugin author writes (a string, possibly with interpolation syntax resolved before it reaches Dart), while the Dart side renders whatever the resolved runtime value ends up being, so it stays loosely typed defensively.
+
+- When writing plugin TS code, always follow the **TS type** declared in `@types` for the field you're setting
+
+---
+
 ## 👥 Observers & Tags Fields (NON-NEGOTIABLE)
 
 Every entity in the model carries two JSON-array metadata fields that **must be wired in every edit modal and every sidebar** that exposes the entity for editing. Forgetting either is a **hard error**.
@@ -370,13 +389,20 @@ Map every request to one of these skills. **Each "create" skill has a matching "
 
 ### Sidebars, Carts & Containers
 
-- `create-sidebar` / `create-sidebar-interceptor` — details/config sidebar with file drop & dynamic uploads.
+- `create-sidebar` — details/config sidebar, including file drop & dynamic uploads (upload behavior is only customizable when **creating** a new sidebar).
+- `create-sidebar-interceptor` — customize layout, buttons, or lifecycle hooks of an **existing** sidebar. Does **not** expose a file-upload hook — see the skill's own "Known Limitations" section before promising upload customization via an interceptor.
 - `create-tab-sidebar` / `create-tab-sidebar-interceptor` — tabbed sidebar container embedding sub-routes.
 - `create-simple-cart` / `create-simple-cart-interceptor` — cart drawer for temporary item selections.
+- `create-simple-batch-cart` — spreadsheet-style batch/bulk-editing cart drawer (`SimpleBatchCart`): many DTO rows added via cart button/filter/spreadsheet import, edited inline column-by-column, saved in one transaction. Its interceptor counterpart must extend `SimpleBatchCartInterceptor<S, I>` — never `SimpleCartListener`, which targets `SimpleCart` only and silently has no batch-specific hooks (see the skill's own non-negotiable rule).
+- `create-entity-links-section` — adds a "Links" section to an existing sidebar/tab-sidebar for polymorphic, entity-agnostic links to other records (backed by an `<owner>_entity` join table and `EntityLinksDesign`). Use this instead of hand-rolling the pick-a-type-then-pick-a-record flow again — it's already been copied by hand three times across separate plugins.
 
 ### Screenshot-driven (visual fidelity)
 
 - `create-screen-from-image` — reproduce a **user-provided screenshot (print)** as faithfully as possible. Performs structured visual decomposition, maps each visual element to a concrete design class via `.claude/component_catalog.md`, produces an approved visual spec, then delegates to the matching `create-*` page/modal skill. **Use this whenever the user provides an image of the desired screen.**
+
+### Extensibility
+
+- `create-app-strategy` — register a new app-layer strategy (`CoreAppStrategyAsync`/`CoreAppStrategySync`), or override the default implementation of an existing core one (e.g. `EntityHasAttachmentTypesStrategy`), via `appStrategyService.registerStrategies`. **Not** the same as the server-side `create-strategy` (`@glyvio_core.Strategy`, queued/deduplicated) — this one is a singleton resolved by event key, used as an app-side overridable extension point.
 
 ### Schema
 
