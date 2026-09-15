@@ -361,3 +361,19 @@ export class <EntityName>GridPage extends glyvio_core.SimpleGridPage<<EntityName
   }
 }
 ```
+
+> **Sobre o botão de report acima** — `registerReport(this)` + `getButton()` expõem o seletor
+> **nativo de Report Records** (`glyvio_entity.Report`, o modelo configurado pelo app), não um
+> controller que você tenha escrito. O seletor só lista registros cujo `screenPaths` contenha
+> `{ path: '<o path desta rota>', type: '<o tipo desta rota>' }` — ou seja, **vincular um relatório
+> a esta tela é cadastro, não código**. A tela não precisa implementar nada: `openExternalUrl` já
+> vem de `CoreView`.
+>
+> Para abrir uma **Custom Page** (HTML/Plotly gerada pelo `glyvio-custom-page-agent`), não use
+> este botão — adicione um `ActionButtonDesign` comum e, na action, chame
+> `await this.openCustomPage(name, isPublic?, parameters?)`, retornando `'STATE_FREEZED'`.
+> **Não monte a URL à mão**: o cliente Flutter resolve BASE_URL, company id e token sozinho, e
+> converte `parameters` em query string. Do lado do controller eles chegam em
+> `WebRequest.requestParams` sempre como **string** e são **entrada não confiável** — valide e
+> reautorize no servidor. Ver a skill `create-custom-page`.
+

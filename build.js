@@ -124,7 +124,10 @@ const PLATFORMS = {
 // Substituição
 // ---------------------------------------------------------------------------
 
-const TOKEN_RE = /\{\{([A-Z_]+)\}\}/g;
+// Tokens do gerador começam com letra: {{SKILLS_DIR}}, {{TEMP_DIR}}, …
+// Um `_` inicial marca placeholder do próprio Glyvio (ex.: `{{_BASE_URL_}}`, expandido em runtime
+// pela camada Flutter) — esses passam intactos e NÃO são tratados como token de build.
+const TOKEN_RE = /\{\{([A-Z][A-Z_]*)\}\}/g;
 
 function render(text, tokens, origin) {
   return text.replace(TOKEN_RE, (match, name) => {
@@ -170,9 +173,11 @@ function buildAgent(text, platform, origin) {
 
 const checkOnly = process.argv.includes('--check');
 const stale = [];
+const emitted = new Set();
 let written = 0;
 
 function emit(outPath, content) {
+  emitted.add(path.normalize(outPath));
   const abs = path.join(ROOT, outPath);
   const current = fs.existsSync(abs) ? fs.readFileSync(abs, 'utf8') : null;
   if (current === content) return;
@@ -183,6 +188,50 @@ function emit(outPath, content) {
   fs.mkdirSync(path.dirname(abs), { recursive: true });
   fs.writeFileSync(abs, content, 'utf8');
   written++;
+}
+
+/**
+ * Remove arquivos gerados que a fonte não produz mais (skill/agente renomeado ou apagado).
+ * Sem isso o nome antigo continua vivo na saída e volta a ser carregado pela plataforma.
+ * Só varre os subdiretórios que o gerador gerencia — nunca toca em settings.json, .env etc.
+ */
+const MANAGED = ['skills', 'agents', 'rules', 'references', 'scripts'];
+const orphans = [];
+
+function pruneOrphans() {
+  for (const key of Object.keys(PLATFORMS)) {
+    const base = path.join(ROOT, PLATFORMS[key].out);
+    for (const dir of MANAGED) {
+      const abs = path.join(base, dir);
+      if (!fs.existsSync(abs)) continue;
+      walk(abs, (file) => {
+        const rel = path.normalize(path.relative(ROOT, file));
+        if (emitted.has(rel)) return;
+        if (path.basename(file) === '.DS_Store') return;
+        orphans.push(rel);
+        if (!checkOnly) fs.rmSync(file);
+      });
+      if (!checkOnly) pruneEmptyDirs(abs);
+    }
+  }
+}
+
+/** Remove diretórios que ficaram vazios depois do prune (ex.: skill renomeada). */
+function pruneEmptyDirs(dir) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (e.isDirectory()) pruneEmptyDirs(path.join(dir, e.name));
+  }
+  if (fs.readdirSync(dir).length === 0 && path.resolve(dir) !== path.resolve(ROOT)) {
+    fs.rmdirSync(dir);
+  }
+}
+
+function walk(dir, fn) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) walk(p, fn);
+    else fn(p);
+  }
 }
 
 function listSkills(platform) {
@@ -308,15 +357,26 @@ function buildCatalog() {
 
 for (const key of Object.keys(PLATFORMS)) buildPlatform(key);
 buildCatalog();
+pruneOrphans();
 
 if (checkOnly) {
-  if (stale.length) {
-    console.error(`[forge] ${stale.length} arquivo(s) dessincronizado(s) com src/:`);
-    for (const f of stale) console.error(`  ${f}`);
+  if (stale.length || orphans.length) {
+    if (stale.length) {
+      console.error(`[forge] ${stale.length} arquivo(s) dessincronizado(s) com src/:`);
+      for (const f of stale) console.error(`  ${f}`);
+    }
+    if (orphans.length) {
+      console.error(`[forge] ${orphans.length} arquivo(s) órfão(s) (a fonte não produz mais):`);
+      for (const f of orphans) console.error(`  ${f}`);
+    }
     console.error('\nRode `node build.js` e faça commit do resultado.');
     process.exit(1);
   }
   console.log('[forge] saída sincronizada com src/.');
 } else {
   console.log(`[forge] ${written} arquivo(s) escrito(s) em ${Object.keys(PLATFORMS).join(', ')}.`);
+  if (orphans.length) {
+    console.log(`[forge] ${orphans.length} órfão(s) removido(s):`);
+    for (const f of orphans) console.log(`  ${f}`);
+  }
 }

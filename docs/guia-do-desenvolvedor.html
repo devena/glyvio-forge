@@ -733,7 +733,7 @@
 
       <div class="callout callout-warn">
         <div class="callout-title">Atenção — Instanciação de Entidades</div>
-        Sempre use <code>await glyvio_entity.Erp.new()</code> para criar instâncias de entidade. Nunca use <code>new glyvio_entity.Erp()</code> — o construtor direto não inicializa corretamente o estado interno do framework.
+        Sempre use a fábrica <code>.new()</code> para criar instâncias de entidade. Nunca use <code>new glyvio_entity.Erp()</code> — o construtor direto não inicializa corretamente o estado interno do framework. Só o <code>await</code> muda por camada: <code>await glyvio_entity.Erp.new()</code> em <code>plugin/app</code>; <code>glyvio_entity.Erp.new()</code> (<strong>sem await</strong>) em <code>plugin/server</code> e <code>plugin/environment</code>.
       </div>
 
       <h3>QueryBuilder — Padrão de Consultas</h3>
@@ -1191,7 +1191,7 @@
         <div class="agent-card-layer"><span class="layer-badge badge-env">Env</span></div>
       </div>
       <div class="agent-card">
-        <div class="agent-card-name">glyvio-report-agent</div>
+        <div class="agent-card-name">glyvio-custom-page-agent</div>
         <div class="agent-card-trigger">Para dashboards HTML interativos servidos via SimpleController. Trabalha com Plotly.js, propõe layout de KPIs e gráficos a partir de queries SQL, gera preview antes de implementar.</div>
         <div class="agent-card-layer"><span class="layer-badge badge-server">Server</span></div>
       </div>

@@ -178,7 +178,7 @@ export class UserBatchCart extends glyvio_core.SimpleBatchCart<UserBatchCartStat
     item: UserBatchCartDto,
     queue: glyvio_core.EntityServiceQueue,
   ): Promise<glyvio_core.EntityServiceQueue> {
-    const user = new glyvio_entity.AppUser();
+    const user = await glyvio_entity.AppUser.new();
     user.id = item.id;
     user.name = item.name;
     user.email = item.email;

@@ -94,7 +94,7 @@ export class TagColorNotificationInterceptor extends glyvio_core.SimpleAfterInte
     );
 
     // Build the system notification entity.
-    const notification = new glyvio_entity.Notification();
+    const notification = glyvio_entity.Notification.new();
     notification.title = 'Tag Color Changed';
     notification.description = `Tag "${value.name}" color was changed from "${previousColor ?? 'none'}" to "${currentColor ?? 'none'}".`;
     notification.viewed = false;

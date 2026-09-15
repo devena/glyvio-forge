@@ -82,8 +82,10 @@ glyvio_core.appInterceptorService.registerInterceptors([{
 `SimpleSendModal`, `SimpleCart`, `SimpleSidebar`, `SimpleKanbanPage`,
 `SimpleCalendarPage`.
 
-> **Atenção:** Sempre use `await glyvio_entity.Erp.new()` para instanciar
-> entidades — nunca `new glyvio_entity.Erp()`.
+> **Atenção:** Sempre use a fábrica `.new()` para instanciar entidades — nunca o
+> construtor direto `new glyvio_entity.Erp()`. Só o `await` muda por camada:
+> `await glyvio_entity.Erp.new()` em `plugin/app`; `glyvio_entity.Erp.new()`
+> (**sem `await`**) em `plugin/server` e `plugin/environment`.
 >
 > Em interpolações de design, use o caminho joined: `item.client.name`, nunca
 > `item.clientId`.
@@ -172,8 +174,8 @@ descritivo → push. O CI no GitHub Actions valida o build antes do deploy.
 | App         | Pages / Modals / Carts                    | Explícito em `index.ts` via `routerService.loadRoutes()`                   |
 | App         | Interceptors de app                       | Explícito em `index.ts` via `appInterceptorService.registerInterceptors()` |
 | App         | Menu items                                | Explícito em `index.ts` via `FullMenuPage.fullMenuGroupAdd()`              |
-| Server      | Before / After / AfterCommit Interceptors | Descoberta automática via decorador                                        |
-| Server      | Controllers                               | Descoberta automática via decorador                                        |
+| Server      | Before / After / AfterCommit Interceptors | Decorador **+** `export *` em `src/index.ts` (obrigatório)                  |
+| Server      | Controllers                               | Decorador **+** `export *` em `src/index.ts` (obrigatório)                  |
 | Environment | SystemTool / CustomTool                   | Descoberta automática via decorador                                        |
 
 ---
@@ -237,7 +239,7 @@ As skills geram código seguindo os padrões do projeto. Invoque no chat com
 | `glyvio-app-chart`          | App         | Criação e customização de gráficos                   |
 | `glyvio-server-coordinator` | Server      | Lógica de negócio com múltiplos interceptors         |
 | `glyvio-environment-agent`  | Environment | Tools de IA, queries com SyncClient                  |
-| `glyvio-report-agent`       | Server      | Dashboards HTML interativos com Plotly.js            |
+| `glyvio-custom-page-agent`| Server      | Custom Pages: HTML interativo com Plotly.js        |
 | `Plan`                      | Qualquer    | Planejar implementações que afetam múltiplas camadas |
 
 > **Skill vs. Agente:** Use uma _skill_ quando sabe exatamente o que criar. Use
