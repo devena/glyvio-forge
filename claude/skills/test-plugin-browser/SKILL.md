@@ -11,7 +11,7 @@ Esta skill guia o **AGY** / **Claude** para testar e validar o plugin do cliente
 - o alvo (staging/homologação) foi compilado com `--dart-define=ENABLE_AI_BRIDGE=true`; **ou**
 - você está logado numa **company sandbox** que o backend do Glyvio marcou explicitamente com `aiBridgeSandbox: true` — esse é o caminho para testar contra **produção de verdade** (mesma build que todo cliente usa, mesmos dados reais), sem precisar de uma flag de build.
 
-**Credenciais**: sempre via `.env` (`GLYVIO_APP_URL`, `GLYVIO_EMAIL`, `GLYVIO_PASSWORD`) lido internamente pelo script Node (`require('dotenv').config()`). **Nunca** peça para o usuário colar a senha no chat, e nunca imprima/ecoe o valor da senha em nenhum output ou comando.
+**Credenciais**: sempre via `.env` (`G_APP_URL`, `G_USERNAME`, `G_PASSWORD`; os nomes legados `GLYVIO_*` seguem aceitos como fallback) lido internamente pelo script Node (`require('dotenv').config()`). **Nunca** peça para o usuário colar a senha no chat, e nunca imprima/ecoe o valor da senha em nenhum output ou comando.
 
 ---
 
@@ -75,6 +75,64 @@ node /home/ubuntu/glyvio-forge/tools/test-runner/runner.js \
 Um step `{"action": "screenshot", "path": "01_estado_vazio.png"}` dentro do `--scenario` tira o print na hora — é a forma preferida de cumprir a regra da seção 0 sem escrever um script Node à mão.
 
 Para fluxos com navegação em cascata (lista → cart → modal, 2+ níveis), use `{"action": "waitForScreen", "nameObject": "SaleEditCart", "surfaceType": "cart"}` **depois** do `dispatch`/`navigate` que abre a tela nova, em vez de confiar em "a última tela do array" + sleep fixo — ver seção 6. A partir desse step, os steps seguintes (`dispatch`/`setField`/`selectEntity`/`waitForIdle`) usam automaticamente essa tela "pinada" até o próximo `waitForScreen`.
+
+---
+
+## 1.5. Descobrir o BASE_URL da API da empresa (antes de bater em qualquer controller)
+
+**O host da API NÃO é necessariamente o host do app.** Confirmado ao vivo em `app-beta.glyvio.com`:
+o app serve **apenas estáticos** (`/`, `/version.json`, `/assets/…`), e toda a API vive em
+`webapi-prod.glyvio.com` (auth em `auth-webapi-prod.glyvio.com`). Chamar o host do app devolve o
+HTML de fallback da SPA — e é exatamente essa a causa raiz do gotcha "app-beta devolve HTML para
+controller customizado" registrado na seção 6.
+
+**Nunca assuma o host.** Descubra-o observando o próprio app: logo após o login / seleção de empresa,
+ele chama `POST {BASE_URL}/query/{companyId}/query-for-user`. Removendo o sufixo
+`/query/{companyId}/query-for-user` dessa URL, o que sobra é o `BASE_URL` daquele ambiente + empresa.
+
+O script vive no checkout do **glyvio-forge** (não no diretório de skills instalado):
+
+```bash
+cd <glyvio-forge>/tools/test-runner
+npm install                          # só na primeira vez
+node discover_base_url.js            # relatório legível
+node discover_base_url.js --json     # para consumo por script
+node discover_base_url.js --headed   # conta com várias empresas (seleção manual)
+```
+
+Credenciais saem do `.env` (`G_APP_URL`, `G_USERNAME`, `G_PASSWORD`; aceita os nomes legados
+`GLYVIO_*`). **Nunca** peça a senha no chat e nunca a ecoe — o script lê via `dotenv` e redige
+qualquer token antes de imprimir.
+
+Saída real (app-beta, validada ao vivo):
+
+```json
+{
+  "baseUrl": "https://webapi-prod.glyvio.com",
+  "companyId": "afb515c7-...",
+  "appUrl": "https://app-beta.glyvio.com",
+  "apiHostDiffersFromApp": true
+}
+```
+
+Com o `BASE_URL` em mãos, as URLs de report daquela empresa são:
+
+```
+{BASE_URL}/custom/private/page/{companyId}/{controllerPath}?authorization=Bearer%20<jwt>
+{BASE_URL}/custom/public/page/{companyId}/{controllerPath}
+{BASE_URL}/custom/external/page/{companyId}/{controllerPath}?auth_token=<jwt>
+```
+
+- `{controllerPath}` é o `path` do `@glyvio_core.Controller({ path: '...' })`.
+- `private` é o caso padrão (`SimpleController`, usuário logado); `public` dispensa auth; `external`
+  é para `ExternalSimpleController` com link compartilhável — note que **o parâmetro de auth muda**
+  junto com o segmento (`authorization=Bearer%20…` vs `auth_token=…` vs nenhum).
+- ⚠️ **Migração `report` → `page` em andamento.** `report` ficou reservado para o modelo de Report
+  Record (`glyvio_entity.Report`); `page` é o segmento das Custom Pages. O `report` legado ainda
+  responde enquanto a migração não termina.
+- A mesma regra `{BASE_URL}/{serviço}/{companyId}/{ação}` vale para o resto da API — foi confirmada
+  em 9 endpoints reais (`/company/…`, `/entity/{companyId}/save-list`, `/plugin/{companyId}/active-plugins`,
+  `/broker/{companyId}/get-token`, …), e é a mesma forma usada pela skill `fork-company-script`.
 
 ---
 
@@ -206,7 +264,7 @@ function unwrap(v) {
   });
   const page = await context.newPage();
 
-  await page.goto(process.env.GLYVIO_APP_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.goto(process.env.G_APP_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
 
   // bridge-ready real (não apenas o shim JS, que existe antes do Dart registrar o callback)
   for (let i = 0; i < 90; i++) {
@@ -217,10 +275,10 @@ function unwrap(v) {
   // login: só o primeiro input é localizável por seletor; o campo de senha e o botão são por
   // coordenada (Tab NÃO move o foco neste app — testado e confirmado que não funciona; ver seção 6).
   // Coordenadas válidas apenas para o viewport 1440x900 acima.
-  await page.locator('input').first().fill(process.env.GLYVIO_EMAIL, { timeout: 30000 });
+  await page.locator('input').first().fill(process.env.G_USERNAME, { timeout: 30000 });
   await page.mouse.click(1050, 496); // campo de senha
   await page.waitForTimeout(300);
-  await page.keyboard.type(process.env.GLYVIO_PASSWORD, { delay: 30 });
+  await page.keyboard.type(process.env.G_PASSWORD, { delay: 30 });
   await page.mouse.click(1050, 569); // botão "Logar"
   await page.waitForTimeout(15000);
 
@@ -271,7 +329,7 @@ Esse template básico assume 1 tela e um `await` direto em `navigate`/`dispatchA
 - **`navigate()`/`dispatchAction()` podem nunca resolver a própria promise mesmo quando o efeito real já aconteceu** (a navegação mudou de tela, o estado mudou) — ou, no caso de uma validação de negócio (`GlyvioError`) disparada dentro de um `dispatchAction`, o app registra o erro em `getErrors()` mas a chamada do bridge não necessariamente rejeita/resolve nunca. **Nunca dê `await` direto nessas duas chamadas sem timeout** — isso trava o script inteiro indefinidamente sem nenhum log. Dispare com timeout tolerante (não fatal) e confirme o resultado real via `waitForScreen`/`getState`/`getErrors` — é exatamente o que `runner.js` faz internamente (`fireAndTolerate`) e o que os steps `navigate`/`dispatch` do `--scenario` já aplicam.
 - **`getErrors()` é a fonte de verdade pra validação de negócio, não o retorno do `dispatchAction`.** Uma regra de negócio real (ex: "Tabela de preço é obrigatória para a escolha das parcelas" antes de abrir um modal de seleção de estoque) aparece em `getErrors({callbackId})` mesmo quando o `dispatchAction` que a disparou não lançou nada capturável no script. Sempre confira `getErrors()` depois de qualquer `dispatch` que pareça não ter tido efeito.
 - **`selectEntityField(callbackId, fieldName, '', 0)` com busca vazia funciona como "listar tudo, pegar o índice N"** — útil quando o campo tem só uma opção óbvia (ex: um único cliente de teste). Se o campo realmente não tiver nenhuma opção disponível (ex: company de teste sem nenhuma tabela de preço cadastrada), a chamada rejeita com uma mensagem clara e específica (`search "" for "..." returned 0 result(s)... Available: (none)`) — não trava e não falha silenciosamente; leia a mensagem, ela já diz se o problema é dado de teste ausente, não bug de código.
-- **`app-beta.glyvio.com` pode estar roteando chamadas de controller customizado para o fallback do SPA em vez da API.** Confirmado em `glyvio-plugin-financial`: `requestService.post` contra `app-beta.glyvio.com` retornou a página HTML de fallback da SPA (não uma resposta real da API) para **todo** controller customizado testado, não uma rota isolada — o host real da API observado nesse ambiente foi `webapi-prod.glyvio.com`. Se uma verificação ao vivo contra `app-beta` falhar de um jeito que parece "a rota não existe"/"resposta é HTML", **antes de investigar o código do plugin**, confirme o host real com `curl -I` na URL usada e considere que pode ser um problema de roteamento do ambiente `app-beta`, não do plugin. Isso ainda não tem causa raiz confirmada no `glyvio_core`/environment — trate como um gotcha conhecido do ambiente `app-beta`, e prefira `webapi-prod.glyvio.com` (ou o host de API real do ambiente-alvo) para bater direto num controller, em vez de assumir que `app-beta.glyvio.com` sempre serve tanto o app quanto a API.
+- **`app-beta.glyvio.com` pode estar roteando chamadas de controller customizado para o fallback do SPA em vez da API.** Confirmado em `glyvio-plugin-financial`: `requestService.post` contra `app-beta.glyvio.com` retornou a página HTML de fallback da SPA (não uma resposta real da API) para **todo** controller customizado testado, não uma rota isolada — o host real da API observado nesse ambiente foi `webapi-prod.glyvio.com`. Se uma verificação ao vivo contra `app-beta` falhar de um jeito que parece "a rota não existe"/"resposta é HTML", **antes de investigar o código do plugin**, confirme o host real com `curl -I` na URL usada e considere que pode ser um problema de roteamento do ambiente `app-beta`, não do plugin. **CAUSA RAIZ CONFIRMADA (medida ao vivo):** não é bug de roteamento do `app-beta` — é que **a API mora em outro host**. Em `app-beta.glyvio.com` o app serve apenas estáticos (`/`, `/version.json`, `/assets/…`) e toda a API responde em `webapi-prod.glyvio.com` (auth em `auth-webapi-prod.glyvio.com`). Quem chama o host do app recebe o HTML de fallback da SPA, como esperado. **Nunca assuma que o host do app é o host da API**: descubra o `BASE_URL` real com o procedimento da seção 1.5 (`discover_base_url.js`) antes de bater em qualquer controller.
 - **Strings `$T{...}` renderizam como `?chave?` literal sob `setPluginDevOverride`, mesmo em plugins já publicados.** Confirmado num plugin em produção (`crm`, título da app bar e campos de card num kanban) e não só num plugin novo/não publicado - o override local troca o `bundle.js`, mas não parece carregar/registrar o catálogo de traduções (`.arb`) do jeito que um publish de verdade faz. Texto que vem direto do banco (ex: nome de uma coluna de kanban configurada pelo usuário) renderiza normal; só chave de template `$T{}` fica quebrada. **Não conclua que as traduções do seu plugin estão erradas só por ver `?chave?` num teste ao vivo via dev-override** — isso é esperado nesse modo de teste. Pra validar o texto traduzido de verdade, é preciso um publish real (homologação), não dev-override.
 
 ---

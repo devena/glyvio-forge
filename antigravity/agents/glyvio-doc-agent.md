@@ -80,13 +80,25 @@ When creating examples for external agents/developers, you must enforce the foll
 ### Example Code Style Rule
 
 ```typescript
-// ✅ CORRECT - Globals from glyvio_core
-const tag = new glyvio_entity.Tag();
+// ✅ CORRECT - Globals injected at runtime, never imported
 glyvio_core.entityService.saveEntity(tag);
+const loggedUserId = glyvio_core.getContext().loggedUserId;
 
 // ❌ WRONG - Do not import
 import { Tag } from '@plugin/glyvio-plugin-server';
 ```
+
+> **Entity instantiation in examples**: never write `new glyvio_entity.X()` — the plain
+> constructor skips the framework's internal initialization and is a hard error in every layer.
+> Always use the `.new()` factory; only the `await` differs:
+>
+> | Layer | Form |
+> | --- | --- |
+> | `plugin/app` | `const x = await glyvio_entity.X.new();` |
+> | `plugin/server`, `plugin/environment` | `const x = glyvio_entity.X.new();` — **no `await`** |
+>
+> Server and environment contexts (such as `SimpleController.handle()`) are synchronous —
+> writing `await` there is as wrong as omitting it in the app.
 
 ---
 
@@ -107,7 +119,7 @@ For all `.ts` source files, decorate exported entities with standard JSDoc:
  * @throws {GlyvioPermissionError} If the user lacks insert/update permissions.
  * @example
  * ```typescript
- * const tag = new glyvio_entity.Tag();
+ * const tag = glyvio_entity.Tag.new();
  * tag.name = "Archived";
  * glyvio_core.entityService.saveEntity(tag);
  * ```

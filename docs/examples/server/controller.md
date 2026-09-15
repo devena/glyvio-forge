@@ -115,7 +115,7 @@ export class RegisterVisitController extends glyvio_core.SimpleController<Regist
     const session = glyvio_core.sessionService.getCurrentSession();
     const visitId = glyvio_core.uuidService.v4();
 
-    const visit = new glyvio_entity.Visit();
+    const visit = glyvio_entity.Visit.new();
     visit.id = visitId;
     visit.clientId = body.clientId;
     visit.notes = body.notes ?? null;
@@ -163,7 +163,7 @@ export class ImportTagsController extends glyvio_core.SimpleController<ImportTag
     const queue: glyvio_core.EntityServiceQueue = [];
 
     for (const name of body.names) {
-      const tag = new glyvio_entity.Tag();
+      const tag = glyvio_entity.Tag.new();
       tag.id = glyvio_core.uuidService.v4();
       tag.name = name;
       tag.entityName = body.entityName;

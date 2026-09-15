@@ -7,8 +7,17 @@ Este documento reúne as diretrizes não-negociáveis e os gotchas de runtime co
 ## 1. Regras Não-Negociáveis do Frontend (`plugin/app`)
 
 ### 1.1. Instanciação de Entidades
-- **Sempre use `await glyvio_entity.Entity.new()`** — nunca chame o construtor síncrono `new glyvio_entity.Entity()`.
-- *Única exceção confirmada*: uploads de anexos que precisam apenas de um `id` temporário pré-gerado antes de chamar persistência especializada (`attachFromTemp`).
+- **Sempre use a fábrica `.new()`** — nunca chame o construtor direto `new glyvio_entity.Entity()`, que não inicializa o estado interno do framework. Isso vale em **todas as camadas**.
+- **O que muda por camada é só o `await`:**
+
+  | Camada | Forma correta |
+  | --- | --- |
+  | `plugin/app` | `const x = await glyvio_entity.Entity.new();` |
+  | `plugin/server` | `const x = glyvio_entity.Entity.new();` — **sem `await`** |
+  | `plugin/environment` | `const x = glyvio_entity.Entity.new();` — **sem `await`** |
+
+  No server e no environment não existe `await` nessa chamada: contextos como o `handle()` de `SimpleController` são síncronos. Usar `await` ali é tão errado quanto omiti-lo no app.
+- *Única exceção confirmada*: uploads de anexos que precisam apenas de um `id` temporário pré-gerado antes de chamar persistência especializada (`attachFromTemp`) — e a construção de `AttachmentEntity` via cast de estrutura (`<glyvio_structure.attachment_entity>{ ... }`) com `id` já montado.
 
 ### 1.2. Campos de Chave Estrangeira / Relações (FKs)
 - **Nunca use `StringTextfieldDesign` para campos que referenciam outra entidade** (campos com sufixo `_id`, `_ic` ou tipo `ENTITY`).

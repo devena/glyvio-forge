@@ -2,7 +2,7 @@
 
 # Catálogo de skills e agentes
 
-56 skills e 6 agentes. Invoque uma skill no chat com `/nome-da-skill`.
+57 skills e 6 agentes. Invoque uma skill no chat com `/nome-da-skill`.
 
 ## App (frontend)
 
@@ -14,6 +14,7 @@
 | `/create-batch-page-interceptor` | Generates a custom class extending an abstract `SimpleBatchPageInterceptor` to dynamically modify batch page designs, spreadsheet mapping layouts, validation, row attributes, and database query inputs, and registers it. |
 | `/create-calendar-page` | Generates a standard entity calendar page showing scheduled events, appointments, or tasks with routing, sidebar filtering, and menu registration for a Glyvio plugin. |
 | `/create-calendar-page-interceptor` | Generates a custom class extending an abstract `SimpleCalendarPageInterceptor` to dynamically modify calendar designs, cell layouts, and database query filters, and registers it. |
+| `/create-custom-page` | Generates a Custom Page: a single-file HTML page (dashboard, relatório, painel, printable document) rendered server-side by a SimpleController in plugin/server and opened by a direct URL at /custom/{private\|public\|external}/page/{companyId}/{path}. |
 | `/create-edit-modal` | Generates a standard entity creation/modification form inside a modal, with input validation, saving routines, routing, and custom interceptor hooks. |
 | `/create-edit-modal-interceptor` | Generates a custom class extending an abstract `SimpleEditModalInterceptor` to dynamically modify form layout fields, query logic, and saving/cancellation procedures, and registers it. |
 | `/create-entity-links-section` | Adds a "Links" section to an existing sidebar (or tab-sidebar), letting the user attach/remove polymorphic links to other entities via a generic pick-a-type-then-pick-a-record flow (EntityLinksDesign), backed by a dedicated `<owner>_entity` join table. |
@@ -86,7 +87,7 @@
 | --- | --- |
 | `glyvio-app-chart` | Use for creating or editing charts (data visualizations) in the app layer. |
 | `glyvio-app-coordinator` | Use for frontend (plugin/app) UI/UX work. |
+| `glyvio-custom-page-agent` | Use for Custom Pages: interactive, single-file HTML pages (dashboards, reports, printable documents) rendered server-side by a SimpleController in plugin/server and opened by a direct URL. |
 | `glyvio-doc-agent` | Use for documenting the glyvio-plugin-core repository so external plugin developers and other AI agents can build against the public declaration files. |
 | `glyvio-environment-agent` | Use for environment-layer (plugin/environment) work. |
-| `glyvio-report-agent` | Use for interactive HTML dashboard reports served via SimpleController in the server layer (plugin/server). |
 | `glyvio-server-coordinator` | Use for server-layer (plugin/server) business logic. |

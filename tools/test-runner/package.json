@@ -1,0 +1,11 @@
+{
+  "name": "glyvio-forge-test-runner",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Runner Playwright para testar plugins contra o Glyvio App publicado (skill test-plugin-browser).",
+  "dependencies": {
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
+    "playwright": "^1.49.0"
+  }
+}
