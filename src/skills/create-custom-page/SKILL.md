@@ -23,12 +23,39 @@ the thing is authored, never by the word.**
 | URL segment | `/custom/{access}/**page**/…` | `/custom/{access}/**report**/…` |
 | Appears in the app's report button | No (see the bridge below) | Yes, via `screenPaths` |
 
+### If the user has not said which one, ASK — do not guess
+
+The word "relatório" matches both models, so a bare request like *"quero um relatório de vendas"*
+is **not** enough to choose. Asking costs one turn; guessing wrong costs the whole build (a
+published controller the user cannot edit, or a record that cannot do what they wanted).
+
+Ask in the user's terms — where it is authored, not which class it extends:
+
+> "Esse relatório você quer **configurar pelo app** — cadastrar a consulta e os filtros na tela de
+> Relatórios, sem publicar nada —, ou quer que eu **escreva em código** uma página HTML com
+> gráficos, que exige publicar o plugin?"
+
+Signals that already answer it, when present:
+
+| Points to **Report Record** | Points to **Custom Page** |
+| --- | --- |
+| "configurar pelo app", "sem publicar", "sem deploy" | "com gráficos", "dashboard", "Plotly" |
+| "o usuário mesmo altera a consulta" | "layout customizado", "igual a este print" |
+| "cadastrar um relatório" | "uma página", "abrir em nova aba" |
+| PDF / XLSX / CSV as the output | an interactive HTML page |
+
+Only when neither the request nor the answer settles it, default to asking again — never start
+building on a coin flip.
+
 If the user wants to configure it in the app without publishing, they want a **Report Record** —
-stop and tell them; there is no code to write.
+switch to the **`configure-report-record`** skill, which covers the record's fields, why a report
+does not show up on a screen (`screenPaths`), and when a custom processor is needed.
 
 **The bridge**: a Custom Page never shows up in the native report button, which lists only
 `Report` records whose `screenPaths` match the current screen. To put one there you need *both* a
-controller *and* a `Report` record whose `processor` returns the page's URL. Only do this when asked.
+controller *and* a `Report` record whose `processor` returns the page's URL — see
+`configure-report-record` §5. Only do this when the user explicitly asks for it; a plain button
+calling `openCustomPage` is simpler and leaves no record to maintain.
 
 ---
 

@@ -83,6 +83,7 @@ Before writing any TypeScript manually, check whether a dedicated skill covers t
 | New `@AfterInterceptor` | **`create-after-interceptor`** |
 | New `@AfterCommitInterceptor` | **`create-after-commit-interceptor`** |
 | New `@SyncInterceptor` | **`create-sync-interceptor`** |
+| Diagnose a sync task that is not filling the target entity (missing field, wrong rounding, bad boolean/date parsing) | **`audit-sync-task-query`** — read-only audit of the task's `baseQuery` against the entity structure; run it before assuming the bug is in code |
 | Interceptor that doesn't fit the four hooks above (e.g. extending a third-party plugin's base interceptor class) | **`create-custom-interceptor`** |
 | New `@Strategy` (server-side, queued/deduplicated business logic) | **`create-strategy`** |
 | New `@Controller` (HTTP endpoint, including HTML report controllers) | **`create-controller`** |

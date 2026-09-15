@@ -9,6 +9,21 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
 
 > ⚠️ **This is an integration-only hook.** `SyncInterceptor` fires **exclusively** when a record arrives through the Glyvio **sync engine** — the pipeline used by third-party integrations (ERPs, external systems) to push data into the platform. It does **NOT** fire on regular user-facing saves (app UI, API calls, or any save triggered by `entityService`). If the requirement is to react to every save regardless of origin, use `BeforeInterceptor` instead.
 
+
+### Where this sits among the sync skills
+
+Four skills touch `glyvio-plugin-sync` — pick by **which end of the pipe** you are on:
+
+| You want to… | Skill |
+| --- | --- |
+| React to data **arriving** through the sync engine (normalize/validate a field) | **this skill** |
+| Make sync **pull** rows from a source with no generic connector (an `@Action` it calls on a schedule) | `create-sync-extraction-action` |
+| Read or trigger a third-party datasource **on demand** from your own code | `query-external-datasource` |
+| Check whether a task's `baseQuery` really fills the target entity | `audit-sync-task-query` |
+
+Configuring dataSources, tasks and schedules is done by the end user in the Sync admin UI — no skill
+covers it because there is no code involved.
+
 ---
 
 ## 🎯 Skill Metadata

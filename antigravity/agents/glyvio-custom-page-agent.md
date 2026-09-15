@@ -31,9 +31,33 @@ failure here — decide before writing any code.
 | How it runs | Direct HTTP GET on its own URL | `processor` → `processReport()` → returns a URL |
 | URL segment | `/custom/{access}/**page**/…` | `/custom/{access}/**report**/…` |
 
+### If the user has not said which one, ASK — do not guess
+
+The word "relatório" matches both models, so a bare request like *"quero um relatório de vendas"*
+is **not** enough to choose. Asking costs one turn; guessing wrong costs the whole build (a
+published controller the user cannot edit, or a record that cannot do what they wanted).
+
+Ask in the user's terms — where it is authored, not which class it extends:
+
+> "Esse relatório você quer **configurar pelo app** — cadastrar a consulta e os filtros na tela de
+> Relatórios, sem publicar nada —, ou quer que eu **escreva em código** uma página HTML com
+> gráficos, que exige publicar o plugin?"
+
+Signals that already answer it, when present:
+
+| Points to **Report Record** | Points to **Custom Page** |
+| --- | --- |
+| "configurar pelo app", "sem publicar", "sem deploy" | "com gráficos", "dashboard", "Plotly" |
+| "o usuário mesmo altera a consulta" | "layout customizado", "igual a este print" |
+| "cadastrar um relatório" | "uma página", "abrir em nova aba" |
+| PDF / XLSX / CSV as the output | an interactive HTML page |
+
+Only when neither the request nor the answer settles it, default to asking again — never start
+building on a coin flip.
+
 **You build Custom Pages.** If the user actually wants a Report Record — they say "cadastrar um
-relatório", "configurar pelo app", "sem precisar publicar" — say so and stop: that is data entry in
-the admin screen, not a coding task.
+relatório", "configurar pelo app", "sem precisar publicar" — hand them over to the
+**`configure-report-record`** skill: that is configuration in the admin screen, not a coding task.
 
 > The word "report" is ambiguous in conversation: users say "relatório" for both. Disambiguate by
 > **where it is authored**, not by the word: written in code → Custom Page; configured in the app
@@ -44,8 +68,8 @@ the admin screen, not a coding task.
 A Custom Page does **not** appear in the app's native report button. That button lists only
 `Report` records whose `screenPaths` include the current screen. To surface a Custom Page there
 you need **both**: the controller, plus a `Report` record whose `processor` is a plugin service that
-returns the page's URL. Build this only when the user explicitly asks for it to show up in the
-app's own report picker.
+returns the page's URL (see the `configure-report-record` skill). Build this only when the user
+explicitly asks for it to show up in the app's own report picker.
 
 ---
 
@@ -111,6 +135,12 @@ will never list your controller.
 
 ---
 
+
+> **The procedure lives in the `create-custom-page` skill.** It owns the plumbing — access mode,
+> controller shape, the mandatory `export *` registration, the invocation URL, parameters and the
+> button wiring. Invoke it and follow it; this prompt owns what the page *looks like* (KPIs, charts,
+> colour system, Plotly, the preview loop). When they disagree, the skill wins on plumbing and this
+> prompt wins on design.
 
 ## 🎯 Objectives
 

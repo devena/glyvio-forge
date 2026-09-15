@@ -45,7 +45,7 @@ Draft a plan detailing:
 3. **Permissions required**: Detail if a new permission needs to be created in the `manifest.json` (specifically for `@SystemTool` registrations).
 4. **Trigger Strategy**: Indicate how/when the tool or action will be called.
 
-### Phase 3: Skill Delegation (use skills first, hand-code only for @Action)
+### Phase 3: Skill Delegation (always check for a skill first)
 
 Before writing any TypeScript manually, check whether a dedicated skill covers the work:
 
@@ -54,11 +54,29 @@ Before writing any TypeScript manually, check whether a dedicated skill covers t
 | Create a new `@SystemTool` | **`create-system-tool`** — generates the class, JSDoc, permission entry, `run_helper.sh` call, and entrypoint import |
 | Create a new Custom Agent (`manifest.json` + `@CustomTool`) | **`create-custom-agent`** — handles the full agent/tool registration |
 | On-demand read/trigger against a third-party datasource already registered in `glyvio-plugin-sync` (ad-hoc query, force a task now, ignore a record) | **`query-external-datasource`** — remember `.call(...)` returns a `Promise` in this layer (must `await`) |
+| An `@Action` invoked by `glyvio-plugin-sync` on a schedule to extract/ingest rows from a source system with no generic connector | **`create-sync-extraction-action`** — generates the `SimpleSyncAction` subclass; rows are integrated by field name into the target entity |
 | A `@SystemTool`/`@CustomTool` response (or a JSON field within it) will be shown to the end user as markdown in `glyvio_app` | **`format-llm-markdown-output`** — constrains the LLM to the exact tags `TextMarkdown`/`gpt_markdown` renders, instead of free-hand formatting prose that risks HTML/unsupported syntax |
 
 - **For `@SystemTool` and `@CustomTool` work: invoke the skill above.** Provide it: `toolId`, `className`, `description` (what the AI Agent reads), `requestTypeName`, and the business logic specification. The skill produces the complete, correctly structured file — do not rewrite it.
-- **For `@Action` work** (RPC, heavy local processing, sync push): no dedicated skill exists — write the code directly following the constraints below, except when the action's job is reaching a third-party datasource via `sync.SyncClient`, which `query-external-datasource` covers.
+- **For `@Action` work**: check the table first. A **sync-extraction action** (`glyvio-plugin-sync` calls your `@Action` on a schedule to pull rows from a source with no generic connector — a local Firebird, a REST endpoint reachable only from the customer's network) has a dedicated skill: **`create-sync-extraction-action`**. Only other kinds of `@Action` (plain RPC, heavy local processing against the offline DB) are hand-written — follow the constraints in Phase 3b.
 - After skill execution, proceed to Phase 4 to validate the output.
+
+#### Sync work: what is yours and what is not
+
+Four skills touch `glyvio-plugin-sync`. Only the first two are yours — **hand the others off instead
+of writing server code**:
+
+| Task | Skill | Owner |
+| --- | --- | --- |
+| Sync **pulls** rows via an `@Action` you expose, on the schedule the user configures | `create-sync-extraction-action` | **you** |
+| Read or trigger a registered datasource **on demand** from environment code | `query-external-datasource` | **you** (shared) |
+| React to data **arriving** through sync (normalize/validate a field on save) | `create-sync-interceptor` | `glyvio-server-coordinator` — `plugin/server`, not yours |
+| Audit whether a task's `baseQuery` really fills the target entity | `audit-sync-task-query` | either — read-only analysis, no code |
+
+Configuring dataSources, tasks and schedules is the end user's job in the Sync admin UI — no skill
+covers it because there is no code involved. If the request is "meu sync não está trazendo o campo
+X", start with `audit-sync-task-query`; it is a query/mapping problem far more often than a code one.
+
 
 ### Phase 3b: Code Writing Constraints (for @Action and any manual adjustments)
 

@@ -2,7 +2,7 @@
 
 # Catálogo de skills e agentes
 
-57 skills e 6 agentes. Invoque uma skill no chat com `/nome-da-skill`.
+59 skills e 6 agentes. Invoque uma skill no chat com `/nome-da-skill`.
 
 ## App (frontend)
 
@@ -77,6 +77,8 @@
 
 | Skill | O que faz |
 | --- | --- |
+| `/configure-report-record` | Guides a user through the Report Record model: a glyvio_entity.Report row configured in the app's "Relatório" admin screen (no deploy), whose SQL lives in the record itself and which is rendered by a processor plugin. |
+| `/create-sync-extraction-action` | Generates an Environment-layer @Action (extending glyvio_core.SimpleSyncAction) used for data synchronization / ingestion into Glyvio — glyvio-plugin-sync invokes it, on the schedule the user configures for the task, as an alternative to a plain baseQuery against a registered dataSource, when the source system has no generic sync connector (e.g. a Firebird database reached only from the customer's local network). |
 | `/modify-manifest` | Guides developers and AI agents on adding/editing permissions under the root `"permissions"` array, and structuring schema migrations (new entities, fields, or sequences) under the `"dbVersions"` array. |
 | `/release-project` | Releases the current project end-to-end: builds, bumps the patch version in package.json, updates CHANGELOG.md, commits every pending change with an auto-generated message, and pushes to origin. |
 | `/test-plugin-browser` | Instruções para o AGY / Claude conectar a aplicação Glyvio App publicada ao bundle local do plugin e testar via Browser usando a AI bridge (window.__GLYVIO_AI__), sem depender da árvore de semântica/acessibilidade. |
