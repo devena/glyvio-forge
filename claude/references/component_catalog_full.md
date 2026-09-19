@@ -65,6 +65,7 @@ dominante** do print.
 | `SimpleCalendarPageDesign`                         | Calendário (mês/semana) com eventos                                          | Agendamentos/eventos por data. **Skill: `create-calendar-page`**                  |
 | `SimpleBatchPageDesign`                            | Planilha editável em massa, com upload e validação por linha                 | Edição em lote tipo spreadsheet. **Skill: `create-batch-page`**                   |
 | `SimpleDashboardPageDesign` (+ `...SectionDesign`) | Painel com KPIs, gráficos e blocos em grade                                  | Dashboard / visão analítica.                                                      |
+| `SimpleMasterDetailPageDesign`                     | Lista/árvore de registros à esquerda + painel de detalhe do item selecionado à direita, cada lado carregando/atualizando independentemente (spinner próprio, sem recarregar a tela toda ao trocar a seleção) | Master-detail de verdade (não confundir com `SimpleListPageDesign` + sidebar de detalhe por rota, que recarrega a página inteira a cada seleção). Ver §16 para como MASTER e DETAIL se comunicam. Sem skill dedicada ainda — montar manualmente a partir de `SimpleMasterDetailPage`/`SidePanelReferenceDesign`. |
 
 > ⚠️ **Regra obrigatória para dashboards — um key por unidade visual.** Cada
 > card, KPI, gráfico ou grupo lógico independente **deve ser um key separado**
@@ -275,7 +276,7 @@ controle.
 | `RangeDateTimeTextfieldDesign`                                          | Intervalo de data/hora                            | Filtro por período com hora.                            |
 | `RangeNumberTextfieldDesign`                                            | Intervalo numérico (min–max)                      | Filtro por faixa de valor.                              |
 | `ChoiceSingleTextfieldDesign` (+ `ChoiceSingleTextfieldOption`)         | Dropdown/seletor de uma opção fixa                | Escolha única entre opções fixas (não-entidade).        |
-| `ChoiceMultipleTextfieldDesign` ⚠️                                      | Multi-seleção de opções fixas                     | Várias opções fixas — **ver bug confirmado abaixo antes de usar.** |
+| `ChoiceMultipleTextfieldDesign`                                        | Multi-seleção de opções fixas                     | Várias opções fixas (não-entidade).                      |
 | `EntitySelectTextfieldDesign`                                           | Seletor (dropdown) de entidade                    | Selecionar entidade de lista curta.                     |
 | `EntityAutocompleteSingleTextfieldDesign`                               | Autocomplete de 1 entidade (com chip)             | **FK/entidade única** — use a **subclasse específica**. |
 | `EntityAutocompleteMultipleTextfieldDesign`                             | Autocomplete de várias entidades (chips)          | Várias entidades relacionadas.                          |
@@ -285,19 +286,6 @@ controle.
 | `MentionsTextfieldDesign` (+ `MentionsTextfieldOption`)                 | Campo com @menções                                | Comentários com menção a usuários.                      |
 | `IconChoiceTextfieldDesign`                                             | Campo com botão de sufixo para escolher um ícone  | Selecionar/exibir um ícone (ex.: ícone de categoria, menu). Usa `suffixAction` (`ActionButtonDesign`) para abrir o seletor. |
 | `TextFieldDesign`                                                       | Base de campo (helpers `isRequired`, `errorText`) | Base — prefira concretas.                               |
-
-> ⚠️ **Bug confirmado em `ChoiceMultipleTextfieldDesign`**: o widget Flutter subjacente
-> (`TextFieldsChoiceWidget._addValue`) compara o novo valor contra a lista já selecionada
-> indexando cada item como se fosse um `Map` (`item['key']`), mas a lista interna é na
-> verdade `List<String>` — isso lança um erro de tipo em **toda tentativa de adicionar**
-> um item assim que a seleção já tem 1+ itens. Remover funciona normalmente
-> (`_remValue` não tem esse bug); só adicionar depois do primeiro item está quebrado.
-> Efeito prático: o usuário consegue remover itens da seleção, mas nunca voltar a
-> adicionar. Antes de usar este componente para qualquer seleção que o usuário vá
-> editar (não só preencher uma vez), avise o usuário desse limite ou prefira outro
-> padrão (ex.: `EntityAutocompleteMultipleTextfieldDesign` se as opções puderem virar
-> uma pseudo-entidade, ou botões individuais de toggle). Reportado e confirmado em
-> `glyvio-plugin-project` (filtro `cardFields` do Kanban) em 2026-09.
 
 ---
 
@@ -798,6 +786,64 @@ getDesignForCell(state: S, item: glyvio_entity.Entity): glyvio_core.CardCellDesi
 > um `RowLayoutFieldDesign` antes do título no cabeçalho). Sempre use
 > `ColumnLayoutDesign` como raiz quando há múltiplas linhas; use
 > `RowLayoutDesign` como raiz apenas quando tudo cabe em uma linha só.
+
+---
+
+## 16. Side Panels & Master-Detail — comunicação entre painéis
+
+Um **side panel** (`CoreSidePanel`/`SimpleSidePanel`) é um componente RPC
+independente — tem seu próprio ciclo de fetch/refresh e spinner de loading,
+diferente de uma `SectionDesign` (que compartilha o estado/RPC da tela que a
+embute). Hoje dois hosts embutem side panels:
+
+| Host                          | Slots                                 | Campo no design                                       |
+| ------------------------------ | -------------------------------------- | ------------------------------------------------------ |
+| `SimpleCartDesign`             | `LEFT` / `RIGHT`                       | `leftSidebarDesign` / `rightSidebarDesign`              |
+| `SimpleMasterDetailPageDesign` | `MASTER` / `DETAIL`                    | `masterPanelDesign` / `detailPanelDesign`               |
+
+Em ambos os casos, o campo recebe um `SidePanelReferenceDesign` (não o
+conteúdo do painel diretamente):
+
+```typescript
+design.masterPanelDesign = glyvio_core.SidePanelReferenceDesign.fromJson({
+  route: new MyMasterPanelRoute(),
+});
+```
+
+### Como um painel avisa outro painel (MASTER → DETAIL)
+
+Um painel **não tem link direto com seu irmão** — só o host (a página/cart) tem
+os dois no mapa `sidePanelRules`. A comunicação sobe um nível e desce outro,
+espelhando `sendActionToSection` (Call Sections), só que com um hop a mais:
+
+```typescript
+// Dentro do painel MASTER, ao selecionar um item:
+await this.sendActionToParent(
+  new glyvio_core.Action({
+    key: '_SEND_ACTION_TO_SIDE_PANEL',
+    data: {
+      panelIdentifier: 'DETAIL',
+      action: new glyvio_core.Action({ key: 'select', data: { id } }),
+    },
+  }),
+);
+```
+
+`sendActionToParent` (em `CoreSidePanel`) sobe pro host; o host já trata
+`_SEND_ACTION_TO_SIDE_PANEL` de graça (é a mesma mecânica de
+`sendActionToSidePanel`, que `SimpleMasterDetailPage`/`CoreCart` implementam).
+DETAIL recebe a action `select` e atualiza o próprio estado — **sem** o
+design/estado da página mudar, e sem recriar o cubit do DETAIL (só é
+recriado quando o `path` do `SidePanelReferenceDesign` muda, não quando só
+`routeParams` muda).
+
+> ⚠️ Não existe skill `create-simple-master-detail-page` ainda. Montar à mão:
+> `SimpleMasterDetailPage extends CorePage` (não tem fetch/lista própria — só
+> declara os dois slots), + duas classes `SimpleSidePanel` (MASTER e DETAIL).
+> Exemplo completo funcionando (dados mock, sem banco) em
+> `glyvio-plugin-core/plugin/app/src/views/examples/master_detail_showcase_page.ts`,
+> reachable pelo item "Galeria de Componentes" no full menu
+> (`glyvio-plugin-core/plugin/app/src/views/examples/examples_hub_page.ts`).
 
 ---
 
