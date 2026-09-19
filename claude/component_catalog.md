@@ -17,6 +17,7 @@
 | **Edição em Massa** | `SimpleBatchPageDesign` | Planilha editável em lote com validação de linha | `create-batch-page` |
 | **Formulário Modal** | `FormEntityLayoutDesign` | Modal de criação/edição com campos e validação | `create-edit-modal` |
 | **Sidebar de Detalhes**| `SimpleSidebarDesign` | Painel lateral de detalhes e uploads | `create-sidebar` |
+| **Master-Detail** | `SimpleMasterDetailPageDesign` | Lista/árvore à esquerda + painel de detalhe à direita, cada lado com refresh próprio | Sem skill dedicada ainda — ver `component_catalog_full.md §16` |
 
 ---
 
