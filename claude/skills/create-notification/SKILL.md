@@ -1,8 +1,8 @@
 ---
 name: create-notification
-description: 'Generates code that delivers an in-app notification (title, description, optional click-through routing to a sidebar or modal) to a user group or an explicit list of users via crm.GenerateNotificationStrategy, normally embedded inside an existing AfterInterceptor or Strategy.'
+description: "Generates code that delivers an in-app notification (title, description, optional click-through routing to a sidebar or modal) to a user group or an explicit list of users via crm.GenerateNotificationStrategy, normally embedded inside an existing AfterInterceptor or Strategy."
 ---
-
+<!-- Generated from src/skills/create-notification/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Notification in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to deliver an in-app notification to users via the `crm` plugin's `GenerateNotificationStrategy`.

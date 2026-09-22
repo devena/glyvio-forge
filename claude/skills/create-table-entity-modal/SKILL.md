@@ -1,8 +1,8 @@
 ---
 name: create-table-entity-modal
-description: 'Generates a table-rendered entity selection and search modal (SimpleEntityModal concept, table results instead of list cells), with autocomplete lookups (inline dropdown + full-screen modal), query filter configurations, table column/row definitions, selection chips, routing, and textfield wrappers.'
+description: "Generates a table-rendered entity selection and search modal (SimpleEntityModal concept, table results instead of list cells), with autocomplete lookups (inline dropdown + full-screen modal), query filter configurations, table column/row definitions, selection chips, routing, and textfield wrappers."
 ---
-
+<!-- Generated from src/skills/create-table-entity-modal/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom Table Entity Modal View in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional entity selector (extending `TableEntityModal`) within a Glyvio plugin project.

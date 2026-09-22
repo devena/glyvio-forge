@@ -1,8 +1,8 @@
 ---
 name: fork-company-script
-description: Verifies an unpublished, freshly-built plugin/server code change against a live Glyvio backend without deploying — by forking a temporary company script (PUT /plugin/{companyId}/fork-company-script) and running verification requests with the custom-script-id header. Only activates when the operator explicitly opts into live testing and supplies the server URL, a private/internal JWT, and the companyId — never invents or reuses these from an unrelated prior task.
+description: "Verifies an unpublished, freshly-built plugin/server code change against a live Glyvio backend without deploying — by forking a temporary company script (PUT /plugin/{companyId}/fork-company-script) and running verification requests with the custom-script-id header. Only activates when the operator explicitly opts into live testing and supplies the server URL, a private/internal JWT, and the companyId — never invents or reuses these from an unrelated prior task."
 ---
-
+<!-- Generated from src/skills/fork-company-script/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Skill: Fork Company Script (live server-code verification)
 
 Runs a curl-based verification against **the real running backend**, executing a just-built `plugin/server/dist/bundle.js` instead of the company's normally-deployed code, for one or more specific requests — no deploy, no restart. Validated end-to-end (creation, normal execution, custom-code execution, invalid-id rejection, expiration) against a live backend.

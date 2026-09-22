@@ -1,3 +1,18 @@
 claude/settings.json
 claude/.claude
+claude/skills/synced/
 tools/test-runner/.env*
+
+# Generator caches and generated-package runtime artifacts
+__pycache__/
+*.py[cod]
+.DS_Store
+.pnpm-store/
+.agents/
+claude/temp/
+antigravity/temp/
+agy/temp/
+
+# Local browser dependencies and saved authentication are not distribution inputs
+node_modules/
+tools/test-runner/.session_auth.json

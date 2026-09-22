@@ -1,8 +1,8 @@
 ---
 name: create-batch-page
-description: 'Generates a spreadsheet-style bulk/batch editor page with spreadsheet uploads, row validation, database persistence matching custom layouts, routing, and menu registration for a Glyvio plugin.'
+description: "Generates a spreadsheet-style bulk/batch editor page with spreadsheet uploads, row validation, database persistence matching custom layouts, routing, and menu registration for a Glyvio plugin."
 ---
-
+<!-- Generated from src/skills/create-batch-page/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom Batch Page View in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional spreadsheet-like batch page view (extending `SimpleBatchPage`) within a Glyvio plugin project.

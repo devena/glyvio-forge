@@ -1,15 +1,15 @@
 ---
 name: create-screen-from-image
-description: 'Reproduces a UI screenshot (print) as faithfully as possible using Glyvio framework components. Performs structured visual decomposition of the image, maps each visual element to a concrete design class via the component catalog, produces an approved visual spec, then delegates to the matching create-* page/modal skills.'
+description: "Reproduces a UI screenshot (print) as faithfully as possible using Glyvio framework components. Performs structured visual decomposition of the image, maps each visual element to a concrete design class via the component catalog, produces an approved visual spec, then delegates to the matching create-* page/modal skills."
 ---
-
+<!-- Generated from src/skills/create-screen-from-image/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Screen From Image (print → Glyvio screen)
 
 This skill turns a **screenshot provided by the user** into a Glyvio screen that is as visually
 faithful as possible, using **only** components exposed in `@types` (`glyvio_core.*`). It does not
 guess from a feature description — it reads the actual image and reconstructs its structure.
 
-It is **vision-driven**: the agent must actually look at the image (via the Read tool on the image
+It is **vision-driven**: the agent must actually look at the image (via the available image-viewing tool on the image
 path) and reason about layout, components, colors, spacing, and text.
 
 ---
@@ -44,7 +44,7 @@ If any required parameter is missing, **stop and ask** — never guess.
 
 ### Phase 1 — Read the image
 
-- Open the image with the Read tool so the pixels are actually analyzed.
+- Open the image with the available image-viewing tool so the pixels are actually analyzed.
 - Note global facts: overall layout (single column? sidebar + content? grid?), dominant colors,
   density, and whether it is a **page**, a **modal**, or a **sidebar**.
 
@@ -67,7 +67,7 @@ Decomposition order:
 
 ### Phase 3 — Produce the visual spec (gate — must be approved)
 
-Write the decomposition to `.agents/temp<ScreenName>_visual_spec.json` as a component tree. Each node:
+Write the decomposition to `antigravity/temp/<ScreenName>_visual_spec.json` as a component tree. Each node:
 
 ```jsonc
 {
@@ -93,7 +93,7 @@ Rules for the spec:
 - Map colors to `colorTheme`, text sizes to `style` (Material scale), spacing to `padding`,
   alignment to `mainAlignment`/`crossAlignment`.
 
-Then write a short human summary to `.agents/temp<ScreenName>_visual_analysis.md`:
+Then write a short human summary to `antigravity/temp/<ScreenName>_visual_analysis.md`:
 
 - chosen page type + skill,
 - the per-element mapping table (visual element → component → rationale),

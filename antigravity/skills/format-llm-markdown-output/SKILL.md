@@ -1,8 +1,8 @@
 ---
 name: format-llm-markdown-output
-description: 'Constrains any LLM-facing prompt (System Tool / Custom Tool response, "Instructions for the LLM" block, or a JSON field the LLM fills with markdown) to the exact markdown syntax the glyvio_app renderer supports, preventing the AI Agent from producing HTML or unsupported markdown that renders as broken literal text.'
+description: "Constrains any LLM-facing prompt (System Tool / Custom Tool response, \"Instructions for the LLM\" block, or a JSON field the LLM fills with markdown) to the exact markdown syntax the glyvio_app renderer supports, preventing the AI Agent from producing HTML or unsupported markdown that renders as broken literal text."
 ---
-
+<!-- Generated from src/skills/format-llm-markdown-output/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Format LLM Markdown Output
 
 This skill applies whenever a prompt instructs the AI Agent (Jeannie) to produce text that will ultimately be **rendered to the end user as markdown inside `glyvio_app`** — a chat reply, an `Instructions for the LLM: ...` block appended by a `@SystemTool`/`@CustomTool`, or a JSON field (e.g. an alert's `description`) that is itself markdown.

@@ -1,8 +1,8 @@
 ---
 name: create-system-tool
-description: 'Generates and registers a custom @SystemTool in the Environment layer (plugin/environment) to expose a local action, query, or computation to the AI Agent (Jeannie).'
+description: "Generates and registers a custom @SystemTool in the Environment layer (plugin/environment) to expose a local action, query, or computation to the AI Agent (Jeannie)."
 ---
-
+<!-- Generated from src/skills/create-system-tool/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create System Tool in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register an **Environment-layer System Tool** (`@glyvio_core.SystemTool`). System Tools are utilities designed to interface directly with the AI Agent, acting as its eyes, ears, and hands: they read local system status (briefings, offline inventory, schedules) or write/update resources (register a visit, log a delivery) during natural-language chats.

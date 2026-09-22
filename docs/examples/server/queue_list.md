@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/server/queue_list.md by tools/generate.py. Edit the source, not this file. -->
 # Example: QueueList — Deferred & Deduplicated Task Execution
 
 This example demonstrates how to use `QueueList` via the global `getCurrentQueue()` helper to schedule operations that execute deferred (later in the process, always within the current database transaction). It also details how to use **deterministic IDs** to avoid duplicate operations during complex operations.

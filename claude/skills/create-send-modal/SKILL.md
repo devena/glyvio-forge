@@ -1,8 +1,8 @@
 ---
 name: create-send-modal
-description: 'Generates a standard message sending modal (supporting email and WhatsApp templates, attachments, and dynamic reports) with recipient list populating, state handling, and menu/route registration.'
+description: "Generates a standard message sending modal (supporting email and WhatsApp templates, attachments, and dynamic reports) with recipient list populating, state handling, and menu/route registration."
 ---
-
+<!-- Generated from src/skills/create-send-modal/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom SimpleSendModal View in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional message/attachment sending modal (extending `SimpleSendModal`) within a Glyvio plugin project.

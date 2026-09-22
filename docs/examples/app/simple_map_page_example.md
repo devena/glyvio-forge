@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/app/simple_map_page_example.md by tools/generate.py. Edit the source, not this file. -->
 # Simple Map Page Example
 
 This example demonstrates how to implement a custom map page using `glyvio_core.SimpleMapPage` to display geolocation points of `AppUser` entities. It showcases custom routing, state definition, map viewport query filtering, cell/marker layout configuration, and interceptor support.

@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/server/controller.md by tools/generate.py. Edit the source, not this file. -->
 # Example: Controller — HTTP Request Handlers
 
 This example demonstrates how to create a **controller** in Glyvio. Controllers expose HTTP endpoints within your plugin, allowing external systems, the frontend, or the Glyvio orchestration layer to trigger server-side logic via API calls.
@@ -12,7 +13,7 @@ The `@glyvio_core.Controller` decorator registers a class as an HTTP handler und
 
 Key characteristics:
 
-- **Path-based routing** — each controller maps a class to a unique route segment (e.g., `health_check` → `POST /controller/health_check`).
+- **Path-based routing** — each controller maps a class to a unique route segment via its `path` (e.g. `health_check`). The real server route built from that `path` is an implementation detail of the routing layer — always reach it via `glyvio_core.restService.postController`/`putController`/`getController` from `plugin/app` (see "Calling This From `plugin/app`" below) rather than constructing the URL yourself.
 - **Access control** — you choose independently whether the endpoint is accessible from private (internal server) calls, public (external/unauthenticated) calls, or both.
 - **Strictly typed I/O** — generics define the request body type (`T`) and response type (`R`), ensuring compile-time type safety.
 - **Single method** — the entire logic is contained in the `handle(request)` method.
@@ -132,6 +133,30 @@ export class RegisterVisitController extends glyvio_core.SimpleController<Regist
   }
 }
 ```
+
+---
+
+## Calling This From `plugin/app`
+
+A controller's `path` is not itself a reachable URL — the real server route is
+`/custom/<public|private|external>/sync/<companyId>/<controllerId>`, and `plugin/app` (TS) code
+has no way to resolve `companyId` itself. Always call a controller via
+`glyvio_core.restService.postController`/`putController`/`getController`, which send just the
+visibility scope and `controllerId` and let the Dart client build the real path and resolve
+`companyId` — never hand-build a `/custom/...` (or any other) path with `restService.post`/`put`/`get`.
+
+```typescript
+const result = await glyvio_core.restService.postController<RegisterVisitResponse>(
+  'private', // 'public' | 'private' | 'external' — must match one of the controller's allow*Access flags
+  'register_visit', // exactly the `path` passed to @Controller
+  { clientId: client.id } satisfies RegisterVisitRequest,
+);
+```
+
+`visibility` must be one the target controller allows (`allowPublicAccess`/`allowPrivateAccess`/`allowExternalUserAccess`)
+and must match how the current caller is authenticated — there is no compile-time link between it,
+the controller's declared `path`, and the caller's `controllerId` string, so a typo or a mismatched
+visibility silently 404s/misroutes instead of failing to build.
 
 ---
 
@@ -283,4 +308,5 @@ export class DeleteAllTestDataController extends glyvio_core.SimpleController<vo
 | `glyvio_core.entityService.saveList(queue)` | Saves multiple entities in one batch with permission checks                                       |
 | `glyvio_core.GlyvioError`                   | The standard error type for business rule violations (no try/catch wrapping needed)               |
 | `glyvio_core.sessionService`                | Provides the current user and company from the active session                                     |
+| `glyvio_core.restService.postController/putController/getController` | Call this controller from `plugin/app` (TS) — see "Calling This From `plugin/app`" above; never hand-build the `/custom/...` path |
 | No imports                                  | All symbols (`glyvio_core`, `glyvio_entity`, etc.) are globally injected and must NOT be imported |

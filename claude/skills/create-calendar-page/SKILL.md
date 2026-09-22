@@ -1,8 +1,8 @@
 ---
 name: create-calendar-page
-description: 'Generates a standard entity calendar page showing scheduled events, appointments, or tasks with routing, sidebar filtering, and menu registration for a Glyvio plugin.'
+description: "Generates a standard entity calendar page showing scheduled events, appointments, or tasks with routing, sidebar filtering, and menu registration for a Glyvio plugin."
 ---
-
+<!-- Generated from src/skills/create-calendar-page/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom Calendar Page View in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional calendar page view (extending `SimpleCalendarPage`) within a Glyvio plugin project.

@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/environment/slack_sync_action.md by tools/generate.py. Edit the source, not this file. -->
 # Example: Creating a Custom Environment Action
 
 This example demonstrates how to define a custom action in the **Environment** subproject using the `@Action` decorator. Actions are triggered by external environments or services to execute synchronization, integration, or utility routines.

@@ -1,8 +1,8 @@
 ---
 name: schedule-queued-operation
-description: 'Guides the agent to schedule a deferred, deduplicated operation using the transaction-scoped QueueList.'
+description: "Guides the agent to schedule a deferred, deduplicated operation using the transaction-scoped QueueList."
 ---
-
+<!-- Generated from src/skills/schedule-queued-operation/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Schedule Queued Operation in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to schedule and deduplicate deferred operations (`QueuedOperation`) inside server-side interceptors.

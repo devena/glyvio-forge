@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/app/simple_cart_example.md by tools/generate.py. Edit the source, not this file. -->
 # Custom Cart using SimpleCart
 
 This example demonstrates how to implement a custom shopping/selection cart view by subclassing `glyvio_core.SimpleCart`. It covers setting up custom routing, managing state, configuring the cart UI design, defining cart item status rules, implementing addition/removal event hooks, handling file uploads, and creating a listener class to intercept cart actions.

@@ -1,8 +1,8 @@
 ---
 name: create-sync-interceptor
-description: 'Generates a custom class extending SimpleSyncInterceptor to normalize, denormalize, or validate fields exclusively on data arriving via the Glyvio sync engine (third-party integrations such as ERPs). NOT a substitute for BeforeInterceptor — does not fire on regular user-facing saves.'
+description: "Generates a custom class extending SimpleSyncInterceptor to normalize, denormalize, or validate fields exclusively on data arriving via the Glyvio sync engine (third-party integrations such as ERPs). NOT a substitute for BeforeInterceptor — does not fire on regular user-facing saves."
 ---
-
+<!-- Generated from src/skills/create-sync-interceptor/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Sync Interceptor in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register a server-side synchronization interceptor (`SimpleSyncInterceptor`).

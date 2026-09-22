@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/server/request_service.md by tools/generate.py. Edit the source, not this file. -->
 # Example: Request Service — Retrieve Request-Scoped Modifications
 
 This example demonstrates how to use the **Request Service** (`glyvio_core.requestService`) to inspect all database entity modifications that occurred within the current request execution context.

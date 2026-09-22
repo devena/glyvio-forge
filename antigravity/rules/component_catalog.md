@@ -1,3 +1,4 @@
+<!-- Generated from src/component_catalog.md by tools/generate.py. Edit the source, not this file. -->
 # Glyvio — Catálogo Visual de Componentes (Resumo de Referência)
 
 > **Propósito**: Guia rápido para mapeamento visual de componentes (`glyvio_core.*`).
@@ -21,6 +22,7 @@
 | **Sidebar com Abas**| `TabSidebarDesign` | Container lateral de abas | `create-tab-sidebar` |
 | **Carrinho Simples**| `SimpleCartDesign` | Drawer de carrinho / seleção temporária | `create-simple-cart` |
 | **Carrinho em Lote**| `SimpleBatchCartDesign` | Drawer de carrinho estilo planilha em lote | `create-simple-batch-cart` |
+| **Master-Detail** | `SimpleMasterDetailPageDesign` | Lista/árvore à esquerda + painel de detalhe à direita, cada lado com refresh próprio | Sem skill dedicada ainda — ver `component_catalog_full.md §16` |
 
 ---
 
@@ -29,7 +31,7 @@
 - **Status / Pills**: `ChipDesign` (badge colorido com texto) — *Atenção: evite condicionais Handlebars aninhadas dentro do texto; resolva a cor/label no TypeScript*.
 - **Totalizadores / Métricas**: `HorizontalTotalizerBoxDesign` ou `TwoLinesTotalizerBoxDesign`
 - **Pessoas / Usuários**: `AvatarDesign` ou `UserGroupDesign`
-- **Layouts**: `RowLayoutDesign` (horizontal), `ColumnLayoutDesign` (vertical), `TableLayoutDesign` (grade)
+- **Layouts**: `RowLayoutDesign` (horizontal), `ColumnLayoutDesign` (vertical), `TableLayoutDesign` (grade), `TreeLayoutDesign` (árvore hierárquica retrátil)
 - **Vínculos**: `EntityLinksDesign` (seção de links polimórficos, ver `create-entity-links-section`)
 - **Gráficos**: `CartesianChartDesign`, `CircularChartDesign`, `FunnelChartDesign`, `PyramidChartDesign`, `RadialChartDesign`, `GaugeChartDesign`, `HeatmapChartDesign`, `RadarChartDesign` (delegar a `glyvio-app-chart`)
 

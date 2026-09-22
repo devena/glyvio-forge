@@ -1,8 +1,8 @@
 ---
 name: create-app-strategy
-description: 'Registers a new app-layer strategy (CoreAppStrategyAsync/CoreAppStrategySync), or overrides the default implementation of an existing core one (e.g. EntityHasAttachmentTypesStrategy), via appStrategyService.registerStrategies.'
+description: "Registers a new app-layer strategy (CoreAppStrategyAsync/CoreAppStrategySync), or overrides the default implementation of an existing core one (e.g. EntityHasAttachmentTypesStrategy), via appStrategyService.registerStrategies."
 ---
-
+<!-- Generated from src/skills/create-app-strategy/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create or Override an App-Layer Strategy in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to register a new app-layer (`plugin/app`) strategy, or to override the default implementation of an existing one already shipped by `glyvio-plugin-core`.

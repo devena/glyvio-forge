@@ -1,8 +1,8 @@
 ---
 name: create-table-modal
-description: 'Generates a standard data table search and selection modal, with layout column definitions, filters sidebar, row tap actions, routing, and user config persistence.'
+description: "Generates a standard data table search and selection modal, with layout column definitions, filters sidebar, row tap actions, routing, and user config persistence."
 ---
-
+<!-- Generated from src/skills/create-table-modal/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom SimpleTableModal View in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional table search and selection modal (extending `SimpleTableModal`) within a Glyvio plugin project.

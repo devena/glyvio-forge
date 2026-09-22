@@ -1,31 +1,27 @@
 #!/usr/bin/env node
+// Generated from src/scripts/chrome_inspector.js by tools/generate.py.
 
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
 const sidebarName = process.argv[2];
-if (!sidebarName) {
-  console.error('Please provide the SidebarName, e.g. TaskTypeSidebar');
+if (!sidebarName || !/^[A-Za-z0-9_-]+$/.test(sidebarName)) {
+  console.error('Provide a view name using letters, digits, underscores or hyphens, e.g. TaskTypeSidebar');
   process.exit(1);
 }
 
-const targetFileDir = path.resolve(process.cwd(), '.agents/temp');
-if (!fs.existsSync(targetFileDir)) {
-  fs.mkdirSync(targetFileDir, { recursive: true });
-}
+const projectRoot = process.cwd();
+const targetFileDir = path.resolve(projectRoot, 'antigravity/temp');
 const targetFilePath = path.join(targetFileDir, `${sidebarName}_design.json`);
 
 // Read package name from package.json
-let projectName = 'unknown';
-const packageJsonPath = path.resolve(process.cwd(), 'package.json');
-if (fs.existsSync(packageJsonPath)) {
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-  projectName = packageJson.name;
-}
+const packageJsonPath = path.resolve(projectRoot, 'package.json');
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+const projectName = packageJson.name;
 
 async function run() {
-  const distDir = path.resolve(process.cwd(), 'plugin/app/dist');
+  const distDir = path.resolve(projectRoot, 'plugin/app/dist');
   console.log(`Starting httpster server on port 9998, serving: ${distDir}...`);
 
   const httpster = spawn('npx', ['httpster', '-p', '9998', '-d', distDir, '-c'], {

@@ -1,8 +1,8 @@
 ---
 name: create-simple-cart
-description: 'Generates a standard cart drawer view for managing temporary item selections (such as shopping carts, booking lists, or item checkout bins), configuring item statuses, handles file attachments, and handles adding/removing actions.'
+description: "Generates a standard cart drawer view for managing temporary item selections (such as shopping carts, booking lists, or item checkout bins), configuring item statuses, handles file attachments, and handles adding/removing actions."
 ---
-
+<!-- Generated from src/skills/create-simple-cart/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom SimpleCart View in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional cart drawer panel (extending `SimpleCart`) within a Glyvio plugin project.

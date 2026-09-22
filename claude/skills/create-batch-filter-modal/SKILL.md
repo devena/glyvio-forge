@@ -1,8 +1,8 @@
 ---
 name: create-batch-filter-modal
-description: 'Generates a batch entity filter modal extending SimpleBatchFilterEditModal, with a filter form, results table, query builder, routing, and interceptor hooks.'
+description: "Generates a batch entity filter modal extending SimpleBatchFilterEditModal, with a filter form, results table, query builder, routing, and interceptor hooks."
 ---
-
+<!-- Generated from src/skills/create-batch-filter-modal/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Batch Filter Modal View in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional batch filter modal (extending `SimpleBatchFilterEditModal`) within a Glyvio plugin project.
@@ -57,6 +57,7 @@ The executing agent MUST strictly adhere to these rules:
    - `$T{...}` → Translation/i18n key.
 9. **`interopDesign.stateName` must always be prefixed with `state.`**: Use `stateName: 'state.results'`, never `stateName: 'results'`. The interop engine evaluates `data.<stateName>` where `data` is the full state object, so the prefix is required.
 10. **No favorite-star button by default**: `SimpleBatchFilterEditModal` overrides `getFavoriteButtonEnabled()` to return `false`, so it does not get the automatic "favorite this screen" star button that `CoreView` injects into `appBarDesign.favoriteButton` for most views — a filter/selection popup isn't a top-level screen worth favoriting. This is already handled by the base class; there is nothing to configure.
+11. **Avoid `ChoiceMultipleTextfieldDesign` for a filter field the user re-edits often**: it has a confirmed bug where adding an item throws once the selection already has 1+ items (removal always works). See `component_catalog_full.md`'s `ChoiceMultipleTextfieldDesign` entry. A one-shot filter the user sets and rarely changes is lower risk, but still warn the user if you use it here.
 
 ---
 

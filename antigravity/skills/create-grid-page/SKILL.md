@@ -1,8 +1,8 @@
 ---
 name: create-grid-page
-description: 'Generates a standard entity grid/gallery page with responsive grid cells, search, sidebar filtering, routing, and menu registration for a Glyvio plugin.'
+description: "Generates a standard entity grid/gallery page with responsive grid cells, search, sidebar filtering, routing, and menu registration for a Glyvio plugin."
 ---
-
+<!-- Generated from src/skills/create-grid-page/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom Grid Page View in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional grid page view (extending `SimpleGridPage`) within a Glyvio plugin project.

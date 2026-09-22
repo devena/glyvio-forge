@@ -1,3 +1,4 @@
+<!-- Generated from src/references/component_catalog_full.md by tools/generate.py. Edit the source, not this file. -->
 # Glyvio — Catálogo Visual de Componentes (Design Library)
 
 > **Propósito**: dar ao agente de criação de tela o conhecimento de **como cada
@@ -65,6 +66,7 @@ dominante** do print.
 | `SimpleCalendarPageDesign`                         | Calendário (mês/semana) com eventos                                          | Agendamentos/eventos por data. **Skill: `create-calendar-page`**                  |
 | `SimpleBatchPageDesign`                            | Planilha editável em massa, com upload e validação por linha                 | Edição em lote tipo spreadsheet. **Skill: `create-batch-page`**                   |
 | `SimpleDashboardPageDesign` (+ `...SectionDesign`) | Painel com KPIs, gráficos e blocos em grade                                  | Dashboard / visão analítica.                                                      |
+| `SimpleMasterDetailPageDesign`                     | Lista/árvore de registros à esquerda + painel de detalhe do item selecionado à direita, cada lado carregando/atualizando independentemente (spinner próprio, sem recarregar a tela toda ao trocar a seleção) | Master-detail de verdade (não confundir com `SimpleListPageDesign` + sidebar de detalhe por rota, que recarrega a página inteira a cada seleção). Ver §16 para como MASTER e DETAIL se comunicam. Sem skill dedicada ainda — montar manualmente a partir de `SimpleMasterDetailPage`/`SidePanelReferenceDesign`. |
 
 > ⚠️ **Regra obrigatória para dashboards — um key por unidade visual.** Cada
 > card, KPI, gráfico ou grupo lógico independente **deve ser um key separado**
@@ -160,6 +162,7 @@ Layouts não têm aparência própria; eles **arranjam** filhos. Escolha pela
 | `FormLayoutDesign` (+ `FormLayoutFieldDesign`, `FormLayoutEndOfLineDesign`) | Formulário em grade de campos que se ajusta por largura de coluna | Conjunto de campos de formulário.                                                                                                      | `columnSize`, `children`                                                                                                                                                                                                                                                                                                                                                     |
 | `FormEntityLayoutDesign`                                                    | Formulário focado nos campos de uma entidade                      | Form gerado a partir de uma entidade.                                                                                                  | —                                                                                                                                                                                                                                                                                                                                                                            |
 | `DashboardLayoutDesign` (+ `...FieldDesign`)                                | Grade de blocos de dashboard                                      | Arranjo de KPIs/gráficos num dashboard.                                                                                                | —                                                                                                                                                                                                                                                                                                                                                                            |
+| `TreeLayoutDesign` (+ `TreeNodeDesign`)                                     | Árvore hierárquica retrátil com nós aninhados, chevrons giratórios e linhas guias | Estruturas em árvore (categorias, plano de contas, pastas/arquivos, organogramas) com expand/collapse suave e preservação de estado em re-renders. | `nodes` (`TreeNodeDesign`: `key`, `child`, `children`, `initialExpanded`, `actionKey`, `data`), `indentation` (px por nível, padrão: 20), `showGuideLines` (boolean, padrão: true), `initialExpandedKeys` (string[]), `initialExpandedAll` (boolean), `onNodeTapActionKey` (string), `padding` |
 
 > **Alinhamento**: `mainAlignment` = eixo principal
 > (START/CENTER/END/SPACE_BETWEEN…), `crossAlignment` = eixo cruzado
@@ -424,7 +427,7 @@ controle.
 
 Os temas usados em `colorTheme` (e em props equivalentes de cor) são
 **registrados em runtime** pelo `FormatterInterceptor` em
-[formatter_interceptor.ts](../../plugin/app/src/interceptors/formatter_interceptor.ts).
+`plugin/app/src/interceptors/formatter_interceptor.ts` no projeto Glyvio Core (quando disponível).
 Cada tema é um `ColorTheme` com até 5 canais: `backgroundColor`, `borderColor`,
 `iconColor`, `textColor`, `labelColor` (cores em hex sem `#`). Há um conjunto
 completo para **modo claro** (`colorThemeLight`) e um espelho para **modo
@@ -801,6 +804,65 @@ getDesignForCell(state: S, item: glyvio_entity.Entity): glyvio_core.CardCellDesi
 
 ---
 
+## 16. Side Panels & Master-Detail — comunicação entre painéis
+
+Um **side panel** (`CoreSidePanel`/`SimpleSidePanel`) é um componente RPC
+independente — tem seu próprio ciclo de fetch/refresh e spinner de loading,
+diferente de uma `SectionDesign` (que compartilha o estado/RPC da tela que a
+embute). Hoje dois hosts embutem side panels:
+
+| Host                          | Slots                                 | Campo no design                                       |
+| ------------------------------ | -------------------------------------- | ------------------------------------------------------ |
+| `SimpleCartDesign`             | `LEFT` / `RIGHT`                       | `leftSidebarDesign` / `rightSidebarDesign`              |
+| `SimpleMasterDetailPageDesign` | `MASTER` / `DETAIL`                    | `masterPanelDesign` / `detailPanelDesign`               |
+
+Em ambos os casos, o campo recebe um `SidePanelReferenceDesign` (não o
+conteúdo do painel diretamente). As larguras dos painéis podem ser declaradas tanto na página (`masterPanelWidth`, `detailPanelWidth` em px ou `%`) quanto no próprio `SidePanelReferenceDesign` (`width`):
+
+```typescript
+design.masterPanelWidth = 320; // ou '30%'
+design.masterPanelDesign = glyvio_core.SidePanelReferenceDesign.fromJson({
+  route: new MyMasterPanelRoute(),
+});
+```
+
+### Como um painel avisa outro painel (MASTER → DETAIL)
+
+Um painel **não tem link direto com seu irmão** — só o host (a página/cart) tem
+os dois no mapa `sidePanelRules`. A comunicação sobe um nível e desce outro,
+espelhando `sendActionToSection` (Call Sections), só que com um hop a mais:
+
+```typescript
+// Dentro do painel MASTER, ao selecionar um item:
+await this.sendActionToParent(
+  new glyvio_core.Action({
+    key: '_SEND_ACTION_TO_SIDE_PANEL',
+    data: {
+      panelIdentifier: 'DETAIL',
+      action: new glyvio_core.Action({ key: 'select', data: { id } }),
+    },
+  }),
+);
+```
+
+`sendActionToParent` (em `CoreSidePanel`) sobe pro host; o host já trata
+`_SEND_ACTION_TO_SIDE_PANEL` de graça (é a mesma mecânica de
+`sendActionToSidePanel`, que `SimpleMasterDetailPage`/`CoreCart` implementam).
+DETAIL recebe a action `select` e atualiza o próprio estado — **sem** o
+design/estado da página mudar, e sem recriar o cubit do DETAIL (só é
+recriado quando o `path` do `SidePanelReferenceDesign` muda, não quando só
+`routeParams` muda).
+
+> ⚠️ Não existe skill `create-simple-master-detail-page` ainda. Montar à mão:
+> `SimpleMasterDetailPage extends CorePage` (não tem fetch/lista própria — só
+> declara os dois slots), + duas classes `SimpleSidePanel` (MASTER e DETAIL).
+> Exemplo completo funcionando (dados mock, sem banco) em
+> `glyvio-plugin-core/plugin/app/src/views/examples/master_detail_showcase_page.ts`,
+> reachable pelo item "Galeria de Componentes" no full menu
+> (`glyvio-plugin-core/plugin/app/src/views/examples/examples_hub_page.ts`).
+
+---
+
 ## Pendência: imagens de referência
 
 Para o matching ficar **confiável** (comparar recorte do print com a thumbnail),
@@ -808,7 +870,7 @@ cada componente deveria ter uma imagem. Sugestão de fluxo para gerá-las:
 
 1. Renderizar cada design isolado num storybook/página de exemplo do app.
 2. Capturar screenshot por componente em
-   `docs/component_images/<classe>.png`.
+   `antigravity/rules/references/component_images/<classe>.png`.
 3. Substituir os marcadores textuais deste catálogo por
    `![ClassName](component_images/ClassName.png)`.
 

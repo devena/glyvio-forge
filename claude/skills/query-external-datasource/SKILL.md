@@ -1,8 +1,8 @@
 ---
 name: query-external-datasource
-description: 'Writes code (server, app, or environment layer) that reads or triggers third-party data (ERPs, marketplaces, external systems) on demand through glyvio-plugin-sync''s `sync.SyncClient` — ad-hoc queries against an already-registered dataSource, forcing a sync task to run now, or excluding a record from future sync. Does NOT configure dataSources/tasks/scheduledTasks (done by the end user via the Sync admin UI) and does NOT react to inbound synced data (use create-sync-interceptor for that).'
+description: "Writes code (server, app, or environment layer) that reads or triggers third-party data (ERPs, marketplaces, external systems) on demand through glyvio-plugin-sync's `sync.SyncClient` — ad-hoc queries against an already-registered dataSource, forcing a sync task to run now, or excluding a record from future sync. Does NOT configure dataSources/tasks/scheduledTasks (done by the end user via the Sync admin UI) and does NOT react to inbound synced data (use create-sync-interceptor for that)."
 ---
-
+<!-- Generated from src/skills/query-external-datasource/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Query External Datasource via Sync
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to write code that reaches a third-party database/API **on demand**, exclusively through `glyvio-plugin-sync`'s `SyncClient`.

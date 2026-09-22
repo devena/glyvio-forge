@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/README.md by tools/generate.py. Edit the source, not this file. -->
 # Glyvio Core Extension Examples
 
 Welcome! This directory contains highly structured, self-contained examples demonstrating how to extend and customize the Glyvio engine using the components from the Glyvio Core Plugin.
@@ -29,17 +30,17 @@ Examples of building user interfaces, menus, routes, and custom screens.
 
 - [Custom Menu and Pages](app/custom_menu_route.md) — How to define pages, routes, and link them to menus.
 - [List Page Example](app/simple_list_page_example.md) — How to build and search entity lists with SimpleListPage.
-- [Edit Page Example](app/simple_edit_page_example.md) — How to construct form-based edit views using SimpleEditPage.
-- [Table Page Example](app/simple_table_page_example.md) — How to implement custom spreadsheet grid layout views using SimpleTablePage.
-- [Kanban Page Example](app/simple_kanban_page_example.md) — How to set up status column boards and drag-and-drop cards using SimpleKanbanPage.
-- [Dashboard Page Example](app/simple_dashboard_page_example.md) — How to aggregate stats and configure responsive widget grids using SimpleDashboardPage.
+- Edit Page Example (exemplo ainda não incluído) — How to construct form-based edit views using SimpleEditPage.
+- Table Page Example (exemplo ainda não incluído) — How to implement custom spreadsheet grid layout views using SimpleTablePage.
+- Kanban Page Example (exemplo ainda não incluído) — How to set up status column boards and drag-and-drop cards using SimpleKanbanPage.
+- Dashboard Page Example (exemplo ainda não incluído) — How to aggregate stats and configure responsive widget grids using SimpleDashboardPage.
 - [Map Page Example](app/simple_map_page_example.md) — How to implement interactive map layouts and coordinate tracking using SimpleMapPage.
-- [Simple Choice Modal Example](app/simple_choice_modal_example.md) — How to implement and trigger simple choice/confirm dialogs using SimpleChoiceModalRoute.
+- Simple Choice Modal Example (exemplo ainda não incluído) — How to implement and trigger simple choice/confirm dialogs using SimpleChoiceModalRoute.
 - [Simple Edit Modal Example](app/simple_edit_modal_example.md) — How to implement a custom edit modal using SimpleEditModal.
 - [Simple Cart Example](app/simple_cart_example.md) — How to subclass and configure custom shopping carts using SimpleCart.
 - [Simple Batch Cart Example](app/simple_batch_cart_example.md) — How to subclass and configure custom batch carts using SimpleBatchCart.
 - [Simple Entity Modal Example](app/simple_entity_modal_example.md) — How to implement and trigger modals for selecting/editing specific database entities.
-- [Simple Textfield Modal Example](app/simple_textfield_modal_example.md) — How to implement and trigger field-specific entry dialogs (string, date, decimal, etc.).
+- Field-specific entry dialogs: use the public declarations for string, date and decimal modal routes; a dedicated example is not included yet.
 - [Query Builder Example](app/query_builder_example.md) — How to construct, filter, order, and execute database queries using QueryBuilder.
 
 ### 🔄 Environment Layer (`/environment`)
@@ -67,39 +68,39 @@ Examples of API controllers, interceptors, and database query/persistence.
 
 ### 🤖 AI Agent Skills
 
-- [List Page Creation Skill](../skills/create_list_page.md) — Executable markdown guide for AI coding assistants to build and register `SimpleListPage` views in another project.
-- [List Page Interceptor Creation Skill](../skills/create_list_page_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleListPageInterceptor` listeners in another project.
-- [Table Page Creation Skill](../skills/create_table_page.md) — Executable markdown guide for AI coding assistants to build and register `SimpleTablePage` views in another project.
-- [Table Page Interceptor Creation Skill](../skills/create_table_page_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleTablePageInterceptor` listeners in another project.
-- [Edit Modal Creation Skill](../skills/create_edit_modal.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleEditModal` views in another project.
-- [Edit Modal Interceptor Creation Skill](../skills/create_edit_modal_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleEditModalInterceptor` listeners in another project.
-- [Entity Modal Creation Skill](../skills/create_entity_modal.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleEntityModal` selection modals in another project.
-- [Entity Modal Interceptor Creation Skill](../skills/create_entity_modal_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleEntityModalInterceptor` listeners in another project.
-- [Batch Page Creation Skill](../skills/create_batch_page.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleBatchPage` views in another project.
-- [Batch Page Interceptor Creation Skill](../skills/create_batch_page_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleBatchPageInterceptor` listeners in another project.
-- [Kanban Page Creation Skill](../skills/create_kanban_page.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleKanbanPage` views in another project.
-- [Kanban Page Interceptor Creation Skill](../skills/create_kanban_page_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleKanbanPageInterceptor` listeners in another project.
-- [Grid Page Creation Skill](../skills/create_grid_page.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleGridPage` views in another project.
-- [Grid Page Interceptor Creation Skill](../skills/create_grid_page_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleGridPageInterceptor` listeners in another project.
-- [Calendar Page Creation Skill](../skills/create_calendar_page.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleCalendarPage` views in another project.
-- [Calendar Page Interceptor Creation Skill](../skills/create_calendar_page_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleCalendarPageInterceptor` listeners in another project.
-- [Send Modal Creation Skill](../skills/create_send_modal.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleSendModal` views in another project.
-- [Send Modal Interceptor Creation Skill](../skills/create_send_modal_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleSendModalInterceptor` listeners in another project.
-- [Table Modal Creation Skill](../skills/create_table_modal.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleTableModal` search/selection modals in another project.
-- [Table Modal Interceptor Creation Skill](../skills/create_table_modal_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleTableModalInterceptor` listeners in another project.
-- [List Modal Creation Skill](../skills/create_list_modal.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleListModal` search/selection modals in another project.
-- [List Modal Interceptor Creation Skill](../skills/create_list_modal_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleListModalInterceptor` listeners in another project.
-- [Sidebar Creation Skill](../skills/create_sidebar.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleSidebar` side drawers in another project.
-- [Sidebar Interceptor Creation Skill](../skills/create_sidebar_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleSidebarInterceptor` listeners in another project.
-- [Tabbed Sidebar Creation Skill](../skills/create_tab_sidebar.md) — Executable markdown guide for AI coding assistants to build and register custom `TabSidebar` tabbed side drawers in another project.
-- [Tabbed Sidebar Interceptor Creation Skill](../skills/create_tab_sidebar_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom `TabSidebarInterceptor` listeners in another project.
-- [Cart Creation Skill](../skills/create_simple_cart.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleCart` drawer views in another project.
-- [Cart Interceptor Creation Skill](../skills/create_simple_cart_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleCartListener` listeners in another project.
-- [Before Interceptor Creation Skill](../skills/create_before_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom server-side `SimpleBeforeInterceptor` listeners in another project.
-- [Sync Interceptor Creation Skill](../skills/create_sync_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom server-side `SimpleSyncInterceptor` listeners in another project.
-- [After Interceptor Creation Skill](../skills/create_after_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom server-side `SimpleAfterInterceptor` listeners in another project.
-- [Strategy Creation Skill](../skills/create_strategy.md) — Executable markdown guide for AI coding assistants to build and register custom server-side `SimpleStrategy` implementations in another project.
-- [Queued Operation Scheduling Skill](../skills/schedule_queued_operation.md) — Executable markdown guide for AI coding assistants to schedule and deduplicate deferred operations in server-side interceptors.
-- [Custom Interceptor Creation Skill](../skills/create_custom_interceptor.md) — Executable markdown guide for AI coding assistants to build and register custom server-side `SimpleInterceptor` event listeners in another project.
-- [Manifest Modification Skill](../skills/modify_manifest.md) — Executable markdown guide for AI coding assistants to include/edit entities, fields, sequences, and permissions in the plugin's `manifest.json`.
-- [Controller Creation Skill](../skills/create_controller.md) — Executable markdown guide for AI coding assistants to build and register typed `SimpleController` HTTP endpoints in another project.
+- [List Page Creation Skill](../../src/skills/create-list-page/SKILL.md) — Executable markdown guide for AI coding assistants to build and register `SimpleListPage` views in another project.
+- [List Page Interceptor Creation Skill](../../src/skills/create-list-page-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleListPageInterceptor` listeners in another project.
+- [Table Page Creation Skill](../../src/skills/create-table-page/SKILL.md) — Executable markdown guide for AI coding assistants to build and register `SimpleTablePage` views in another project.
+- [Table Page Interceptor Creation Skill](../../src/skills/create-table-page-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleTablePageInterceptor` listeners in another project.
+- [Edit Modal Creation Skill](../../src/skills/create-edit-modal/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleEditModal` views in another project.
+- [Edit Modal Interceptor Creation Skill](../../src/skills/create-edit-modal-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleEditModalInterceptor` listeners in another project.
+- [Entity Modal Creation Skill](../../src/skills/create-entity-modal/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleEntityModal` selection modals in another project.
+- [Entity Modal Interceptor Creation Skill](../../src/skills/create-entity-modal-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleEntityModalInterceptor` listeners in another project.
+- [Batch Page Creation Skill](../../src/skills/create-batch-page/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleBatchPage` views in another project.
+- [Batch Page Interceptor Creation Skill](../../src/skills/create-batch-page-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleBatchPageInterceptor` listeners in another project.
+- [Kanban Page Creation Skill](../../src/skills/create-kanban-page/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleKanbanPage` views in another project.
+- [Kanban Page Interceptor Creation Skill](../../src/skills/create-kanban-page-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleKanbanPageInterceptor` listeners in another project.
+- [Grid Page Creation Skill](../../src/skills/create-grid-page/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleGridPage` views in another project.
+- [Grid Page Interceptor Creation Skill](../../src/skills/create-grid-page-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleGridPageInterceptor` listeners in another project.
+- [Calendar Page Creation Skill](../../src/skills/create-calendar-page/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleCalendarPage` views in another project.
+- [Calendar Page Interceptor Creation Skill](../../src/skills/create-calendar-page-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleCalendarPageInterceptor` listeners in another project.
+- [Send Modal Creation Skill](../../src/skills/create-send-modal/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleSendModal` views in another project.
+- [Send Modal Interceptor Creation Skill](../../src/skills/create-send-modal-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleSendModalInterceptor` listeners in another project.
+- [Table Modal Creation Skill](../../src/skills/create-table-modal/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleTableModal` search/selection modals in another project.
+- [Table Modal Interceptor Creation Skill](../../src/skills/create-table-modal-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleTableModalInterceptor` listeners in another project.
+- [List Modal Creation Skill](../../src/skills/create-list-modal/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleListModal` search/selection modals in another project.
+- [List Modal Interceptor Creation Skill](../../src/skills/create-list-modal-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleListModalInterceptor` listeners in another project.
+- [Sidebar Creation Skill](../../src/skills/create-sidebar/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleSidebar` side drawers in another project.
+- [Sidebar Interceptor Creation Skill](../../src/skills/create-sidebar-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleSidebarInterceptor` listeners in another project.
+- [Tabbed Sidebar Creation Skill](../../src/skills/create-tab-sidebar/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `TabSidebar` tabbed side drawers in another project.
+- [Tabbed Sidebar Interceptor Creation Skill](../../src/skills/create-tab-sidebar-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `TabSidebarInterceptor` listeners in another project.
+- [Cart Creation Skill](../../src/skills/create-simple-cart/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleCart` drawer views in another project.
+- [Cart Interceptor Creation Skill](../../src/skills/create-simple-cart-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom `SimpleCartListener` listeners in another project.
+- [Before Interceptor Creation Skill](../../src/skills/create-before-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom server-side `SimpleBeforeInterceptor` listeners in another project.
+- [Sync Interceptor Creation Skill](../../src/skills/create-sync-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom server-side `SimpleSyncInterceptor` listeners in another project.
+- [After Interceptor Creation Skill](../../src/skills/create-after-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom server-side `SimpleAfterInterceptor` listeners in another project.
+- [Strategy Creation Skill](../../src/skills/create-strategy/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom server-side `SimpleStrategy` implementations in another project.
+- [Queued Operation Scheduling Skill](../../src/skills/schedule-queued-operation/SKILL.md) — Executable markdown guide for AI coding assistants to schedule and deduplicate deferred operations in server-side interceptors.
+- [Custom Interceptor Creation Skill](../../src/skills/create-custom-interceptor/SKILL.md) — Executable markdown guide for AI coding assistants to build and register custom server-side `SimpleInterceptor` event listeners in another project.
+- [Manifest Modification Skill](../../src/skills/modify-manifest/SKILL.md) — Executable markdown guide for AI coding assistants to include/edit entities, fields, sequences, and permissions in the plugin's `manifest.json`.
+- [Controller Creation Skill](../../src/skills/create-controller/SKILL.md) — Executable markdown guide for AI coding assistants to build and register typed `SimpleController` HTTP endpoints in another project.

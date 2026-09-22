@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/app/simple_batch_cart_example.md by tools/generate.py. Edit the source, not this file. -->
 # Custom Batch Cart using SimpleBatchCart
 
 This example demonstrates how to implement a custom batch cart view by subclassing `glyvio_core.SimpleBatchCart`. It covers setting up custom routing, state management, bulk spreadsheet imports, inline editing, batch database persistence, and listening to batch events via `glyvio_core.SimpleBatchCartInterceptor`.

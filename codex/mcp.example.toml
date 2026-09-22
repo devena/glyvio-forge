@@ -1,0 +1,5 @@
+# Generated from src/mcp.json by tools/generate.py.
+# Optional: merge into .codex/config.toml only when this server is needed.
+[mcp_servers."playwright"]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-playwright"]

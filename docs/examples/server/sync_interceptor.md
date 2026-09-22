@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/server/sync_interceptor.md by tools/generate.py. Edit the source, not this file. -->
 # Example: Sync Interceptor — Synchronous Pre-Save Operations
 
 This example demonstrates how to create a **sync interceptor** that executes synchronously before an entity is saved to the database. Sync interceptors are a specialized form of before interceptors, optimized for synchronizing dependent fields, keeping track of modification state, and executing synchronous business calculations before committing to the database.

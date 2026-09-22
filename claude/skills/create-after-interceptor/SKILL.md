@@ -1,8 +1,8 @@
 ---
 name: create-after-interceptor
-description: 'Generates a custom class extending SimpleAfterInterceptor to run post-save side effects (e.g., saving notifications, recording audit logs, notifying external services) after a database entity is successfully committed.'
+description: "Generates a custom class extending SimpleAfterInterceptor to run post-save side effects (e.g., saving notifications, recording audit logs, notifying external services) after a database entity is successfully committed."
 ---
-
+<!-- Generated from src/skills/create-after-interceptor/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create After Interceptor in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register a server-side post-save interceptor (`SimpleAfterInterceptor`) to run asynchronous side-effects after database entity save operations.

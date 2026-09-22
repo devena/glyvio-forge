@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/server/before_interceptor.md by tools/generate.py. Edit the source, not this file. -->
 # Example: Before Interceptor — Pre-Save Validation & Mutation
 
 This example demonstrates how to create a **before interceptor** that executes synchronously before an entity is saved to the database. Before interceptors are the correct tool for validating fields, enforcing constraints, injecting default values, or auto-calculating fields prior to persistence.

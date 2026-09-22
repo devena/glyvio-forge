@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Generated from src/scripts/validate_glyvio_rules.js by tools/generate.py.
 
 /**
  * Static AST & Regex Linter for Glyvio Architecture Rules

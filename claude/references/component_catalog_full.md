@@ -1,3 +1,4 @@
+<!-- Generated from src/references/component_catalog_full.md by tools/generate.py. Edit the source, not this file. -->
 # Glyvio — Catálogo Visual de Componentes (Design Library)
 
 > **Propósito**: dar ao agente de criação de tela o conhecimento de **como cada
@@ -161,6 +162,7 @@ Layouts não têm aparência própria; eles **arranjam** filhos. Escolha pela
 | `FormLayoutDesign` (+ `FormLayoutFieldDesign`, `FormLayoutEndOfLineDesign`) | Formulário em grade de campos que se ajusta por largura de coluna | Conjunto de campos de formulário.                                                                                                      | `columnSize`, `children`                                                                                                                                                                                                                                                                                                                                                     |
 | `FormEntityLayoutDesign`                                                    | Formulário focado nos campos de uma entidade                      | Form gerado a partir de uma entidade.                                                                                                  | —                                                                                                                                                                                                                                                                                                                                                                            |
 | `DashboardLayoutDesign` (+ `...FieldDesign`)                                | Grade de blocos de dashboard                                      | Arranjo de KPIs/gráficos num dashboard.                                                                                                | —                                                                                                                                                                                                                                                                                                                                                                            |
+| `TreeLayoutDesign` (+ `TreeNodeDesign`)                                     | Árvore hierárquica retrátil com nós aninhados, chevrons giratórios e linhas guias | Estruturas em árvore (categorias, plano de contas, pastas/arquivos, organogramas) com expand/collapse suave e preservação de estado em re-renders. | `nodes` (`TreeNodeDesign`: `key`, `child`, `children`, `initialExpanded`, `actionKey`, `data`), `indentation` (px por nível, padrão: 20), `showGuideLines` (boolean, padrão: true), `initialExpandedKeys` (string[]), `initialExpandedAll` (boolean), `onNodeTapActionKey` (string), `padding` |
 
 > **Alinhamento**: `mainAlignment` = eixo principal
 > (START/CENTER/END/SPACE_BETWEEN…), `crossAlignment` = eixo cruzado
@@ -276,7 +278,7 @@ controle.
 | `RangeDateTimeTextfieldDesign`                                          | Intervalo de data/hora                            | Filtro por período com hora.                            |
 | `RangeNumberTextfieldDesign`                                            | Intervalo numérico (min–max)                      | Filtro por faixa de valor.                              |
 | `ChoiceSingleTextfieldDesign` (+ `ChoiceSingleTextfieldOption`)         | Dropdown/seletor de uma opção fixa                | Escolha única entre opções fixas (não-entidade).        |
-| `ChoiceMultipleTextfieldDesign`                                        | Multi-seleção de opções fixas                     | Várias opções fixas (não-entidade).                      |
+| `ChoiceMultipleTextfieldDesign` ⚠️                                      | Multi-seleção de opções fixas                     | Várias opções fixas — **ver bug confirmado abaixo antes de usar.** |
 | `EntitySelectTextfieldDesign`                                           | Seletor (dropdown) de entidade                    | Selecionar entidade de lista curta.                     |
 | `EntityAutocompleteSingleTextfieldDesign`                               | Autocomplete de 1 entidade (com chip)             | **FK/entidade única** — use a **subclasse específica**. |
 | `EntityAutocompleteMultipleTextfieldDesign`                             | Autocomplete de várias entidades (chips)          | Várias entidades relacionadas.                          |
@@ -286,6 +288,19 @@ controle.
 | `MentionsTextfieldDesign` (+ `MentionsTextfieldOption`)                 | Campo com @menções                                | Comentários com menção a usuários.                      |
 | `IconChoiceTextfieldDesign`                                             | Campo com botão de sufixo para escolher um ícone  | Selecionar/exibir um ícone (ex.: ícone de categoria, menu). Usa `suffixAction` (`ActionButtonDesign`) para abrir o seletor. |
 | `TextFieldDesign`                                                       | Base de campo (helpers `isRequired`, `errorText`) | Base — prefira concretas.                               |
+
+> ⚠️ **Bug confirmado em `ChoiceMultipleTextfieldDesign`**: o widget Flutter subjacente
+> (`TextFieldsChoiceWidget._addValue`) compara o novo valor contra a lista já selecionada
+> indexando cada item como se fosse um `Map` (`item['key']`), mas a lista interna é na
+> verdade `List<String>` — isso lança um erro de tipo em **toda tentativa de adicionar**
+> um item assim que a seleção já tem 1+ itens. Remover funciona normalmente
+> (`_remValue` não tem esse bug); só adicionar depois do primeiro item está quebrado.
+> Efeito prático: o usuário consegue remover itens da seleção, mas nunca voltar a
+> adicionar. Antes de usar este componente para qualquer seleção que o usuário vá
+> editar (não só preencher uma vez), avise o usuário desse limite ou prefira outro
+> padrão (ex.: `EntityAutocompleteMultipleTextfieldDesign` se as opções puderem virar
+> uma pseudo-entidade, ou botões individuais de toggle). Reportado e confirmado em
+> `glyvio-plugin-project` (filtro `cardFields` do Kanban) em 2026-09.
 
 ---
 
@@ -412,7 +427,7 @@ controle.
 
 Os temas usados em `colorTheme` (e em props equivalentes de cor) são
 **registrados em runtime** pelo `FormatterInterceptor` em
-[formatter_interceptor.ts](../../plugin/app/src/interceptors/formatter_interceptor.ts).
+`plugin/app/src/interceptors/formatter_interceptor.ts` no projeto Glyvio Core (quando disponível).
 Cada tema é um `ColorTheme` com até 5 canais: `backgroundColor`, `borderColor`,
 `iconColor`, `textColor`, `labelColor` (cores em hex sem `#`). Há um conjunto
 completo para **modo claro** (`colorThemeLight`) e um espelho para **modo
@@ -802,9 +817,10 @@ embute). Hoje dois hosts embutem side panels:
 | `SimpleMasterDetailPageDesign` | `MASTER` / `DETAIL`                    | `masterPanelDesign` / `detailPanelDesign`               |
 
 Em ambos os casos, o campo recebe um `SidePanelReferenceDesign` (não o
-conteúdo do painel diretamente):
+conteúdo do painel diretamente). As larguras dos painéis podem ser declaradas tanto na página (`masterPanelWidth`, `detailPanelWidth` em px ou `%`) quanto no próprio `SidePanelReferenceDesign` (`width`):
 
 ```typescript
+design.masterPanelWidth = 320; // ou '30%'
 design.masterPanelDesign = glyvio_core.SidePanelReferenceDesign.fromJson({
   route: new MyMasterPanelRoute(),
 });
@@ -854,7 +870,7 @@ cada componente deveria ter uma imagem. Sugestão de fluxo para gerá-las:
 
 1. Renderizar cada design isolado num storybook/página de exemplo do app.
 2. Capturar screenshot por componente em
-   `docs/claude/component_images/<classe>.png`.
+   `.claude/references/component_images/<classe>.png`.
 3. Substituir os marcadores textuais deste catálogo por
    `![ClassName](component_images/ClassName.png)`.
 

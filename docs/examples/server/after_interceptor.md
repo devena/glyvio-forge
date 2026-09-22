@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/server/after_interceptor.md by tools/generate.py. Edit the source, not this file. -->
 # Example: After Interceptor — Post-Save Side Effects
 
 This example demonstrates how to create an **after interceptor** that reacts to a successfully saved entity. After interceptors are the correct tool for side-effects that must happen only once the database commit has succeeded: sending notifications, writing audit/activity logs, calling external services, and creating derived records.

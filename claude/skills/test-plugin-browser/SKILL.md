@@ -1,11 +1,11 @@
 ---
 name: test-plugin-browser
-description: Instruções para o AGY / Claude conectar a aplicação Glyvio App publicada ao bundle local do plugin e testar via Browser usando a AI bridge (window.__GLYVIO_AI__), sem depender da árvore de semântica/acessibilidade. Inclui o procedimento padrão de validação visual (print por passo) a ser usado ao final de qualquer implementação de tela.
+description: "Instruções para o Claude conectar a aplicação Glyvio App publicada ao bundle local do plugin e testar via Browser usando a AI bridge (window.__GLYVIO_AI__), sem depender da árvore de semântica/acessibilidade. Inclui o procedimento padrão de validação visual (print por passo) a ser usado ao final de qualquer implementação de tela."
 ---
-
+<!-- Generated from src/skills/test-plugin-browser/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Skill: Conexão e Teste de Plugins contra o Glyvio App Publicado (via AI bridge)
 
-Esta skill guia o **AGY** / **Claude** para testar e validar o plugin do cliente (ex: `glyvio-plugin-crm`, `glyvio-plugin-project`, `glyvio-plugin-travel`) contra o site do **Glyvio App** publicado (produção/staging), sem depender do código-fonte do Flutter e **sem usar `aria-label`/`role`/snapshot semântico** — a interação é feita lendo o JSON estruturado de design/estado que o próprio app já expõe para a Jeannie.
+Esta skill guia o **Claude** para testar e validar o plugin do cliente (ex: `glyvio-plugin-crm`, `glyvio-plugin-project`, `glyvio-plugin-travel`) contra o site do **Glyvio App** publicado (produção/staging), sem depender do código-fonte do Flutter e **sem usar `aria-label`/`role`/snapshot semântico** — a interação é feita lendo o JSON estruturado de design/estado que o próprio app já expõe para a Jeannie.
 
 **Pré-requisito**: `window.__GLYVIO_AI__` sempre existe na página, mas toda chamada é rejeitada com `AI bridge is disabled for this session...` a menos que uma destas duas condições seja verdadeira:
 - o alvo (staging/homologação) foi compilado com `--dart-define=ENABLE_AI_BRIDGE=true`; **ou**
@@ -21,12 +21,12 @@ Sempre que uma tarefa **criar ou alterar** uma page/modal/sidebar/cart do `plugi
 
 1. Suba o bundle local (`npx http-server ./plugin/app/dist -p 3000 --cors`, em background).
 2. Rode um cenário (via `--scenario` ou um script ad-hoc baseado no template da seção 5) que **navegue até a tela**, **execute cada ação relevante do fluxo** (criar, editar, marcar, remover, etc.) e **tire um screenshot depois de cada passo**.
-3. Salve os screenshots na **raiz do projeto** (`/home/ubuntu/_DISK_AI/<plugin>/`), numerados em ordem: `NN_descricao.png` (ex: `01_estado_vazio.png`, `02_apos_adicionar_item.png`, `03_apos_marcar_concluido.png`, `04_apos_remover_item.png`).
-4. **Leia cada screenshot** (via `Read`) antes de declarar a tarefa concluída — não basta rodar o script e assumir que renderizou certo; o AI bridge confirma que a *ação* aconteceu no estado, não que o *layout* ficou visualmente correto (ver gotcha do `RowLayoutFieldDesign` na seção 6).
+3. Salve os screenshots na **raiz do projeto** (o diretório de trabalho do plugin), numerados em ordem: `NN_descricao.png` (ex: `01_estado_vazio.png`, `02_apos_adicionar_item.png`, `03_apos_marcar_concluido.png`, `04_apos_remover_item.png`).
+4. **Leia cada screenshot** (com a ferramenta de visualização de imagens disponível) antes de declarar a tarefa concluída — não basta rodar o script e assumir que renderizou certo; o AI bridge confirma que a *ação* aconteceu no estado, não que o *layout* ficou visualmente correto (ver gotcha do `RowLayoutFieldDesign` na seção 6).
 5. Confira `getErrors()` sem itens novos em cada passo relevante.
 6. **Se `.env`/credenciais não estiverem disponíveis**, pare e peça ao usuário para configurar antes de considerar a tarefa concluída — não é opcional, não pule esta fase silenciosamente.
 
-Esse é o mesmo procedimento que o agente `glyvio-app-coordinator` executa como sua "Fase 5" (ver `glyvio_app_coordinator_agent_prompt.md`).
+Esse é o mesmo procedimento que o agente `glyvio-app-coordinator` executa como sua "Fase 5" (ver `.claude/agents/glyvio_app_coordinator_agent_prompt.md`).
 
 ---
 
@@ -42,34 +42,40 @@ O repositório inclui o script executável **`test_runner.js`** (`glyvio-forge/t
 
 ### Exemplos de Comandos CLI:
 
+Execute na raiz do plugin. Os exemplos pressupõem que `tools/test-runner/` foi
+fornecido no projeto (runner, dependências e exemplos); ele pertence ao repositório
+Glyvio Forge e não faz parte deste pacote. Se ausente, use o template da seção 5
+com as ferramentas de navegador disponíveis, ou informe a dependência faltante.
+Não suponha caminhos de outra máquina nem acesso a um repositório irmão.
+
 ```bash
 # 1. Navegar para uma rota e validar se carregou sem erros de Cubit
-node /home/ubuntu/glyvio-forge/tools/test-runner/runner.js \
-  --project "/home/ubuntu/_DISK_AI/glyvio-plugin-crm" \
+node tools/test-runner/runner.js \
+  --project "." \
   --plugin-name "crm" \
   --navigate "/crm/clients/kanban"
 
 # 2. Listar todas as rotas registradas após recarregar o plugin
-node /home/ubuntu/glyvio-forge/tools/test-runner/runner.js \
+node tools/test-runner/runner.js \
   --plugin-name "crm" \
   --list-routes
 
 # 3. Disparar uma ação específica na tela aberta
-node /home/ubuntu/glyvio-forge/tools/test-runner/runner.js \
+node tools/test-runner/runner.js \
   --plugin-name "crm" \
   --navigate "/crm/clients/kanban" \
   --dispatch "OPEN_FILTER"
 
 # 4. Inspecionar o Design JSON AST da tela ativa
-node /home/ubuntu/glyvio-forge/tools/test-runner/runner.js \
+node tools/test-runner/runner.js \
   --plugin-name "crm" \
   --navigate "/crm/clients/kanban" \
   --get-design
 
 # 5. Executar um cenário completo de teste via arquivo JSON, com screenshot por passo
-node /home/ubuntu/glyvio-forge/tools/test-runner/runner.js \
+node tools/test-runner/runner.js \
   --plugin-name "crm" \
-  --scenario "/home/ubuntu/glyvio-forge/tools/test-runner/examples/crm_kanban_test.json"
+  --scenario "tools/test-runner/examples/crm_kanban_test.json"
 ```
 
 Um step `{"action": "screenshot", "path": "01_estado_vazio.png"}` dentro do `--scenario` tira o print na hora — é a forma preferida de cumprir a regra da seção 0 sem escrever um script Node à mão.
@@ -174,7 +180,7 @@ Use isto como ponto de partida em vez de reescrever o fluxo de login/override do
 ```js
 require('dotenv').config();
 const { chromium } = require('playwright');
-const shot = (n) => '/home/ubuntu/_DISK_AI/<plugin-dir>/' + n; // sempre a raiz do projeto
+const shot = (n) => require('path').resolve(process.cwd(), n); // sempre a raiz do projeto
 
 function unwrap(v) {
   if (v === null || v === undefined || typeof v !== 'object') return v;

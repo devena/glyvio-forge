@@ -1,8 +1,8 @@
 ---
 name: create-strategy
-description: 'Generates a custom class extending SimpleStrategy to run a dynamically resolvable custom algorithm or execution routine.'
+description: "Generates a custom class extending SimpleStrategy to run a dynamically resolvable custom algorithm or execution routine."
 ---
-
+<!-- Generated from src/skills/create-strategy/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Strategy in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register a server-side dynamic strategy (`SimpleStrategy`) to encapsulate custom calculations or algorithms.
@@ -78,7 +78,7 @@ Create a new file `src/strategies/<strategy_id_snake_case>.ts` in the server pro
 
 ### Step 2: Register/Load the Strategy
 
-Ensure the strategy file is imported in the plugin's server entrypoint (typically `src/index.ts` or `src/behavior_listeners/index.ts`) so that the decorator executes during initialization:
+Ensure the strategy file is imported in the plugin's server entrypoint (typically `plugin/server/src/index.ts`) so that the decorator executes during initialization:
 
 ```typescript
 import './strategies/<strategy_id_snake_case>';

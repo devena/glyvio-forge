@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/server/sync_interceptor_audit.md by tools/generate.py. Edit the source, not this file. -->
 # Example: Sync Interceptor with Change Tracking
 
 This example demonstrates how to create a synchronous interceptor that listens to entity saves, checks if a specific field was modified, and performs business logic (such as logging an audit entry) before the transaction commits.

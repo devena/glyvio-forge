@@ -1,8 +1,8 @@
 ---
 name: create-sidebar
-description: 'Generates a standard details or configuration sidebar view, with layout structures, file drop support, dynamic uploads, event handling, and route configurations.'
+description: "Generates a standard details or configuration sidebar view, with layout structures, file drop support, dynamic uploads, event handling, and route configurations."
 ---
-
+<!-- Generated from src/skills/create-sidebar/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom SimpleSidebar View in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional side-drawer panel / sidebar (extending `SimpleSidebar`) within a Glyvio plugin project.
