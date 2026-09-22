@@ -6,7 +6,7 @@ description: "Reference pattern for a Glyvio plugin that exposes an API consumed
 
 Reference pattern for the shape "a Glyvio plugin exposes an API; a fully separate application — any frontend framework, even mobile — consumes it as the only client that matters." Built and validated across a real project (Angular portal + Glyvio plugin), covering auth, multi-tenant scoping, controller security, the frontend contract, and the docs structure that kept a two-repo project coherent across many sessions.
 
-This is a **pattern reference**, not a code generator — apply the parts that fit, adapt the parts that are project-specific (flagged explicitly below), and always prefer an existing narrower skill (`create-controller`, `modify-manifest`, etc.) or the `glyvio-report-agent` role for the actual artifact once the pattern below has told you what to build.
+This is a **pattern reference**, not a code generator — apply the parts that fit, adapt the parts that are project-specific (flagged explicitly below), and always prefer an existing narrower skill (`create-controller`, `create-custom-page`, `modify-manifest`, `glyvio-custom-page-agent`, etc.) for the actual artifact once the pattern below has told you what to build.
 
 ---
 
@@ -34,13 +34,31 @@ This is a **pattern reference**, not a code generator — apply the parts that f
 ## 🛣️ Routing convention
 
 ```
-POST {host}/custom/external/read/{companyId}/{path}    — queries, no side effects
-POST {host}/custom/external/write/{companyId}/{path}   — mutations
-GET  {host}/custom/external/report/{companyId}/{path}?...&auth_token=<jwt>  — opened as a plain link, not called via the app's HTTP client
+POST {BASE_URL}/custom/external/read/{companyId}/{path}    — queries, no side effects
+POST {BASE_URL}/custom/external/write/{companyId}/{path}   — mutations
+GET  {BASE_URL}/custom/external/page/{companyId}/{path}?...&auth_token=<jwt>    — opened as a plain link, not called via the app's HTTP client
 ```
 
+> ⚠️ **`{BASE_URL}` is the API base, which is frequently NOT the app's host.** Measured live: on
+> `app-beta.glyvio.com` the app serves only static assets while every API call goes to
+> `webapi-prod.glyvio.com`; on other environments the API sits on the same host under a prefix such
+> as `/web-api`. Pointing at the app host returns the SPA's fallback HTML with HTTP 200 — no error,
+> just the wrong body. Never hardcode it: the app reveals it by calling
+> `POST {BASE_URL}/query/{companyId}/query-for-user` right after login, so stripping that suffix
+> yields `BASE_URL`. The `test-plugin-browser` skill automates this (`discover_base_url.js`).
+>
+> The private (internal, logged-in user) counterpart of the `page` route is
+> `{BASE_URL}/custom/private/page/{companyId}/{path}?authorization=Bearer%20<jwt>`, and the
+> unauthenticated one is `{BASE_URL}/custom/public/page/{companyId}/{path}` — the access segment
+> and the auth parameter always change together.
+>
+> ⚠️ **Migration in progress: `report` → `page`.** This route used to be `…/report/…`; that
+> segment is now reserved for the **Report Record** model (`glyvio_entity.Report`, configured in
+> the app, not in code). Use `page` for anything new; the legacy `report` segment still responds
+> while the migration lands.
+
 - `read` vs `write` is a **semantic** split, not enforced by the platform — respect it consistently so the frontend's own read/write service methods stay meaningful, and so nothing that mutates data hides behind a `read` call.
-- `report` is not exclusive to dashboards — it's the right prefix for **any** route meant to be opened as a direct link (new tab, no custom headers), using the `auth_token` query-string auth described above. If the "report" is an actual dashboard/visualization, this skill stops at the routing/auth wiring — hand off the content itself (KPIs, charts, layout) to the report-building skill/agent. If it's some other kind of "open this in a new tab" resource, the `report` prefix + `auth_token` pattern still applies even though there's no dashboard involved.
+- `page` is not exclusive to dashboards — it's the right prefix for **any** route meant to be opened as a direct link (new tab, no custom headers), using the `auth_token` query-string auth described above. If the "report" is an actual dashboard/visualization, this skill stops at the routing/auth wiring — hand off the content itself (KPIs, charts, layout) to the `create-custom-page` skill / `glyvio-custom-page-agent`. If it's some other kind of "open this in a new tab" resource, the `page` prefix + `auth_token` pattern still applies even though there's no dashboard involved.
 - Controller shape:
   ```typescript
   @glyvio_core.Controller({

@@ -306,12 +306,40 @@ export class <ClassName> extends glyvio_core.SimpleController<void, string> {
 <head><meta charset="UTF-8"><title>Report Title</title></head>
 <body>
   <!-- Render data here -->
-  <script>const rawData = ${JSON.stringify(data)};</script>
+  <script>const rawData = ${JSON.stringify(data).replace(/</g, '\\u003c')};</script>
 </body>
 </html>`;
   }
 }
 ```
+
+**Como este report é chamado.** Um controller de report é aberto por uma URL direta — não é
+invocado pelo botão nativo de report das telas (aquele lista apenas registros
+`glyvio_entity.Report`, um mecanismo distinto):
+
+```
+{BASE_URL}/custom/private/page/{companyId}/<controllerId>?authorization=Bearer%20<jwt>
+```
+
+- `<controllerId>` é exatamente o `path` do `@glyvio_core.Controller({ path: '...' })`.
+- Com `allowExternalUserAccess` (via `ExternalSimpleController`), a rota vira
+  `/custom/external/page/...` e o parâmetro de auth muda para **`auth_token=<jwt>`**; com
+  `allowPublicAccess`, vira `/custom/public/page/...` sem parâmetro de auth.
+- ⚠️ **Migração em andamento:** o segmento era `report` e agora é `page` — `report` ficou reservado
+  para o modelo de **Report Record** (`glyvio_entity.Report`). Use `page` no que for novo; o `report`
+  legado ainda responde enquanto a migração não termina.
+- Para uma página HTML completa (dashboard/relatório), prefira a skill **`create-custom-page`**,
+  que cobre modo de acesso, registro, URL e como expor na tela.
+- **`{BASE_URL}` não é o host do app.** Em vários ambientes a API vive em outro host (ex.: app em
+  `app-beta.glyvio.com`, API em `webapi-prod.glyvio.com`); apontar para o host do app devolve o
+  HTML de fallback da SPA com HTTP 200, sem erro. Descubra o valor real com
+  `discover_base_url.js` (skill `test-plugin-browser`, seção 1.5) em vez de assumir.
+
+Para abrir a partir de uma tela, chame `await this.openCustomPage(name, isPublic?, parameters?)`
+— o cliente Flutter resolve BASE_URL, company id e token sozinho, então **não monte a URL à mão**.
+`parameters` vira query string (valores convertidos para string; `null`/`undefined` descartados;
+`authorization` é chave reservada) e chega em `request.requestParams` — sempre string, sempre
+entrada não confiável: valide, faça bind via `params` e reautorize contra a sessão.
 
 ---
 

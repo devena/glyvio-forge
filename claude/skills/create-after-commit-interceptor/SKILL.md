@@ -164,7 +164,7 @@ export class <InterceptorClassName> extends glyvio_core.SimpleAfterCommitInterce
     // like 'env-name' into shipped code.
 
     // 💡 SAVE A SUPPLEMENTARY RECORD (e.g., notification or audit log) EXAMPLE:
-    // const notification = new glyvio_entity.Notification();
+    // const notification = glyvio_entity.Notification.new();
     // notification.title = '<TargetEntityName> Updated';
     // notification.description = `Record ${context.valueId} was ${action}.`;
     // notification.viewed = false;
