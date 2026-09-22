@@ -1,8 +1,8 @@
 ---
 name: create-simple-batch-cart
-description: 'Generates a spreadsheet-style batch/bulk-editing cart drawer (extending SimpleBatchCart) for editing many entity items at once inside a single table — with spreadsheet import/export, inline column editing, "change all" bulk edits, and a single-transaction batch save.'
+description: "Generates a spreadsheet-style batch/bulk-editing cart drawer (extending SimpleBatchCart) for editing many entity items at once inside a single table — with spreadsheet import/export, inline column editing, \"change all\" bulk edits, and a single-transaction batch save."
 ---
-
+<!-- Generated from src/skills/create-simple-batch-cart/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom SimpleBatchCart View in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional batch (bulk-editing) cart drawer panel — extending `SimpleBatchCart` — within a Glyvio plugin project.

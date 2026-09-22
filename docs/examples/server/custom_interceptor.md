@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/server/custom_interceptor.md by tools/generate.py. Edit the source, not this file. -->
 # Example: Custom Interceptor — Event-Based Deferred Tasks
 
 This example demonstrates how to create and register a **custom interceptor** (also known as a simple interceptor) and trigger it deferred using `QueueList` (`getCurrentQueue()`) during a database transaction.

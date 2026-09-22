@@ -1,8 +1,8 @@
 ---
 name: release-project
-description: Builds the project, bumps the patch version, commits all changes with an auto-generated message describing what changed, and pushes to the remote branch.
+description: "Builds the project, bumps the patch version, commits the changes belonging to the requested release with an auto-generated message describing what changed, and pushes to the remote branch."
 ---
-
+<!-- Generated from src/skills/release-project/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Skill: Release Project
 
 Execute this skill whenever the user asks to release, publish, versionar, or deploy the current project.
@@ -46,11 +46,14 @@ Read the new version from `package.json` and keep it for use in the commit messa
 
 ---
 
-### Step 4 — Stage all changes
+### Step 4 — Stage the release changes
 
-```bash
-git add -A
-```
+Inspect `git status --short` and `git diff --cached` before staging. Select the
+files belonging to this release, including the version files changed in Step 3.
+Stage those paths explicitly with `git add -- <release-file> ...`; do not use
+`git add -A`. Preserve unrelated working-tree changes. If unrelated changes are
+already staged, do not commit or unstage them as part of this release: report the
+conflict so the operator can separate the work before the commit.
 
 ---
 
@@ -93,21 +96,10 @@ Entry format (newest on top, right below the `# Changelog` heading):
 
 ### Step 7 — Commit
 
-```bash
-git commit -m "<generated message>"
-```
-
-Pass the message via `$()` heredoc form to preserve newlines:
-
-```bash
-git commit -m "$(cat <<'EOF'
-v<version>: <summary>
-
-- <bullet 1>
-- <bullet 2>
-EOF
-)"
-```
+Write the exact commit message to a temporary file outside the staged set,
+then run `git commit --file <message-file>`. Preserve newlines and literal shell
+characters; do not interpolate generated prose into a shell command. Remove only
+the temporary file you created after the commit succeeds.
 
 ---
 

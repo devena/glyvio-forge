@@ -1,8 +1,8 @@
 ---
 name: create-before-interceptor
-description: 'Generates a custom class extending SimpleBeforeInterceptor to perform pre-save modifications, field injection, or validation constraints on a database entity.'
+description: "Generates a custom class extending SimpleBeforeInterceptor to perform pre-save modifications, field injection, or validation constraints on a database entity."
 ---
-
+<!-- Generated from src/skills/create-before-interceptor/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Before Interceptor in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register a server-side pre-save interceptor (`SimpleBeforeInterceptor`) to perform field validation, mutation, default value injection, or abort transactions before database save operations.

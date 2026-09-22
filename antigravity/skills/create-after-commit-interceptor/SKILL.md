@@ -1,8 +1,8 @@
 ---
 name: create-after-commit-interceptor
-description: 'Generates a custom class extending SimpleAfterCommitInterceptor to run post-commit side effects (e.g., sending e-mails, pushing webhooks, invalidating external caches, enqueuing background jobs) after a database entity transaction has been fully and durably committed.'
+description: "Generates a custom class extending SimpleAfterCommitInterceptor to run post-commit side effects (e.g., sending e-mails, pushing webhooks, invalidating external caches, enqueuing background jobs) after a database entity transaction has been fully and durably committed."
 ---
-
+<!-- Generated from src/skills/create-after-commit-interceptor/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create After-Commit Interceptor in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register a server-side post-commit interceptor (`SimpleAfterCommitInterceptor`) to run side-effects that must only fire once the database transaction is durably committed.

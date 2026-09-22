@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/environment/system_tool.md by tools/generate.py. Edit the source, not this file. -->
 # Example: Custom Environment System Tools for AI Agent Conversations
 
 This guide explains how to design and build custom **System Tools** in the **Environment Layer** (`plugin/environment`) of Glyvio.

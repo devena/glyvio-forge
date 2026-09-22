@@ -1,0 +1,16 @@
+{
+  "assistant": "AGY",
+  "format": "agy",
+  "runtime_root": ".agents",
+  "references": "rules/references",
+  "catalog": null,
+  "instructions": "AGENTS.md",
+  "skills": [
+    "audit-sync-task-query",
+    "format-llm-markdown-output",
+    "test-plugin-browser"
+  ],
+  "agents": {},
+  "agent_metadata": {},
+  "mcp": "mcp_config.json"
+}

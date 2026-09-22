@@ -1,8 +1,8 @@
 ---
 name: audit-sync-task-query
-description: 'Audits a glyvio-plugin-sync task''s baseQuery (raw SQL against an external dataSource, e.g. an ERP) against the target glyvio_entity structure it binds to — reports structure fields the SQL leaves unfilled, wrong/missing rounding on Decimal columns, incorrect boolean/date/relation parsing, and other column-level mismatches. Read-only analysis — does not edit sync config or write code.'
+description: "Audits a glyvio-plugin-sync task's baseQuery (raw SQL against an external dataSource, e.g. an ERP) against the target glyvio_entity structure it binds to — reports structure fields the SQL leaves unfilled, wrong/missing rounding on Decimal columns, incorrect boolean/date/relation parsing, and other column-level mismatches. Read-only analysis — does not edit sync config or write code."
 ---
-
+<!-- Generated from src/skills/audit-sync-task-query/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Audit Sync Task Query Against Entity Structure
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to review a **single sync task's `baseQuery`** — the raw SQL a `glyvio-plugin-sync` task runs against a registered `dataSource` — and verify that every column it selects correctly and completely fills the target entity's structure.

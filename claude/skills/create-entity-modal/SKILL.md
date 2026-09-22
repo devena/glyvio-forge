@@ -1,8 +1,8 @@
 ---
 name: create-entity-modal
-description: 'Generates a standard entity selection and search modal, with autocomplete lookups, query filter configurations, list cells, selection chips, routing, and textfield wrappers.'
+description: "Generates a standard entity selection and search modal, with autocomplete lookups, query filter configurations, list cells, selection chips, routing, and textfield wrappers."
 ---
-
+<!-- Generated from src/skills/create-entity-modal/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom Entity Modal View in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional entity selector modal (extending `SimpleEntityModal`) within a Glyvio plugin project.

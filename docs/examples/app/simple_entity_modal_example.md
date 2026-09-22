@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/app/simple_entity_modal_example.md by tools/generate.py. Edit the source, not this file. -->
 # Custom Selection Modal using SimpleEntityModal
 
 This example demonstrates how to implement a custom selection modal by extending `glyvio_core.SimpleEntityModal`. A selection modal is used to display, filter, search, and select records of a specific database entity model (such as `AppUser`) from a list.

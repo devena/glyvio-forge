@@ -1,8 +1,8 @@
 ---
 name: create-controller
-description: 'Generates a typed class extending SimpleController, registers it via the @Controller decorator, and wires it into the server entrypoint. The controller exposes an HTTP endpoint for triggering server-side business logic, running queries, saving entities, or rendering HTML reports.'
+description: "Generates a typed class extending SimpleController, registers it via the @Controller decorator, and wires it into the server entrypoint. The controller exposes an HTTP endpoint for triggering server-side business logic, running queries, saving entities, or rendering HTML reports."
 ---
-
+<!-- Generated from src/skills/create-controller/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Controller in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register a server-side HTTP request handler (`SimpleController`) in the `plugin/server` layer of a Glyvio plugin.
@@ -116,7 +116,17 @@ The executing agent MUST strictly adhere to the following rules:
 
 11. **Money fields use `Decimal`, never native `Number`/`number` math**: raw `Number()`-based arithmetic on money-bearing fields accumulates floating-point rounding drift (a real bug fixed in a production plugin, alongside an installment generator that was silently losing cents on the remainder). Any field representing currency — totals, prices, installment amounts, discounts — must use the `Decimal` API for all arithmetic, comparisons, and storage; never coerce it through a plain `number` mid-calculation.
 
-12. **Custom controller call sites need the `/${PLUGIN_NAME}/` path prefix — the compiler will not catch a missing one**: the client-side call to a controller registered via `@Controller({ path: '<controllerId>' })` must be addressed as `/${PLUGIN_NAME}/<controllerId>` (or the equivalent helper that prefixes it), not the bare `path` string. A forgotten prefix is a plain string mismatch — no TypeScript error, just a request that 404s or hits the wrong route — so double check the prefix explicitly whenever wiring the caller side of a new controller.
+12. **Calling a controller from `plugin/app` — always use `glyvio_core.restService.postController`/`putController`/`getController`, never a hand-built path**: a controller registered via `@Controller({ path: '<controllerId>', allowPrivateAccess, allowPublicAccess, allowExternalUserAccess })` is reached at `/custom/<public|private|external>/sync/<companyId>/<controllerId>` on the server — a path `plugin/app` (TS) code cannot construct itself, since nothing there exposes the current `companyId` (only the Dart client can resolve it). Always call it like this instead of using `restService.post`/`put`/`get` with a hand-built path:
+
+    ```typescript
+    const result = await glyvio_core.restService.postController<ResponseType>(
+      'private', // 'public' | 'private' | 'external' — must match one of the controller's allow*Access flags, and how the current caller is authenticated
+      '<controllerId>', // exactly the `path` passed to @Controller
+      requestBody satisfies RequestType,
+    );
+    ```
+
+    `putController`/`getController` take the same `(visibility, controllerId[, data])` shape. There is no compile-time link between the controller's `path` and the caller's `controllerId` string, nor between `visibility` and the controller's `allow*Access` flags — a typo or a mismatched visibility silently 404s/misroutes instead of failing to build, so double-check both explicitly whenever wiring the caller side of a new controller.
 
 ---
 
@@ -337,7 +347,7 @@ Before delivering the code, the agent must verify:
 - [ ] Are all `request.body` accesses guarded with a null/undefined check? → Add guards.
 - [ ] Are business errors thrown with `glyvio_core.GlyvioError`? → Replace any raw `throw new Error()`.
 - [ ] Did I add any try/catch block that was NOT explicitly requested? → Remove it.
-- [ ] Is the controller imported in `src/index.ts` or `src/behavior_listeners/index.ts`? → Add the import.
+- [ ] Is the controller imported in `plugin/server/src/index.ts`? → Add the import.
 - [ ] Does every `queryService.find` call bind caller-influenced values via `params` instead of string-interpolating them into the SQL text? → Fix any violation (rule #10, SQL injection).
 - [ ] Does any money-bearing field use native `Number`/`number` arithmetic instead of `Decimal`? → Replace it (rule #11).
-- [ ] Does the client-side call site for this controller use the `/${PLUGIN_NAME}/<controllerId>` path, not the bare `path` string? → Fix it (rule #12).
+- [ ] Does the client-side call site for this controller use `glyvio_core.restService.postController`/`putController`/`getController` — not `restService.post`/`put`/`get` with a hand-built path, and not the bare `path` string? → Fix it (rule #12).

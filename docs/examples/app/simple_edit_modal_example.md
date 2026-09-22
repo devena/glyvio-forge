@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/app/simple_edit_modal_example.md by tools/generate.py. Edit the source, not this file. -->
 # Custom Edit Modal using SimpleEditModal
 
 This example demonstrates how to implement a custom edit modal by extending `glyvio_core.SimpleEditModal`. An edit modal is used to display form fields, validate user inputs, and save changes to a specific database entity model (such as `AppUser`).

@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/app/custom_menu_route.md by tools/generate.py. Edit the source, not this file. -->
 # Example: Defining Custom Pages, Routes, and Menu Items
 
 This example demonstrates how to create a custom page, declare a route for it, register the route in the app routing system, and add it to the application's navigation menu.

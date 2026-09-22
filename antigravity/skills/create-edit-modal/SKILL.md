@@ -1,8 +1,8 @@
 ---
 name: create-edit-modal
-description: 'Generates a standard entity creation/modification form inside a modal, with input validation, saving routines, routing, and custom interceptor hooks.'
+description: "Generates a standard entity creation/modification form inside a modal, with input validation, saving routines, routing, and custom interceptor hooks."
 ---
-
+<!-- Generated from src/skills/create-edit-modal/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom Edit Modal View in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional edit modal view (extending `SimpleEditModal`) within a Glyvio plugin project.

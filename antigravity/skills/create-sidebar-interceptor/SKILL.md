@@ -1,8 +1,8 @@
 ---
 name: create-sidebar-interceptor
-description: 'Generates a custom class extending an abstract `SimpleSidebarInterceptor` to dynamically modify sidebar layouts, custom buttons, lifecycle hooks (init/refresh/event side-effects), or details views, and registers it. Does NOT expose a file-upload hook — see Known Limitations.'
+description: "Generates a custom class extending an abstract `SimpleSidebarInterceptor` to dynamically modify sidebar layouts, custom buttons, lifecycle hooks (init/refresh/event side-effects), or details views, and registers it. Does NOT expose a file-upload hook — see Known Limitations."
 ---
-
+<!-- Generated from src/skills/create-sidebar-interceptor/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create SimpleSidebar Interceptor in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register an interceptor/listener to customize the behavior of an existing `SimpleSidebar` view in another project.
@@ -61,7 +61,7 @@ Consequences:
 
 ### Step 0 — Collect the current design JSON using SpyInterceptor
 
-1. Determine the temp file path: `.agents/temp<SidebarName>_design.json` (e.g., `TaskTypeSidebar_design.json`).
+1. Determine the temp file path: `antigravity/temp/<SidebarName>_design.json` (e.g., `TaskTypeSidebar_design.json`).
 2. Check if that file already exists. If it does, remove/delete the file from disk and proceed with the collection flow normally to capture a fresh design.
 3. Create and register a temporary **SpyInterceptor** in the plugin:
    - Create a file `src/interceptors/views/spy_interceptor.ts`.
@@ -83,14 +83,14 @@ Consequences:
      }
      ```
    - Register it temporarily in `src/index.ts`.
-   - Run `pnpm build` via `run_command` to compile the codebase with the temporary `SpyInterceptor`.
+   - Run `pnpm build` via the available shell tool to compile the codebase with the temporary `SpyInterceptor`.
 4. Retrieve the design JSON using the browser inspection script:
    - Ask the user to make sure Chrome is running with remote debugging enabled (`--remote-debugging-port=9222`) and that the target sidebar is open/active.
-   - Run the script `antigravity/scripts/chrome_inspector.js` via `run_command` to connect to Chrome, automatically wait for `window.__finalDesign` to be populated, and save the retrieved JSON to `.agents/temp<SidebarName>_design.json`.
+   - Run the script `antigravity/scripts/chrome_inspector.js` via the available shell tool to connect to Chrome, automatically wait for `window.__finalDesign` to be populated, and save the retrieved JSON to `antigravity/temp/<SidebarName>_design.json`.
      _Command:_ `node antigravity/scripts/chrome_inspector.js <SidebarName>` (e.g., `node antigravity/scripts/chrome_inspector.js TaskTypeSidebar`).
      _(Note: This script automatically starts an `httpster` server on port 9998 with CORS enabled serving `plugin/app/dist` beforehand, injects the localStorage rules for `app_rule_plugins` and `USER_PREFERENCE`, reloads the page to apply them, and automatically reconnects to continue polling.)_
-5. Once the design JSON is collected and saved to `.agents/temp<SidebarName>_design.json`, remove the temporary `SpyInterceptor` and its registration from the codebase, and run `pnpm build` again to clean up the compiled distribution.
-6. If Chrome debugging is not available or fails, fallback to asking the user to send the **current design JSON** of the sidebar (obtained from `sidebar.getDesignRaw(state)` or the console) in the next message, or to save it manually to `.agents/temp<SidebarName>_design.json`.
+5. Once the design JSON is collected and saved to `antigravity/temp/<SidebarName>_design.json`, remove the temporary `SpyInterceptor` and its registration from the codebase, and run `pnpm build` again to clean up the compiled distribution.
+6. If Chrome debugging is not available or fails, fallback to asking the user to send the **current design JSON** of the sidebar (obtained from `sidebar.getDesignRaw(state)` or the console) in the next message, or to save it manually to `antigravity/temp/<SidebarName>_design.json`.
 7. Do NOT proceed to Step 0.1 until the JSON is saved to disk.
 
 ### Step 0.1 — Interpret the design JSON (read-only)
@@ -109,7 +109,7 @@ Rules:
 
 ### Step 0.2 — Save the analysis summary
 
-After completing the Step 0.1 analysis, **immediately write the findings to `.agents/temp<SidebarName>_analysis.md`** using `write_to_file`. Include:
+After completing the Step 0.1 analysis, **immediately write the findings to `antigravity/temp/<SidebarName>_analysis.md`** using the available file-editing tool. Include:
 
 1. The target section/widget `runtimeClass` and `key`.
 2. The full navigation path to each target node (dot-path string).

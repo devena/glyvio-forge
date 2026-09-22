@@ -1,0 +1,21 @@
+{
+  "assistant": "Antigravity",
+  "format": "antigravity",
+  "runtime_root": "antigravity",
+  "references": "rules/references",
+  "catalog": "rules/component_catalog.md",
+  "instructions": "AGENTS.md",
+  "skills": "*",
+  "agents": {
+    "glyvio-doc-agent.md": "glyvio-doc-agent",
+    "glyvio-app-coordinator.md": "glyvio-app-coordinator",
+    "glyvio-environment-agent.md": "glyvio-environment-agent",
+    "glyvio-report-agent.md": "glyvio-report-agent",
+    "glyvio-server-coordinator.md": "glyvio-server-coordinator",
+    "glyvio-app-chart.md": "glyvio-app-chart"
+  },
+  "agent_metadata": {
+    "model": "pro"
+  },
+  "mcp": "mcp_config.json"
+}

@@ -1,8 +1,8 @@
 ---
 name: modify-manifest
-description: 'Guides developers and AI agents on adding/editing permissions under the root `"permissions"` array, and structuring schema migrations (new entities, fields, or sequences) under the `"dbVersions"` array.'
+description: "Guides developers and AI agents on adding/editing permissions under the root `\"permissions\"` array, and structuring schema migrations (new entities, fields, or sequences) under the `\"dbVersions\"` array."
 ---
-
+<!-- Generated from src/skills/modify-manifest/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Modify Manifest Configuration in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to include or edit entities, fields, sequences, and permissions within a Glyvio plugin's `manifest.json` file.

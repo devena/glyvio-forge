@@ -1,322 +1,116 @@
-# glyvio-plugin-{pluginName}
+# Glyvio Forge
 
-Plugin Glyvio para {pluginName} — monorepo TypeScript com arquitetura em três
-camadas: frontend (`app`), backend (`server`) e integração com IA
-(`environment`).
+Base de agents, skills, referências e exemplos para desenvolver no Glyvio com
+Claude, Codex e Antigravity. O conteúdo compartilhado é mantido em **`src/`**;
+as pastas dos assistentes são geradas e continuam prontas para distribuição.
 
----
+## Estrutura
 
-## Estrutura do Projeto
+```text
+src/
+├── agents/                 # 6 papéis, com instruções independentes do assistente
+├── skills/                 # 56 skills compartilhadas
+├── component_catalog.md    # Índice visual
+├── references/             # Catálogo completo e regras arquiteturais
+├── scripts/                # Helpers compartilhados
+├── examples/               # Exemplos por camada
+├── plugin-development.md   # Guia de desenvolvimento de plugins
+├── mcp.json                # Configuração MCP compartilhada
+└── adapters/
+    ├── claude/             # Modelo, ferramentas, nomes e caminhos do Claude
+    ├── codex/              # TOML, instruções de execução e instalação
+    ├── antigravity/        # Metadados e layout do Antigravity
+    └── agy/                # Seleção reduzida de skills para o pacote legado
 
-```
-glyvio-plugin-{pluginName}/
-├── plugin/
-│   ├── app/          # Frontend — telas, modais, menus
-│   ├── server/       # Backend — interceptors, controllers, strategies
-│   └── environment/  # IA — system tools, custom tools, services
-├── shared/
-│   └── commons/      # Constantes compartilhadas (PLUGIN_ID, VERSION…)
-└── manifest.json     # Entidades, permissões e migrações do banco
-```
-
-Cada pacote tem seu próprio ciclo de build via Webpack e gera um
-`dist/bundle.js` independente.
-
----
-
-## Pré-requisitos
-
-- [Node.js](https://nodejs.org/) LTS
-- [pnpm](https://pnpm.io/) instalado globalmente:
-
-```sh
-npm install -g pnpm
-```
-
----
-
-## Setup
-
-```sh
-# instalar todas as dependências do monorepo
-pnpm install
-
-# build de todas as camadas
-pnpm build
-
-# verificar tipos e lint
-pnpm lint
+tools/generate.py           # Geração determinística e verificação de divergências
+tools/tests/                # Testes do gerador em diretórios temporários
+.generated-files.json      # Arquivos gerenciados e hashes da última geração
+claude/                    # Gerado
+codex/                     # Gerado
+antigravity/                # Gerado
+agy/                       # Gerado; mantém as 3 skills do pacote legado
+docs/examples/             # Gerado de src/examples/
+docs/plugin-development.md # Gerado de src/plugin-development.md
 ```
 
-Após editar `manifest.json`, rode `./run_helper.sh` na raiz para regenerar
-`entity.d.ts`, `glyvio_structure.d.ts` e `service.ts`.
+O [guia de desenvolvimento de plugins](docs/plugin-development.md) contém a
+arquitetura app/server/environment, as convenções e os comandos dos projetos
+Glyvio. Esses comandos de build pertencem aos plugins, não a este repositório.
 
-> **`@types`/`dist/bundle.d.ts` são sempre gerados e ficam fora do git**
-> (`.gitignore` os exclui em todos os plugins). Isso significa que, se em algum
-> ponto for necessário editar esses arquivos manualmente como stopgap — por
-> exemplo, para desbloquear um build enquanto uma alteração de manifesto de
-> outro plugin ainda não foi publicada — **esse patch manual não deixa
-> nenhum rastro no git**: some no próximo `run_helper.sh`/checkout limpo, e o
-> próximo agente que ler o repositório não tem como saber que ele existiu. A
-> regra padrão continua sendo **nunca editar esses arquivos manualmente**; se
-> um stopgap desse tipo for genuinamente necessário, documente-o explicitamente
-> para o usuário na conversa (não apenas no arquivo gerado) e trate como
-> temporário até a publicação real do dependency resolver o gap.
+## Alterar e gerar
 
----
+Requer **Python 3.11 ou superior**, sem dependências Python adicionais.
 
-## Jornada de Desenvolvimento de uma Feature
+1. Edite a skill, agent, referência, helper ou exemplo em `src/`.
+2. Execute:
 
-```
-[1] Manifesto  →  [2] App  →  [3] Server  →  [4] Environment  →  [5] Release
+```bash
+python3 tools/generate.py
+python3 tools/generate.py --check
+python3 -m unittest discover -s tools/tests -v
 ```
 
-### 1. Manifesto
+3. Revise o diff e inclua na mesma entrega `src/`, os arquivos gerados e
+   `.generated-files.json`. A checagem também é executada no CI.
 
-Se a feature precisa de uma nova entidade, adicione uma versão em
-`manifest.json → dbVersions`. Defina campos, tipos, chaves estrangeiras e
-permissões. Rode `./run_helper.sh` para regenerar os tipos.
+`--check` não escreve arquivos e retorna erro quando uma saída está ausente,
+alterada ou desatualizada. A geração só remove arquivos anteriormente gerenciados
+que deixaram de ter origem; nunca limpa as pastas inteiras.
 
-### 2. Camada App — Frontend
+Se alguém editar diretamente uma saída, o gerador recusa sobrescrevê-la.
+Transfira a alteração para a fonte correspondente em `src/`, confira o diff e
+restaure **somente aquela saída** à versão gerada anterior, ou mova-a para um
+backup fora do caminho gerenciado. Depois gere novamente. Não edite o manifesto
+manualmente nem reverta outras alterações para contornar essa proteção.
 
-Crie views em `plugin/app/src/views/`. Registre rotas e interceptors em
-`plugin/app/src/index.ts`:
+## Onde editar
 
-```ts
-glyvio_core.routerService.loadRoutes([MinhaPageRoute, MeuModalRoute]);
-glyvio_core.appInterceptorService.registerInterceptors([{
-  interceptor: MeuInterceptor,
-}]);
-```
+| Mudança | Fonte |
+| --- | --- |
+| Regra ou procedimento do Glyvio | `src/agents/`, `src/skills/` ou `src/references/` |
+| Exemplo de código | `src/examples/` |
+| Modelo, ferramentas, seleção de skills e nomes dos arquivos | `src/adapters/<assistente>/config.json` |
+| Orientações específicas de instalação ou execução | `src/adapters/<assistente>/files/` ou `preamble.md` |
+| Conversão de formatos e caminhos | `tools/generate.py` |
 
-**Tipos de view disponíveis:** `SimpleListPage`, `SimpleTablePage`,
-`SimpleDashboardPage`, `SimpleEditModal`, `SimpleEntityModal`,
-`SimpleSendModal`, `SimpleCart`, `SimpleSidebar`, `SimpleKanbanPage`,
-`SimpleCalendarPage`.
+Os headers canônicos de agents e skills contêm apenas `name` e `description`.
+Use strings JSON de uma linha entre aspas duplas (válidas em YAML), especialmente
+quando houver dois-pontos ou aspas na descrição. Metadados exclusivos do assistente
+ficam no adapter. Uma skill nova em `src/skills/<nome>/SKILL.md` entra automaticamente
+nos três pacotes completos; o AGY usa uma lista explícita. Um agent novo exige
+adicionar seu nome aos três adapters completos.
 
-> **Atenção:** Sempre use `await glyvio_entity.Erp.new()` para instanciar
-> entidades — nunca `new glyvio_entity.Erp()`. **Única exceção confirmada**: um
-> fluxo de upload de anexo pode legitimamente pré-gerar uma instância via
-> construtor bruto só para obter um `id` antes de repassá-la a um método de
-> persistência especializado (ex.: `attachFromTemp`) que já ignora
-> `entityService` por completo — fora desse caso específico, a regra continua
-> absoluta.
->
-> Em interpolações de design, use o caminho joined: `item.client.name`, nunca
-> `item.clientId`.
+Os únicos placeholders de empacotamento são `@@ASSISTANT@@`, `@@REFERENCES@@`,
+`@@ARCHITECTURE@@`, `@@CATALOG@@`, `@@SKILLS@@`, `@@SCRIPTS@@`, `@@TEMP@@`,
+`@@PROJECT_INSTRUCTIONS@@` e `@@AGENT:nome-do-agent@@`. O gerador resolve esses
+valores por assistente e falha se restar algum placeholder. Interpolações do
+Glyvio, como `$S{...}`, `$T{...}` e Handlebars, são preservadas.
+Recursos não Markdown dentro das skills são copiados byte a byte.
 
-### 3. Camada Server — Backend
+## Distribuição
 
-Interceptors são **descobertos automaticamente** pelo Webpack — sem registro
-manual em `index.ts`.
+- **Claude:** distribua o conteúdo de `claude/` em `.claude/` no projeto de destino;
+  os caminhos das instruções seguem essa convenção já usada pelo pacote.
+- **Codex:** siga o [guia do pacote](codex/README.md).
+- **Antigravity:** o conteúdo usa caminhos relativos a `antigravity/` no projeto;
+  preserve a estrutura ao distribuí-lo pelo mecanismo usado pela equipe.
+- **AGY:** `agy/` mantém o pacote legado reduzido, com caminhos de execução em
+  `.agents/`. A instalação local `.agents/` deste checkout não é atualizada pelo gerador.
 
-**BeforeInterceptor** — valida antes do save, pode cancelar:
+A geração monta arquivos para distribuição; não instala pacotes em outros
+projetos, não inicia MCPs e não altera configurações pessoais dos assistentes.
 
-```ts
-@glyvio_core.BeforeInterceptor({ entity: "sale", id: "sale-minimum-value" })
-export class SaleMinimumValueInterceptor
-  extends glyvio_core.SimpleBeforeInterceptor<glyvio_entity.Sale> {
-  async handleBefore(value: glyvio_entity.Sale, ctx: Context) {
-    if (value.totalValue < 100) {
-      throw new glyvio_core.GlyvioError("Valor mínimo de R$ 100,00");
-    }
-    return value;
-  }
-}
-```
+## Reconciliação e limites
 
-**AfterInterceptor** — side effects pós-save (notificações, audit trail,
-denormalização):
+Veja [as decisões da migração](docs/reconciliation.md): o conteúdo foi reconciliado
+entre Claude, Antigravity, AGY e a adaptação para Codex, preservando as alterações
+locais de controllers, árvores e master-detail.
 
-```ts
-@glyvio_core.AfterInterceptor({ entity: 'client', id: 'client-notify-deleted' })
-export class ClientNotifyDeletedInterceptor
-  extends glyvio_core.SimpleAfterInterceptor<glyvio_entity.Client> {
+`claude/skills/synced/`, `.agents/`, credenciais, caches e scripts locais do
+`tools/test-runner/` não são fontes nem saídas gerenciadas. O runner continua sendo
+uma dependência opcional dos testes de navegador. O guia HTML em `docs/` também
+permanece independente; não é regenerado a partir de `src/` nesta migração.
 
-  async handleAfter(value: glyvio_entity.Client, ctx: Context) {
-    if (!value.deletedAt) return;
-    await crm.GenerateNotificationStrategy.pushToQueue({ entityId: value.id, ... });
-  }
-}
-```
-
-**AfterCommitInterceptor** — executa após commit durável (use para webhooks,
-filas externas, emails).
-
-**Controller** — endpoint HTTP decorado com
-`@glyvio_core.Controller({ path, allowPrivateAccess })`.
-
-UUIDs de status e grupos ficam centralizados em `plugin/server/src/constants.ts`
-— nunca hardcode inline.
-
-### 4. Camada Environment — IA
-
-Tools são **descobertas automaticamente** via decorador — sem registro manual.
-
-```ts
-@glyvio_core.SystemTool({
-  id: "company-daily-briefing",
-  permission: Permissions.TOOL_DAILY_BRIEFING,
-  description: "Retorna o briefing diário do usuário",
-})
-export class DailyBriefingTool implements glyvio_core.CoreSystemTool {
-  async handle() {
-    const userId = glyvio_core.getContext().loggedUserId;
-    return TaskService.getInstance().fetchToday(userId);
-  }
-}
-```
-
-Services usam o padrão singleton e acessam o banco via `SyncClient` (arquivo
-`service.ts` — **nunca edite manualmente**, é auto-gerado).
-
-### 5. Release
-
-```sh
-pnpm lint    # checar TypeScript antes
-pnpm build   # compilar todas as camadas
-```
-
-Use a skill `/release-project` para automatizar: bump de versão patch → commit
-descritivo → push. O CI no GitHub Actions valida o build antes do deploy.
-
----
-
-## Registro de Views e Interceptors
-
-| Camada      | Tipo                                      | Como é registrado                                                          |
-| ----------- | ----------------------------------------- | -------------------------------------------------------------------------- |
-| App         | Pages / Modals / Carts                    | Explícito em `index.ts` via `routerService.loadRoutes()`                   |
-| App         | Interceptors de app                       | Explícito em `index.ts` via `appInterceptorService.registerInterceptors()` |
-| App         | Menu items                                | Explícito em `index.ts` via `FullMenuPage.fullMenuGroupAdd()`              |
-| Server      | Before / After / AfterCommit Interceptors | Descoberta automática via decorador                                        |
-| Server      | Controllers                               | Descoberta automática via decorador                                        |
-| Environment | SystemTool / CustomTool                   | Descoberta automática via decorador                                        |
-
----
-
-## Gotchas Confirmados do QueryBuilder
-
-Nenhum destes aparece no `.d.ts` — todos foram confirmados por falha real em
-tempo de execução, não inferidos dos tipos. Leia antes de tratar um
-comportamento estranho do `QueryBuilder` como bug do plugin.
-
-- **`findAll()` ignora `.limit()`/`.offset()` silenciosamente** — só `.find()`
-  de fato pagina. Um bug real que passou despercebido até a tabela ter mais de
-  ~15 registros de teste; não há sinal do compilador.
-- **Self-join sem alias explícito falha, às vezes silenciosamente na UI**: um
-  join de uma entidade contra ela mesma (ex.: `parentTask`, `parentCategory`)
-  sem alias lança `table name specified more than once` no servidor — mas o
-  erro pode nunca chegar ao usuário; a tela (lista ou edição) simplesmente
-  renderiza vazia, sem nenhum aviso visível.
-- **`.findAll()`/select padrão em entidade cross-plugin pode quebrar em
-  relações não registradas**: chamar `.findAll()` numa entidade como `Client`
-  a partir de um plugin consumidor pode lançar
-  `Cannot read property 'structureName' of undefined`, porque o select padrão
-  percorre toda relação declarada e nem toda relação está registrada no
-  runtime desse plugin. Corrija restringindo os campos:
-  `setFromEntity(AllEntities.x, { fields: [...] })` só com os campos
-  escalares necessários.
-- **`addLeftJoinEntity(fieldFrom, { fieldsForeign })` derruba o getter
-  `<relation>Id` do lado "from" se `id` não estiver em `fieldsForeign`** —
-  inclua `id` explicitamente sempre que precisar do FK id depois do join.
-- **`'user'` como `aliasTableForeign` quebra a query** — `USER` é palavra
-  reservada no Postgres; escolha outro alias.
-- **Relação "array de ids" guardado como campo `JSON`/`jsonb` não tem um
-  helper típado no QueryBuilder** — a única forma confirmada de filtrar por
-  contenção é `addFilterRaw` com o operador `@>` do Postgres, ex.:
-  ```typescript
-  qb.addFilterRaw('client.mailing_lists @> to_jsonb(?::text)', [mailingListId]);
-  ```
-  Trate isso como o idiom sancionado para esse formato de relação (array de
-  ids num campo JSON, sem entidade de junção própria) até que exista um
-  helper de primeira classe equivalente.
-
----
-
-## Skills de IA Disponíveis
-
-As skills geram código seguindo os padrões do projeto. Invoque no chat com
-`/nome-da-skill`.
-
-### App (Frontend)
-
-| Skill                         | Quando usar                             |
-| ----------------------------- | --------------------------------------- |
-| `/create-list-page`           | Página de listagem com busca e filtros  |
-| `/create-table-page`          | Tabela spreadsheet com colunas inline   |
-| `/create-edit-modal`          | Formulário de criação/edição em modal   |
-| `/create-entity-modal`        | Picker/autocomplete de entidades        |
-| `/create-sidebar`             | Painel lateral de detalhes              |
-| `/create-kanban-page`         | Página kanban por status                |
-| `/create-calendar-page`       | Página de calendário com eventos        |
-| `/create-send-modal`          | Modal de envio de mensagem/email        |
-| `/create-simple-cart`         | Drawer de carrinho/seleção temporária   |
-| `/create-simple-batch-cart`   | Drawer de carrinho em lote (spreadsheet-like) |
-| `/create-entity-links-section`| Seção "Vínculos" polimórfica num sidebar existente |
-| `/create-screen-from-image`   | Reproduz um screenshot como tela Glyvio |
-| `/create-*-interceptor` (app) | Estende view existente do CRM           |
-
-### Extensibilidade (App)
-
-| Skill                  | Quando usar                                                                 |
-| ----------------------- | --------------------------------------------------------------------------- |
-| `/create-app-strategy`  | Cria ou sobrescreve uma app-layer strategy (`CoreAppStrategyAsync`/`Sync`, ex: `EntityHasAttachmentTypesStrategy`) — diferente do `/create-strategy` (server) |
-
-### Server (Backend)
-
-| Skill                              | Quando usar                     |
-| ---------------------------------- | ------------------------------- |
-| `/create-before-interceptor`       | Validação pré-save              |
-| `/create-after-interceptor`        | Side effect pós-save            |
-| `/create-after-commit-interceptor` | Side effect após commit durável |
-| `/create-sync-interceptor`         | Interceptor de operação sync    |
-| `/create-controller`               | Endpoint HTTP                   |
-| `/create-strategy`                 | Lógica de negócio encapsulada   |
-| `/schedule-queued-operation`       | Operação deferred/enfileirada   |
-
-### Environment (IA)
-
-| Skill                  | Quando usar                              |
-| ---------------------- | ---------------------------------------- |
-| `/create-system-tool`  | Ferramenta invocável pelo agente Jeannie |
-| `/create-custom-tool`  | Tool customizada de roteamento           |
-| `/create-custom-agent` | Agente com tools próprias                |
-| `/format-llm-markdown-output` | Restringe texto markdown gerado por LLM às tags que o `glyvio_app` renderiza |
-
-### Configuração
-
-| Skill              | Quando usar                                    |
-| ------------------ | ---------------------------------------------- |
-| `/modify-manifest` | Adicionar permissões ou migrações no manifesto |
-| `/release-project` | Build → bump de versão → commit → push         |
-
----
-
-## Agentes Especializados
-
-| Agente                      | Camada      | Quando usar                                          |
-| --------------------------- | ----------- | ---------------------------------------------------- |
-| `glyvio-app-coordinator`    | App         | Trabalho completo de UI/UX com múltiplos arquivos    |
-| `glyvio-app-chart`          | App         | Criação e customização de gráficos                   |
-| `glyvio-server-coordinator` | Server      | Lógica de negócio com múltiplos interceptors         |
-| `glyvio-environment-agent`  | Environment | Tools de IA, queries com SyncClient                  |
-| `glyvio-report-agent`       | Server      | Dashboards HTML interativos com Plotly.js            |
-| `Plan`                      | Qualquer    | Planejar implementações que afetam múltiplas camadas |
-
-> **Skill vs. Agente:** Use uma _skill_ quando sabe exatamente o que criar. Use
-> um _agente_ quando precisa de análise ou a tarefa afeta múltiplos arquivos ao
-> mesmo tempo.
-
----
-
-## Scripts
-
-```sh
-pnpm build        # instalar deps + build de todas as camadas
-pnpm build:fast   # build sem install (deps já instaladas)
-pnpm lint         # ESLint + TypeScript check
-pnpm pretty       # Prettier — formatar todos os arquivos TS
-./build_all.sh    # build de todos os plugins do monorepo pai
-./release_all.sh  # release de todos os plugins
-```
+A validação do pacote verifica formatos, cobertura, caminhos e propagação das
+instruções. Ela não substitui a compilação dos exemplos contra os tipos da versão
+Glyvio do projeto-alvo nem os testes ao vivo com a AI bridge.

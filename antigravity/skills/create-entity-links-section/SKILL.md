@@ -1,8 +1,8 @@
 ---
 name: create-entity-links-section
-description: 'Adds a "Links" section to an existing sidebar (or tab-sidebar), letting the user attach/remove polymorphic links to other entities via a generic pick-a-type-then-pick-a-record flow (EntityLinksDesign), backed by a dedicated `<owner>_entity` join table.'
+description: "Adds a \"Links\" section to an existing sidebar (or tab-sidebar), letting the user attach/remove polymorphic links to other entities via a generic pick-a-type-then-pick-a-record flow (EntityLinksDesign), backed by a dedicated `owner_entity` join table."
 ---
-
+<!-- Generated from src/skills/create-entity-links-section/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Add a Polymorphic Entity Links Section in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to add a "Links" (Vínculos) section to an existing `SimpleSidebar`/`TabSidebar` — a generic, entity-type-agnostic way to attach/detach references to other records (e.g. a Complaint linked to a Sale and a Client, a Task linked to a Meeting).

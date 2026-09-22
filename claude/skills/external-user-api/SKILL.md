@@ -1,13 +1,13 @@
 ---
 name: external-user-api
-description: Reference pattern for a Glyvio plugin that exposes an API consumed by a fully separate, non-Glyvio-authenticated application — an Angular/React/Flutter/mobile portal, a public-facing site, anything outside the internal Glyvio app shell. Covers the ExternalUser auth model, the read/write/report routing convention, multi-tenant scoping, security patterns for external-facing controllers, the framework-agnostic frontend integration contract, and the workspace docs structure (shared REQUIREMENTS.md + per-project CLAUDE.md). Does NOT prescribe how ExternalUser maps to a business identity (person, supplier, employee, ...) — that's project-specific and must be asked, never assumed. Does NOT cover report/dashboard *content* design (Plotly, KPI layout) — see the report-building skill/agent for that.
+description: "Reference pattern for a Glyvio plugin that exposes an API consumed by a fully separate, non-Glyvio-authenticated application — an Angular/React/Flutter/mobile portal, a public-facing site, anything outside the internal Glyvio app shell. Covers the ExternalUser auth model, the read/write/report routing convention, multi-tenant scoping, security patterns for external-facing controllers, the framework-agnostic frontend integration contract, and the workspace docs structure (shared REQUIREMENTS.md + per-project CLAUDE.md). Does NOT prescribe how ExternalUser maps to a business identity (person, supplier, employee, ...) — that's project-specific and must be asked, never assumed. Does NOT cover report/dashboard *content* design (Plotly, KPI layout) — see the report-building skill/agent for that."
 ---
-
+<!-- Generated from src/skills/external-user-api/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Skill: External User API (plugin + separate app)
 
 Reference pattern for the shape "a Glyvio plugin exposes an API; a fully separate application — any frontend framework, even mobile — consumes it as the only client that matters." Built and validated across a real project (Angular portal + Glyvio plugin), covering auth, multi-tenant scoping, controller security, the frontend contract, and the docs structure that kept a two-repo project coherent across many sessions.
 
-This is a **pattern reference**, not a code generator — apply the parts that fit, adapt the parts that are project-specific (flagged explicitly below), and always prefer an existing narrower skill (`create-controller`, `modify-manifest`, `glyvio-report-agent`, etc.) for the actual artifact once the pattern below has told you what to build.
+This is a **pattern reference**, not a code generator — apply the parts that fit, adapt the parts that are project-specific (flagged explicitly below), and always prefer an existing narrower skill (`create-controller`, `modify-manifest`, etc.) or the `glyvio-report-agent` role for the actual artifact once the pattern below has told you what to build.
 
 ---
 

@@ -1,0 +1,19 @@
+{
+  "assistant": "Codex",
+  "format": "codex",
+  "runtime_root": "codex",
+  "references": "references",
+  "catalog": "component_catalog.md",
+  "instructions": "AGENTS.md",
+  "skills": "*",
+  "agents": {
+    "glyvio-doc-agent.toml": "glyvio-doc-agent",
+    "glyvio-app-coordinator.toml": "glyvio-app-coordinator",
+    "glyvio-environment-agent.toml": "glyvio-environment-agent",
+    "glyvio-report-agent.toml": "glyvio-report-agent",
+    "glyvio-server-coordinator.toml": "glyvio-server-coordinator",
+    "glyvio-app-chart.toml": "glyvio-app-chart"
+  },
+  "agent_metadata": {},
+  "mcp": "mcp.example.toml"
+}

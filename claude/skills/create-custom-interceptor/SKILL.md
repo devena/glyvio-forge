@@ -1,8 +1,8 @@
 ---
 name: create-custom-interceptor
-description: 'Generates a custom class extending SimpleInterceptor to run business logic in response to a custom eventName (often triggered from the QueueList).'
+description: "Generates a custom class extending SimpleInterceptor to run business logic in response to a custom eventName (often triggered from the QueueList)."
 ---
-
+<!-- Generated from src/skills/create-custom-interceptor/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom Interceptor in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register a server-side custom simple interceptor (`SimpleInterceptor`) that listens to custom event names, typically triggered deferred via queued operations.
@@ -78,7 +78,7 @@ Create a new file `src/interceptors/<listener_id_snake_case>.ts` in the server p
 
 ### Step 2: Register/Load the Interceptor
 
-Ensure the interceptor file is imported in the plugin's server entrypoint (typically `src/index.ts` or `src/behavior_listeners/index.ts`) so that the decorator executes during initialization:
+Ensure the interceptor file is imported in the plugin's server entrypoint (typically `plugin/server/src/index.ts`) so that the decorator executes during initialization:
 
 ```typescript
 import './interceptors/<listener_id_snake_case>';

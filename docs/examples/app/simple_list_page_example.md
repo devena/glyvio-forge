@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/app/simple_list_page_example.md by tools/generate.py. Edit the source, not this file. -->
 # Simple List Page Example
 
 This example demonstrates how to implement a custom list page using `glyvio_core.SimpleListPage` to display a list of `AppUser` entities. It showcases custom routing, state definition, querying, and UI components using the available design system.

@@ -1,6 +1,10 @@
+<!-- Generated from src/references/architecture_rules.md by tools/generate.py. Edit the source, not this file. -->
 # Regras Arquiteturais e Gotchas Críticos do Glyvio
 
-Este documento reúne as diretrizes não-negociáveis e os gotchas de runtime confirmados na arquitetura Glyvio (camadas `app`, `server` e `environment`). Devem ser seguidas rigorosamente por desenvolvedores e agentes de IA (`agy`).
+Este documento reúne as diretrizes não-negociáveis e os gotchas de runtime confirmados na arquitetura Glyvio (camadas `app`, `server` e `environment`). Devem ser seguidas rigorosamente por desenvolvedores e agentes de IA.
+
+> Os gotchas de runtime abaixo foram registrados nas versões usadas pelos projetos de origem.
+> Confirme a aplicabilidade na versão do projeto-alvo; esta migração não reexecutou esses cenários.
 
 ---
 

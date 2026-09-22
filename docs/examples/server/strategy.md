@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/server/strategy.md by tools/generate.py. Edit the source, not this file. -->
 # Example: Strategy — Dynamically Resolvable Algorithms
 
 This example demonstrates how to create and execute a **strategy** in Glyvio. The Strategy pattern is ideal for defining a family of algorithms or execution routines, encapsulating each one, and making them interchangeable at runtime based on an identifier.

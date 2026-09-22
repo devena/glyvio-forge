@@ -1,8 +1,8 @@
 ---
 name: create-list-modal
-description: 'Generates a standard entity search and selection modal, with cell layouts, filters sidebar, tap actions, routing, and user config persistence.'
+description: "Generates a standard entity search and selection modal, with cell layouts, filters sidebar, tap actions, routing, and user config persistence."
 ---
-
+<!-- Generated from src/skills/create-list-modal/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom SimpleListModal View in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional list search and selection modal (extending `SimpleListModal`) within a Glyvio plugin project.

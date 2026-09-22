@@ -1,8 +1,8 @@
 ---
 name: create-batch-filter-modal
-description: 'Generates a batch entity filter modal extending SimpleBatchFilterEditModal, with a filter form, results table, query builder, routing, and interceptor hooks.'
+description: "Generates a batch entity filter modal extending SimpleBatchFilterEditModal, with a filter form, results table, query builder, routing, and interceptor hooks."
 ---
-
+<!-- Generated from src/skills/create-batch-filter-modal/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Batch Filter Modal View in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional batch filter modal (extending `SimpleBatchFilterEditModal`) within a Glyvio plugin project.

@@ -1,8 +1,8 @@
 ---
 name: create-timeline-entry
-description: 'Generates code that records a Timeline entry (activity feed / audit event, e.g. "Sale created", "Status changed from X to Y") via crm.GenerateTimelineStrategy.pushToQueue, normally embedded inside an existing AfterInterceptor.'
+description: "Generates code that records a Timeline entry (activity feed / audit event, e.g. \"Sale created\", \"Status changed from X to Y\") via crm.GenerateTimelineStrategy.pushToQueue, normally embedded inside an existing AfterInterceptor."
 ---
-
+<!-- Generated from src/skills/create-timeline-entry/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Timeline Entry in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to record a Timeline entry — a human-readable activity/audit event, optionally linked to one or more entities so it surfaces in each of their activity feeds — via the `crm` plugin's `GenerateTimelineStrategy`.

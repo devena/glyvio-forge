@@ -1,3 +1,4 @@
+<!-- Generated from src/examples/app/query_builder_example.md by tools/generate.py. Edit the source, not this file. -->
 # Database Queries using QueryBuilder
 
 This example demonstrates how to construct, filter, join, order, and execute database queries using `glyvio_core.QueryBuilder` targeting the `AppUser` entity.

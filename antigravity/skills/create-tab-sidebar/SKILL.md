@@ -1,8 +1,8 @@
 ---
 name: create-tab-sidebar
-description: 'Generates a standard tabbed details sidebar panel container, managing tab selections, embedding sub-routes (such as attachment list panels or history timeline views), and configuring headers/app bars.'
+description: "Generates a standard tabbed details sidebar panel container, managing tab selections, embedding sub-routes (such as attachment list panels or history timeline views), and configuring headers/app bars."
 ---
-
+<!-- Generated from src/skills/create-tab-sidebar/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom TabSidebar View in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional tabbed sidebar panel drawer (extending `TabSidebar`) within a Glyvio plugin project.
