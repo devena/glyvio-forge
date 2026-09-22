@@ -55,6 +55,7 @@ The executing agent MUST strictly adhere to these rules:
 3. **Data Types & Models**: All referenced model fields must exist under the namespace `glyvio_entity.<EntityName>`.
 4. **No any or force cast**: Do not use `any` or force cast to `any` to resolve type errors. Find another way to solve the problem.
 5. **`events()` — EventReturn rule**: Every new `action.key` handler added to `events()` **must** return `'STATE_UPDATE'` when it mutates state properties directly. Use `'STATE_FREEZED'` only for navigation actions (`pushPage`, `pushModal`, `popModal`). Never return `undefined` from a newly added key — that is a silent no-op.
+6. **Every payload needs `user_group_id`**: `getEntitiesFromDto` must place an explicit, authorized `user_group_id` in each new entity input before returning its save queue. A row that creates a child/join record inherits the owner row's group. Do not import an arbitrary user group from the spreadsheet or overwrite the group of an existing row during a normal update.
 
 ---
 
@@ -206,6 +207,9 @@ export class <EntityName>BatchPage extends glyvio_core.SimpleBatchPage<
 
     // Map Dto values back to DB payload fields:
     // inputPayload['<fieldName1>'] = item.values?.['<fieldName1>'] ?? null;
+    // For an inserted record, resolve the authorized group from the page context
+    // (or its owner) and always include it in the payload:
+    // inputPayload['user_group_id'] = <authorizedUserGroupId>;
     <fieldName1_DB_Mapping_Logic>
 
     return [

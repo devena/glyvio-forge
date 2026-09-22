@@ -32,7 +32,14 @@ Este documento reúne as diretrizes não-negociáveis e os gotchas de runtime co
   `actionKeyChangeObservers: 'onChangeObservers'`, `actionKeyChangeTags: 'actionKeyChangeTags'`.
 - Em sidebars (`SimpleSidebar`), implemente:
   - `onChangeObservers` invocando `entityService.updateObservers`.
-  - `actionKeyChangeTags` invocando `entityService.updateTags`.
+   - `actionKeyChangeTags` invocando `entityService.updateTags`.
+
+### 1.5. Escopo de `userGroup` em Persistência de Entidades
+- **Toda entidade nova enviada a qualquer operação de persistência** (`saveEntity`, `saveList`, `saveEntityWithoutPermission` ou uma fila equivalente) **deve ter `userGroupId` definido explicitamente antes do save**. Uma entidade sem esse escopo é um erro de segurança, não um valor a ser deixado para o backend inferir.
+- Ao criar uma entidade filha, de junção ou auxiliar para uma entidade já existente, copie o `userGroupId` da entidade proprietária/origem. Não substitua esse escopo pelo usuário executor.
+- Em uma criação independente, use o grupo efetivamente escolhido para o registro; em fluxos internos, resolva o grupo do ator por uma regra conhecida. Para o contexto de ferramenta/serviço, o mapeamento confirmado é `loggedUserId === 'system' ? 'core_admin' : loggedUserId`.
+- Nunca aceite um `userGroupId` arbitrário vindo de request, planilha ou cliente sem autorizá-lo; nunca use `'core_admin'` como atalho para uma ação humana; e não altere o grupo de uma entidade existente incidentalmente durante um update.
+- Quando não for possível determinar com segurança qual é o grupo da nova entidade, **pare e peça essa definição** antes de escrever o save.
 
 ---
 

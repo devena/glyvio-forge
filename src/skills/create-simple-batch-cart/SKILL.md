@@ -70,7 +70,8 @@ The executing agent MUST strictly adhere to these rules:
 8. **All 8 abstract methods are required**: `SimpleBatchCart<S, I>` has no default row/column/persistence behavior — `getDesign`, `getStatusItemOfCart`, `populateDtoFromCartButton`, `getDtoLayout`, `getSpreadsheetLayout`, `getDtoSpreadsheetFromLine`, `getEntitiesFromDto`, and `onUpdateItem` must **all** be implemented, even if a given cart never uses spreadsheet import (in that case still return `[]` from `getSpreadsheetLayout` and leave `getDtoSpreadsheetFromLine` as an empty/defensive stub — omitting them is a compile error, not a runtime one, so this is rarely forgotten, but the two are easy to leave as dead stubs when only `populateDtoFromCartButton` is actually used).
 9. **Prefer `generateSimple*DtoLayout` helpers over hand-built columns**: `SimpleBatchCart` ships helpers (`generateSimpleStringDtoLayout`, `generateSimpleIntegerDtoLayout`, `generateSimpleDecimalDtoLayout`, `generateSimpleBooleanDtoLayout`, `generateSimpleDateDtoLayout`, `generateSimpleDateTimeDtoLayout`, `generateSimpleUserGroupDtoLayout`, `generateSimpleTagsDtoLayout`, `generateSimpleObserversDtoLayout`, `generateSimpleEntityDtoLayout`) that build a correctly-typed `SimpleBatchCartDtoLayoutItem` — including the "change all" header option — from just a column name/label/field path. Only hand-build a `SimpleBatchCartDtoLayoutItem` when none of these fit (e.g. a fully custom cell widget).
 10. **Attachments/spreadsheet plumbing is already built-in — do not re-wire it manually**: unlike `SimpleCart` (where the attachments section requires manually implementing `AttachmentExtensionDelegate` + registering the extension + flushing changes on save, see the `create-simple-cart` skill), `SimpleBatchCart` already `implements SpreadsheetExtensionDelegate<S>, AttachmentExtensionDelegate<S>` and ships concrete `import`, `spreadsheetOnFileContentLoaded`, `attachmentOnFilesUploaded`, and `onFileUploaded` methods. Only override these if you need to change the default behavior — do not copy the `SimpleCart` attachments recipe onto a batch cart.
-11. **"Add from filter" — chunk the returned ids into the query, never one unbounded `IN` clause (NON-NEGOTIABLE when wiring a `create-batch-filter-modal` as a bulk-add source)**: a filter modal's `popActionKey` can return hundreds/thousands of ids (see `create-batch-filter-modal`'s Usage Notes — the "Select" action is unlimited, unlike the 20-row preview). Re-querying all of them in one `addFilterOperator(entity.id, ids)` risks an oversized SQL `IN` clause. The reference implementation (`glyvio-plugin-core`'s `TaskBatchCart`) uses a chunk-size constant and loops:
+11. **Every newly created row needs a `userGroupId` before it enters the queue (NON-NEGOTIABLE)**: Add the resolved, authorized group to the DTO/context and set `entity.userGroupId` in `getEntitiesFromDto`. For a child/join entity, inherit its owner's group. A spreadsheet/client value is not trusted authorization, `'core_admin'` is not a human-user fallback, and an ordinary update must preserve the persisted group.
+12. **"Add from filter" — chunk the returned ids into the query, never one unbounded `IN` clause (NON-NEGOTIABLE when wiring a `create-batch-filter-modal` as a bulk-add source)**: a filter modal's `popActionKey` can return hundreds/thousands of ids (see `create-batch-filter-modal`'s Usage Notes — the "Select" action is unlimited, unlike the 20-row preview). Re-querying all of them in one `addFilterOperator(entity.id, ids)` risks an oversized SQL `IN` clause. The reference implementation (`glyvio-plugin-core`'s `TaskBatchCart`) uses a chunk-size constant and loops:
     ```typescript
     private static readonly QUERY_CHUNK_SIZE = 100;
 
@@ -302,9 +303,12 @@ export class <CartName>BatchCart extends glyvio_core.SimpleBatchCart<<CartName>B
     item: <CartName>BatchCartDto,
     queue: glyvio_core.EntityServiceQueue,
   ): Promise<glyvio_core.EntityServiceQueue> {
-    const entity = new glyvio_entity.<EntityName>();
+    const entity = await glyvio_entity.<EntityName>.new();
     entity.id = item.id;
     // 💡 Example: entity.name = item.name;
+    // Resolve from the cart context, or inherit from the owning entity. Do not
+    // trust a spreadsheet value without authorization.
+    entity.userGroupId = <authorizedUserGroupId>;
 
     queue.push(entity);
     return queue;

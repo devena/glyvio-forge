@@ -106,6 +106,16 @@ This rule applies to **every entity under `glyvio_entity.*`**, in every view typ
 
 ---
 
+## 👥 `userGroupId` Before Every New-Entity Save (NON-NEGOTIABLE)
+
+Every new `glyvio_entity.*` record placed in an app-side `saveEntity`/`saveList` queue must have an explicit `userGroupId` before persistence. For a child, join, attachment-link, or auxiliary record, copy it from the owner entity; for an independent record, use the group chosen in the form/context. Do not silently use `core_admin`, trust an imported/client-supplied group without authorization, or overwrite an existing record's group during an ordinary update.
+
+`FormEntityLayoutDesign` must retain `actionKeyChangeUserGroup` and its event handler. If a view's flow does not expose a user-group selector and no owning entity supplies one, stop and obtain the required group-resolution rule rather than emitting a save with no group.
+
+When delegating to coder subagents and when running any create/interceptor skill, restate this rule and include it in the final persistence audit.
+
+---
+
 ## 🔗 Interop `stateName` Prefix (NON-NEGOTIABLE)
 
 Any `interopDesign` (on `ListSectionDesign`, `TableSectionDesign`, `TableLayoutDesign`, `RowLayoutDesign`/`ColumnLayoutDesign` interop children, etc.) that generates widgets from a state array **must** set `stateName` to the **full dot-path prefixed with `state.`** — e.g. `stateName: 'state.results'`, never `stateName: 'results'`.

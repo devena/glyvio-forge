@@ -129,7 +129,7 @@ export class UserSelectionCart extends glyvio_core.SimpleCart<UserSelectionCartS
     data: any,
   ): Promise<glyvio_entity.AppUser | undefined> {
     if (entityName === 'AppUser') {
-      const user = new glyvio_entity.AppUser();
+      const user = await glyvio_entity.AppUser.new();
       user.id = entityId;
       user.name = data?.name ?? 'Anonymous User';
       user.email = data?.email;
@@ -151,7 +151,7 @@ export class UserSelectionCart extends glyvio_core.SimpleCart<UserSelectionCartS
     data: any,
   ): Promise<glyvio_entity.AppUser | undefined> {
     if (entityName === 'AppUser') {
-      const user = new glyvio_entity.AppUser();
+      const user = await glyvio_entity.AppUser.new();
       user.id = entityId;
       user.name = data?.name ?? 'User';
 

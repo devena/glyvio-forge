@@ -185,13 +185,15 @@ export class ImportTagsController extends glyvio_core.SimpleController<ImportTag
     }
 
     const queue: glyvio_core.EntityServiceQueue = [];
+    const session = glyvio_core.sessionService.getCurrentSession();
 
     for (const name of body.names) {
       const tag = new glyvio_entity.Tag();
       tag.id = glyvio_core.uuidService.v4();
       tag.name = name;
       tag.entityName = body.entityName;
-      tag.userGroupId = 'core_admin';
+      // This is an independent record created by the authenticated actor.
+      tag.userGroupId = session.user.id;
       queue.push(tag);
     }
 

@@ -78,6 +78,7 @@ The executing agent MUST strictly adhere to these rules:
 3. **Mutable Values**: The `value` parameter is `SyncInterceptorValue<T>` (which is `T & ModelModification`). You CAN modify fields on the intercepted entity inside `handleSync` to normalize or map incoming integration data.
 4. **No Default Try-Catch (Error Propagation & Rollbacks)**: Do not wrap the code in a `try-catch` block unless the user explicitly requests error suppression. By default, let all errors bubble up (throw upwards) so the server can handle the failure and perform a database transaction rollback.
 5. **System Save Operations**: When persisting supplementary records, use `glyvio_core.entityService.saveEntityWithoutPermission(entity)` so the write executes successfully regardless of the current user's permission scope.
+   - Every supplementary entity created by the interceptor needs an explicit `userGroupId` before saving, normally inherited from the synced/owning entity. Do not take it blindly from untrusted inbound data.
 6. **Type Safety**: Implement exact typing on arguments using `glyvio_core.SyncInterceptorValue` and `glyvio_core.SyncInterceptorContext`.
 7. **Execution Pipeline Order**: `SyncInterceptor` is the **first hook** in the pipeline, running only on the sync path — **before** `BeforeInterceptor`. The full execution sequence is `SyncInterceptor` > `BeforeInterceptor` > `AfterInterceptor` > `[COMMIT]` > `AfterCommitInterceptor`.
 

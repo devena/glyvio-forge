@@ -116,7 +116,9 @@ The executing agent MUST strictly adhere to the following rules:
 
 11. **Money fields use `Decimal`, never native `Number`/`number` math**: raw `Number()`-based arithmetic on money-bearing fields accumulates floating-point rounding drift (a real bug fixed in a production plugin, alongside an installment generator that was silently losing cents on the remainder). Any field representing currency — totals, prices, installment amounts, discounts — must use the `Decimal` API for all arithmetic, comparisons, and storage; never coerce it through a plain `number` mid-calculation.
 
-12. **Calling a controller from `plugin/app` — always use `glyvio_core.restService.postController`/`putController`/`getController`, never a hand-built path**: a controller registered via `@Controller({ path: '<controllerId>', allowPrivateAccess, allowPublicAccess, allowExternalUserAccess })` is reached at `/custom/<public|private|external>/sync/<companyId>/<controllerId>` on the server — a path `plugin/app` (TS) code cannot construct itself, since nothing there exposes the current `companyId` (only the Dart client can resolve it). Always call it like this instead of using `restService.post`/`put`/`get` with a hand-built path:
+12. **`userGroupId` before every new-entity save (NON-NEGOTIABLE)**: Set an explicit, authorized `entity.userGroupId` on every newly created entity before calling `saveEntity`, `saveList`, or their permission-bypassing variants. For a child/join/supporting record, inherit the owner entity's group; for an independent private controller record, resolve the current actor's group. Do not accept a request-body group without authorization, use `'core_admin'` as a human-request fallback, or alter an existing entity's group on a normal update.
+
+13. **Calling a controller from `plugin/app` — always use `glyvio_core.restService.postController`/`putController`/`getController`, never a hand-built path**: a controller registered via `@Controller({ path: '<controllerId>', allowPrivateAccess, allowPublicAccess, allowExternalUserAccess })` is reached at `/custom/<public|private|external>/sync/<companyId>/<controllerId>` on the server — a path `plugin/app` (TS) code cannot construct itself, since nothing there exposes the current `companyId` (only the Dart client can resolve it). Always call it like this instead of using `restService.post`/`put`/`get` with a hand-built path:
 
     ```typescript
     const result = await glyvio_core.restService.postController<ResponseType>(
@@ -226,6 +228,7 @@ export class <ClassName> extends glyvio_core.SimpleController<<RequestTypeName>,
     const entity = new glyvio_entity.<EntityClass>();
     entity.id = id;
     entity.fieldName = body.fieldName;
+    // Resolve and authorize the group; never use body.userGroupId blindly.
     entity.userGroupId = session.user.id;
     // entity.entityName = glyvio_structure.AllEntities.<entityKey>.getEntityName();
 
@@ -265,7 +268,9 @@ export class <ClassName> extends glyvio_core.SimpleController<<RequestTypeName>,
       const entity = new glyvio_entity.<EntityClass>();
       entity.id = glyvio_core.uuidService.v4();
       entity.fieldName = item.fieldName;
-      entity.userGroupId = 'core_admin';
+      // Resolve this group once from the authenticated actor/context. Do not
+      // hardcode core_admin for a human request or trust an item-supplied value.
+      entity.userGroupId = session.user.id;
       queue.push(entity);
     }
 
@@ -368,6 +373,7 @@ Use the following globally-available services inside controllers. Do NOT import 
 Before delivering the code, the agent must verify:
 
 - [ ] Did I use `any` anywhere? → Refactor to `unknown` + type guards.
+- [ ] Does every newly-created entity passed to a save API/queue have an explicit, authorized `userGroupId`? Child/join records inherit it from their owner; ordinary updates preserve it.
 - [ ] Did I import from `@plugin/server`, `@plugin/commons`, or any external package for Glyvio globals? → Remove all such imports.
 - [ ] Is the code and all documentation written in **English**? → Translate if needed.
 - [ ] Does the file use `snake_case` naming? → Rename if needed.

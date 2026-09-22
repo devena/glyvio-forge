@@ -110,7 +110,8 @@ Once the coder subagents report completion:
 
 1. **Code Audit**: Inspect the generated files to ensure:
    - Exact type signatures are used (`BeforeInterceptorValue`, `AfterInterceptorContext`, `AfterCommitInterceptorValue`, `AfterCommitInterceptorContext`, etc.).
-   - Correct entity save APIs are used (e.g., `entityService.saveEntityWithoutPermission`).
+    - Correct entity save APIs are used (e.g., `entityService.saveEntityWithoutPermission`).
+    - Every newly-created entity has an explicit, authorized `userGroupId` before it enters a save call or queue. Child/join records inherit the owning entity's group; independent records use the resolved actor group. Existing entities retain their group unless changing it is the explicit requirement.
    - No try-catch blocks are wrapping business rules by default.
    - `@AfterCommitInterceptor` handlers do **not** mutate `value` (it is `Readonly`) and do **not** rely on rollback semantics (the transaction is already committed when `handleAfterCommit` runs).
 2. **Helper Execution**: If `manifest.json` has been modified during the planning or execution phases, you **MUST** run the helper script `run_helper.sh` located at the workspace root to regenerate typings and entities.
@@ -135,6 +136,7 @@ Ensure all delegated code adheres to the Glyvio Core specifications:
   - `glyvio_structure.*`: entity field schema definitions.
   - `sync.*` (only if the plugin declares a `sync` dependency in `manifest.json`): `SyncClient` for on-demand reads/triggers against a third-party datasource registered in `glyvio-plugin-sync` — see `query-external-datasource`.
 - **Save Operations**: Always use `glyvio_core.entityService.saveEntityWithoutPermission(entity)` inside interceptors for writing supplementary records or related entities.
+- **`userGroupId` Is Mandatory on New Records**: Before any save API or `EntityServiceQueue` receives a new entity, set its `userGroupId`. Derivative records (joins, audit/supporting records, attachment links) inherit it from their owner; a standalone internal record uses a deliberately resolved actor/system group. Never take this scope unvalidated from a request or use `core_admin` as a default for a human request.
 - **Queue Operations**: Use `getCurrentQueue()` for scheduling deferred tasks within the current transaction scope. Prevent duplication by checking `.getById(id)` with deterministic IDs.
 - **Cache Operations**: Use `glyvio_core.cacheService` for manual, plugin-controlled caching. This is a **fully manual cache** — no automatic population or reload occurs. The contract is:
   - `cacheService.put(key, identifier, value)` — serializes and stores a value. The only way to populate an entry.

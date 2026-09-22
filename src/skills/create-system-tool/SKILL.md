@@ -183,6 +183,8 @@ WHERE public.similarity(name, public.unaccent('${name}')) > public.show_limit()
 
 When resolving a foreign key from a descriptive name supplied by the user, you MUST run a similarity query to convert the name into the record ID before persisting.
 
+When this tool creates an entity, set its `userGroupId` before persistence. Use the resolved `userGroupId` above for an independent record; a child/join record instead inherits the owning entity's group. Never trust a group supplied in the tool request without authorization, and do not overwrite an existing record's group as a side effect of an update.
+
 ---
 
 ## ✅ Completion Checklist
@@ -194,4 +196,5 @@ When resolving a foreign key from a descriptive name supplied by the user, you M
 - [ ] `permission: glyvio_permissions.tool_<tool_id>` referenced in the decorator.
 - [ ] File imported in the entrypoint so the decorator registers at init.
 - [ ] `handle` returns an LLM-friendly string ending with `Instructions for the LLM: ...`.
+- [ ] Every new entity saved by the tool has an explicit, authorized `userGroupId` (or inherits it from its owner).
 - [ ] Build passes (`pnpm run build:fast` / `pnpm tsc --noEmit`).

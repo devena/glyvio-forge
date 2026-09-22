@@ -99,6 +99,8 @@ export class TagColorNotificationInterceptor extends glyvio_core.SimpleAfterInte
     notification.title = 'Tag Color Changed';
     notification.description = `Tag "${value.name}" color was changed from "${previousColor ?? 'none'}" to "${currentColor ?? 'none'}".`;
     notification.viewed = false;
+    // This notification belongs to the same scope as the Tag that triggered it.
+    notification.userGroupId = value.userGroupId;
 
     // Assign the notification to the user who triggered the save (if passed in context extras)
     // otherwise default to the system.
