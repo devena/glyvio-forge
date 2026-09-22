@@ -85,6 +85,11 @@ export class CustomUserEditModal extends glyvio_core.SimpleEditModal<CustomUserE
       return 'STATE_FREEZED';
     }
 
+    if (action.key === 'onChangeUserGroup') {
+      state.appUser!.userGroupId = action.data.userGroupId;
+      return 'STATE_UPDATE';
+    }
+
     return undefined;
   }
 
@@ -108,6 +113,9 @@ export class CustomUserEditModal extends glyvio_core.SimpleEditModal<CustomUserE
 
     // Assign default fallback values if not specified
     state.appUser.admin = state.appUser.admin ?? false;
+    if (!state.appUser.userGroupId) {
+      throw new glyvio_core.GlyvioError({ message: 'A user group is required.' });
+    }
 
     const queue: glyvio_entity.AppUser[] = [state.appUser];
 
@@ -141,9 +149,12 @@ export class CustomUserEditModal extends glyvio_core.SimpleEditModal<CustomUserE
     design.sectionsDesign = [
       new glyvio_core.FormSectionDesign({
         key: 'main.section',
-        childDesign: new glyvio_core.FormLayoutDesign({
+        childDesign: new glyvio_core.FormEntityLayoutDesign({
           columnSize: 280,
           key: 'main.layout',
+          name: 'state.appUser',
+          structureName: glyvio_structure.AllEntities.appUser.getStructureName(),
+          actionKeyChangeUserGroup: 'onChangeUserGroup',
           children: [
             new glyvio_core.FormLayoutFieldDesign({
               columns: 1,

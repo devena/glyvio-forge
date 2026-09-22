@@ -160,6 +160,8 @@ export class <ToolName>Tool implements glyvio_core.CoreCustomTool<<ToolName>Requ
     }
 
     // 💡 IMPLEMENT BUSINESS LOGIC HERE (query / compute / persist)
+    // If creating an entity, resolve an authorized userGroupId first; child/join
+    // entities inherit it from their owner. Never trust it from this request.
     const result = `Successfully processed: ${request.paramName}`;
 
     // End with an LLM instruction so the agent knows how to present the result.
@@ -181,6 +183,7 @@ export class <ToolName>Tool implements glyvio_core.CoreCustomTool<<ToolName>Requ
 - [ ] Each Custom Tool's `handle` uses `glyvio_core.GlyvioError` for failures (no default try-catch).
 - [ ] Each Custom Tool's `handle` returns a string ending with `Instructions for the LLM: ...`.
 - [ ] Data scope in each tool is restricted to only what the agent's use case requires.
+- [ ] Every entity created by a Custom Tool receives an explicit, authorized `userGroupId` before persistence.
 - [ ] **No** `index.ts` import added for Custom Tools — auto-registered by decorator.
 - [ ] Agent invocation integrated in server controllers or interceptors using `JeannieV2Client`.
 - [ ] Build passes (`pnpm run build:fast`).

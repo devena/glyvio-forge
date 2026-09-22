@@ -37,6 +37,7 @@ Before writing any code, inspect the workspace:
 2. Verify existing tools/actions in `plugin/environment/src/` to prevent duplicate IDs.
 3. Read `manifest.json` if database schemas or permissions are involved.
 4. **Model Mapping for Insertions**: For tasks involving adding or creating database records, always inspect `plugin/environment/@types/entity.d.ts` to map and align the user's input/payload fields with the database model fields.
+   - Every new record must also receive an explicit, authorized `userGroupId` before persistence. Inherit it from the owning entity for child/join records; otherwise resolve it from the acting context (the tool mapping in Phase 4). Never trust a request-supplied group without authorization.
 
 ### Phase 2: Implementation Planning
 
@@ -130,7 +131,8 @@ Once coding is complete:
   const loggedUserId = glyvio_core.getContext().loggedUserId;
   const userGroupId = loggedUserId === 'system' ? 'core_admin' : loggedUserId;
   ```
-  Since every human user has a dedicated group named after their user ID, and system calls (from the AI Agent) default to `'system'`, mapping `'system'` to `'core_admin'` ensures correct security scopes.
+   Since every human user has a dedicated group named after their user ID, and system calls (from the AI Agent) default to `'system'`, mapping `'system'` to `'core_admin'` ensures correct security scopes.
+   Set this resolved value on **every newly created entity** before saving it. For a child/join entity, prefer its owner's `userGroupId`; never overwrite an existing record's group merely because the current actor differs, and never accept an unvalidated `userGroupId` from a tool request.
 - **Attachment Processing (Linking Uploaded Files)**: When users add files/images in a conversation, the AI Agent injects their IDs into the context. The tool can safely assume these attachments are already saved in the database under `Attachment`.
   - To link attachments to another record (e.g., photos to a sale order), instantiate `AttachmentEntity` using snake_case properties inside structure casts:
     ```typescript

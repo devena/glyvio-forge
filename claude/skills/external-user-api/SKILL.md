@@ -98,6 +98,7 @@ Once the operator has answered the "ask first" question above and there's a conc
 - **No `AppUser` session exists for an external user** — use `glyvio_core.entityService.saveEntityWithoutPermission(entity)` / `saveListWithoutPermission([...])` (not `saveEntity`/`saveList`, which check permissions against a session that doesn't exist here).
 - **NOT NULL FK to `AppUser` on content the external user "creates"** (e.g. an audit/timeline entry with a mandatory `userId`): resolve a stable system/service `AppUser` once (by name, cached) to satisfy the FK, and — if the real external identity's name should be *displayed* — add a separate nullable `authorName`-style field alongside it, populated from the resolution chain. Reads should prefer the nullable display name when present, falling back to the system user's name for content that didn't originate externally.
 - **Pre-generate ids with `glyvio_core.uuidService.v4()`** before a save whenever a just-created id is needed later in the same request (e.g. to link a second entity to it) — this pattern already exists elsewhere in Glyvio server code; it's not external-API-specific but comes up constantly here because external creates often need to link a freshly-created id to another freshly-created row in the same request. `glyvio_core.entityService.saveListWithoutPermission([entityA, entityB, ...])` saves a mixed batch in one call when both need to land together (verified: batch saves of unrelated entity types in one array do work).
+- **Set `userGroupId` on every new entity before saving.** There is no AppUser session to infer it from here: resolve the authorized group from the external identity's already-validated business scope, or inherit it from the owner entity for child/join records. Never accept a client-supplied group id as the authorization decision and never default it blindly to `core_admin`.
 
 ---
 
@@ -145,6 +146,7 @@ workspace-root/
 - [ ] Confirmed whether the external identity can reach more than one "scope" — if yes, planned the `{scope}Id?` param + `external_{scope}_list` controller from the start.
 - [ ] `read`/`write`/`report` used consistently per their semantic meaning, not just habit.
 - [ ] Every external controller revalidates client-supplied ids against the resolved scope; no `saveEntity`/`saveList` (permission-checked) calls inside external-user code paths.
+- [ ] Every externally-created entity has an explicit, scope-authorized `userGroupId` before its permission-bypassing save.
 - [ ] If external-created content needs a real display name but its FK is a NOT NULL `AppUser` reference, planned the system-user-FK + nullable-display-name-field split up front.
 - [ ] Frontend auth persistence choice (and duration) confirmed with the operator, not defaulted silently.
 - [ ] Workspace has one shared `REQUIREMENTS.md` + one `CLAUDE.md` per repo, kept current as work lands — not just written once at the start.

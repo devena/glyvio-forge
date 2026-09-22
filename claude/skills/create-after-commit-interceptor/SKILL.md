@@ -73,6 +73,7 @@ The executing agent MUST strictly adhere to these rules:
 4. **No Default Try-Catch**: Do not wrap the code in a `try-catch` block unless the user explicitly requests error suppression (`suppressErrors: true`). By default, let exceptions propagate so the engine can log and surface them properly.
 
 5. **System Save Operations**: When inserting supplementary records (e.g., notification entries, audit logs), use `glyvio_core.entityService.saveEntityWithoutPermission(entity)` so the write succeeds regardless of the current user's permission scope.
+   - Set an explicit `userGroupId` on every newly inserted record before saving. Inherit it from the owner/intercepted entity where applicable; do not leave security scope implicit.
 
 6. **Type Safety — Zero `any`**: Use exact types: `glyvio_core.AfterCommitInterceptorValue<glyvio_entity.<EntityName>>` and `glyvio_core.AfterCommitInterceptorContext<glyvio_entity.<EntityName>>`. Never use `any` or force-casts.
 
