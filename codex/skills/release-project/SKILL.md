@@ -5,7 +5,19 @@ description: "Builds the project, bumps the patch version, commits the changes b
 <!-- Generated from src/skills/release-project/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Skill: Release Project
 
-Execute this skill whenever the user asks to release, publish, versionar, or deploy the current project.
+Execute this skill whenever the user asks to release, publish, version or deploy the current project.
+
+**Trigger phrases** (não exaustivo — qualquer formulação equivalente conta):
+
+| Português | English |
+| --- | --- |
+| "atualizar a versão" / "atualiza a versão" | "update the version" |
+| "sobe a versão" / "subir a versão" | "bump the version" |
+| "nova versão" / "incrementar a versão" | "new version" / "bump version" |
+| "versionar" / "fazer um release" | "release" / "ship it" |
+| "publicar o projeto" | "publish" / "deploy" |
+
+Se o pedido significa **"comita o que está pendente, incrementa a versão e faz push"**, é esta skill — execute os passos abaixo em vez de fazer commit/bump/push à mão, para que build, CHANGELOG e mensagem de commit não sejam pulados.
 
 ---
 

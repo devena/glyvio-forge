@@ -130,7 +130,7 @@ export class <InterceptorClassName> extends glyvio_core.SimpleAfterInterceptor<g
     // const newValue = value.color;
 
     // 💡 BUSINESS LOGIC: SAVE A NOTIFICATION EXAMPLE:
-    // const notification = new glyvio_entity.Notification();
+    // const notification = glyvio_entity.Notification.new();
     // notification.title = "Record Updated";
     // notification.description = `The field changed from "${oldValue}" to "${newValue}".`;
     // notification.viewed = false;

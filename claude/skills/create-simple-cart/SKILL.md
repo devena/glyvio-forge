@@ -181,6 +181,7 @@ export class <CartName>Cart extends glyvio_core.SimpleCart<<CartName>CartState> 
    * Configures design details like titles, icons, and action buttons.
    */
   getDesign(state: <CartName>CartState, design: glyvio_core.SimpleCartDesign): void {
+    // ⚠️ titleOpened/subtitleOpened are plain `string` in @types — never a design object.
     design.titleOpened = '<CartName> Cart';
     // 💡 Optional: discreet subtitle rendered below titleOpened in the cart's fixed top header.
     // design.subtitleOpened = 'Manage your selected items';
