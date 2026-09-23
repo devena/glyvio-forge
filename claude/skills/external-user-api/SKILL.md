@@ -29,6 +29,11 @@ This is a **pattern reference**, not a code generator — apply the parts that f
   - Header: `Authorization: Bearer <jwt>` — used by any real HTTP client (the frontend's own API calls).
   - Query string: `?auth_token=<jwt>` — used when a link must open in a new tab with no way to attach a custom header (e.g. `<a href target="_blank">`). Confirmed: `?auth_token=malformed` fails the exact same way as a malformed `Authorization` header (`400 invalid_token`) — it's the same validation path, just a different transport.
 - A controller receives the resolved `externalUser: glyvio_entity.ExternalUser` as the second argument to `handle(request, externalUser)` — never re-derive identity from the raw token yourself.
+- Controllers are framework-managed entrypoints: **never instantiate a controller manually**, inject
+  one, or call another controller's `handle()` for reuse. Each route must extend
+  `ExternalSimpleController` (or the applicable controller base) and be registered with
+  `@Controller`. Extract shared authorization/business logic to a typed non-controller service,
+  strategy, or helper; otherwise implement it in the new controller.
 
 ---
 

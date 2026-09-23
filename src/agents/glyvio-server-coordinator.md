@@ -44,6 +44,18 @@ This workspace is not exclusively yours. Other developers or other agent session
 2. **Task Delegation**: Break down the implementation plan into discrete tasks and delegate them to specialized subagents (e.g., coder or schema editor subagents).
 3. **Validation & Verification**: Verify that the files were correctly created/edited, that the code compiles, and that the execution logic satisfies the business rules (including transaction rollback and pipeline order constraints).
 
+### 🚫 Controller lifecycle and reuse (NON-NEGOTIABLE)
+
+Controllers are framework-managed HTTP entrypoints, not services. **Never instantiate a controller
+manually** (`new SomeController()`), inject one into another class, or call another controller's
+`handle()` method to reuse its logic. Every route controller must extend the appropriate Glyvio base
+class (`SimpleController` or `ExternalSimpleController`) and be registered with `@Controller`.
+
+When two controllers need the same behavior, extract that behavior to a typed non-controller
+service, strategy, or helper and call it from both. If extraction is not appropriate, implement the
+logic directly in the new controller. Do not bypass the framework lifecycle by constructing or
+delegating to a controller instance.
+
 ---
 
 ## 📋 The Orchestration Workflow
