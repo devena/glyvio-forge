@@ -34,10 +34,13 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual(generate.synchronize(self.root, output), [])
         self.assertEqual(timestamps, {name: (self.root / name).stat().st_mtime_ns for name in output})
         expected_skills = {p.parent.name for p in (self.root / 'src/skills').glob('*/SKILL.md')}
-        for target in ['claude', 'codex', 'antigravity']:
-            found = {Path(p).parent.name for p in output if p.startswith(f'{target}/skills/') and p.endswith('/SKILL.md')}
+        for target in ['claude', 'codex', 'antigravity', 'opencode']:
+            config = json.loads((self.root / f'src/adapters/{target}/config.json').read_text())
+            output_root = config.get('output', target)
+            found = {Path(p).parent.name for p in output
+                     if p.startswith(f'{output_root}/skills/') and p.endswith('/SKILL.md')}
             self.assertEqual(found, expected_skills)
-            self.assertEqual(sum(p.startswith(f'{target}/agents/') for p in output), 6)
+            self.assertEqual(sum(p.startswith(f'{output_root}/agents/') for p in output), 6)
         self.assertEqual(sum(p.startswith('agy/skills/') for p in output), 3)
         for name, data in output.items():
             if name.endswith('.toml'):
@@ -50,6 +53,14 @@ class GeneratorTests(unittest.TestCase):
         self.assertIn('CLAUDE.md', claude)
         self.assertIn('AGENTS.md', codex)
         self.assertNotIn('CLAUDE.md', codex)
+        opencode_agent = output['opencode/.opencode/agents/glyvio-app-chart.md'].decode()
+        self.assertIn('mode: "all"', opencode_agent)
+        self.assertNotIn('@@', opencode_agent)
+        opencode_config = json.loads(output['opencode/.opencode/opencode.jsonc'].decode())
+        self.assertEqual(opencode_config, {'$schema': 'https://opencode.ai/config.json'})
+        mcp = output['opencode/.opencode/mcp.example.jsonc'].decode()
+        self.assertIn('"type": "local"', mcp)
+        self.assertIn('"command": [', mcp)
 
     def test_source_change_propagates_to_all_selected_packages(self):
         before = self.initial_generation()
@@ -57,6 +68,7 @@ class GeneratorTests(unittest.TestCase):
         source.write_text(source.read_text() + '\nAdditional browser scenario guidance.\n')
         after = generate.build(self.root)
         expected = {f'{t}/skills/test-plugin-browser/SKILL.md' for t in ['claude', 'codex', 'antigravity', 'agy']}
+        expected.add('opencode/.opencode/skills/test-plugin-browser/SKILL.md')
         self.assertEqual({name for name in after if before[name] != after[name]}, expected)
         self.assertEqual(set(generate.synchronize(self.root, after, check=True)), expected | {generate.MANIFEST})
         # Check did not write any of the old outputs.
@@ -135,8 +147,10 @@ class GeneratorTests(unittest.TestCase):
         payload = b'\x00\xff@@BINARY_LITERAL@@\x80'
         source.write_bytes(payload)
         output = generate.build(self.root)
-        for target in ['claude', 'codex', 'antigravity']:
-            self.assertEqual(output[f'{target}/skills/create-controller/assets/example.bin'], payload)
+        for target in ['claude', 'codex', 'antigravity', 'opencode']:
+            config = json.loads((self.root / f'src/adapters/{target}/config.json').read_text())
+            output_root = config.get('output', target)
+            self.assertEqual(output[f'{output_root}/skills/create-controller/assets/example.bin'], payload)
 
     def test_output_paths_cannot_escape_repository(self):
         with self.assertRaises(ValueError):
@@ -151,15 +165,18 @@ class GeneratorTests(unittest.TestCase):
 
     def test_reconciled_knowledge_survives_all_full_packages(self):
         output = generate.build(self.root)
-        for target, directory in [('claude', 'references'), ('codex', 'references'), ('antigravity', 'rules/references')]:
-            catalog = output[f'{target}/{directory}/component_catalog_full.md'].decode()
+        for target, directory in [('claude', 'references'), ('codex', 'references'),
+                                  ('antigravity', 'rules/references'), ('opencode', 'references')]:
+            config = json.loads((self.root / f'src/adapters/{target}/config.json').read_text())
+            output_root = config.get('output', target)
+            catalog = output[f'{output_root}/{directory}/component_catalog_full.md'].decode()
             for topic in ['SimpleMasterDetailPageDesign', 'masterPanelWidth', 'TreeLayoutDesign',
                           'ChoiceMultipleTextfieldDesign', 'TextFieldsChoiceWidget._addValue']:
                 self.assertIn(topic, catalog)
-            browser = output[f'{target}/skills/test-plugin-browser/SKILL.md'].decode()
+            browser = output[f'{output_root}/skills/test-plugin-browser/SKILL.md'].decode()
             for topic in ['GLYVIO_PASSWORD', 'waitForScreen', 'fireAndTolerate']:
                 self.assertIn(topic, browser)
-            controller = output[f'{target}/skills/create-controller/SKILL.md'].decode()
+            controller = output[f'{output_root}/skills/create-controller/SKILL.md'].decode()
             self.assertIn('restService.postController', controller)
             self.assertNotIn('`src/behavior_listeners/index.ts`', controller)
         self.assertIn(b'restService.postController', output['docs/examples/server/controller.md'])
@@ -185,15 +202,16 @@ class GeneratorTests(unittest.TestCase):
                     continue
                 destination = self.root / Path(name).parent / link.split('#')[0]
                 self.assertTrue(destination.exists(), (name, link))
-        for target in ['claude', 'codex', 'antigravity', 'agy']:
+        for target in ['claude', 'codex', 'antigravity', 'agy', 'opencode']:
             config = json.loads((self.root / f'src/adapters/{target}/config.json').read_text())
+            output_root = config.get('output', target)
             base = config['runtime_root']
             pattern = re.compile(r'(?<![\w/.-])' + re.escape(base) + r'/[a-zA-Z0-9_./-]+\.(?:md|toml|js)')
             for name, data in output.items():
-                if not name.startswith(target + '/') or not name.endswith(('.md', '.toml')):
+                if not name.startswith(output_root + '/') or not name.endswith(('.md', '.toml')):
                     continue
                 for reference in pattern.findall(data.decode()):
-                    destination = target + '/' + reference[len(base) + 1:]
+                    destination = output_root + '/' + reference[len(base) + 1:]
                     self.assertIn(destination, output, (name, reference))
 
     def test_canonical_skill_references_resolve(self):
