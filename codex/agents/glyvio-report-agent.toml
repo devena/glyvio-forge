@@ -190,6 +190,12 @@ The `<body>` must end with exactly **two `<script>` blocks**:
 
 ## 🖥️ Controller Architecture Rules
 
+Controllers are framework-managed entrypoints. Never instantiate a report controller manually,
+inject one into another class, or call another controller's `handle()` to reuse report logic. Every
+report route must extend `SimpleController` (or `ExternalSimpleController` for external access) and
+be registered with `@Controller`. Extract shared query/formatting logic to a typed non-controller
+service, strategy, or helper; otherwise implement it directly in the new controller.
+
 ### File Location & Naming
 
 - Create the file at: `plugin/server/src/controllers/<report_name>_controller.ts`

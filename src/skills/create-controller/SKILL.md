@@ -90,6 +90,15 @@ The executing agent MUST strictly adhere to the following rules:
 
 7. **Decorator Registration**: Register the controller via `@glyvio_core.Controller({ path, allowPrivateAccess, allowPublicAccess })`. Do NOT register it manually in any registry.
 
+**Controller Lifecycle and Reuse (NON-NEGOTIABLE)**: Controllers are framework-managed HTTP
+entrypoints, never reusable service instances. **Never instantiate a controller manually** (`new
+SomeController()`), inject one into another class, or call another controller's `handle()` method.
+Each route must be a class extending `glyvio_core.SimpleController<T, R>` (or
+`ExternalSimpleController<T, R>` for external access) and registered with `@Controller`. When
+behavior is shared, extract it to a typed non-controller service, strategy, or helper and call it
+from both controllers. If extraction is not appropriate, implement the logic directly in the new
+controller — never bypass the controller lifecycle.
+
 8. **Validation First**: Always validate `request.body` before accessing its properties. A missing or malformed body must immediately throw `GlyvioError`.
 
 9. **Entity Naming**: When setting `entityName` on entities, always use:

@@ -102,6 +102,14 @@ On some environments the API is same-host under a prefix such as `/web-api`.
 
 ## ⚙️ Execution Steps
 
+### 🚫 Controller lifecycle and reuse
+
+The page controller is framework-managed. **Never instantiate a controller manually** (`new
+SomeController()`), inject a controller, or call another controller's `handle()` to share page
+logic. This route must extend `SimpleController` (or `ExternalSimpleController`) and be registered
+with `@Controller`. Put shared query/rendering logic in a typed non-controller service, strategy,
+or helper; otherwise implement it directly in this controller.
+
 ### Step 1 — Create the controller
 
 `plugin/server/src/controllers/<controller_path>_controller.ts`:

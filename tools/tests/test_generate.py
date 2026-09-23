@@ -178,6 +178,7 @@ class GeneratorTests(unittest.TestCase):
                 self.assertIn(topic, browser)
             controller = output[f'{output_root}/skills/create-controller/SKILL.md'].decode()
             self.assertIn('restService.postController', controller)
+            self.assertIn('Never instantiate a controller manually', controller)
             self.assertNotIn('`src/behavior_listeners/index.ts`', controller)
         self.assertIn(b'restService.postController', output['docs/examples/server/controller.md'])
 
