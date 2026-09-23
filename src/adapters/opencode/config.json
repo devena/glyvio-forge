@@ -1,0 +1,23 @@
+{
+  "assistant": "OpenCode",
+  "format": "opencode",
+  "output": "opencode/.opencode",
+  "files_output": "opencode",
+  "runtime_root": ".opencode",
+  "references": "references",
+  "catalog": "component_catalog.md",
+  "instructions": "AGENTS.md",
+  "skills": "*",
+  "agents": {
+    "glyvio-app-chart.md": "glyvio-app-chart",
+    "glyvio-app-coordinator.md": "glyvio-app-coordinator",
+    "glyvio-doc-agent.md": "glyvio-doc-agent",
+    "glyvio-environment-agent.md": "glyvio-environment-agent",
+    "glyvio-report-agent.md": "glyvio-report-agent",
+    "glyvio-server-coordinator.md": "glyvio-server-coordinator"
+  },
+  "agent_metadata": {
+    "mode": "all"
+  },
+  "mcp": "mcp.example.jsonc"
+}

@@ -9,7 +9,7 @@ as pastas dos assistentes são geradas e continuam prontas para distribuição.
 ```text
 src/
 ├── agents/                 # 6 papéis, com instruções independentes do assistente
-├── skills/                 # 56 skills compartilhadas
+├── skills/                 # Skills compartilhadas
 ├── component_catalog.md    # Índice visual
 ├── references/             # Catálogo completo e regras arquiteturais
 ├── scripts/                # Helpers compartilhados
@@ -20,7 +20,8 @@ src/
     ├── claude/             # Modelo, ferramentas, nomes e caminhos do Claude
     ├── codex/              # TOML, instruções de execução e instalação
     ├── antigravity/        # Metadados e layout do Antigravity
-    └── agy/                # Seleção reduzida de skills para o pacote legado
+    ├── agy/                # Seleção reduzida de skills para o pacote legado
+    └── opencode/           # Configuração e layout nativos do OpenCode V2
 
 tools/generate.py           # Geração determinística e verificação de divergências
 tools/tests/                # Testes do gerador em diretórios temporários
@@ -29,6 +30,7 @@ claude/                    # Gerado
 codex/                     # Gerado
 antigravity/                # Gerado
 agy/                       # Gerado; mantém as 3 skills do pacote legado
+opencode/                  # Gerado; bundle nativo para .opencode/
 docs/examples/             # Gerado de src/examples/
 docs/plugin-development.md # Gerado de src/plugin-development.md
 ```
@@ -96,6 +98,8 @@ Recursos não Markdown dentro das skills são copiados byte a byte.
   preserve a estrutura ao distribuí-lo pelo mecanismo usado pela equipe.
 - **AGY:** `agy/` mantém o pacote legado reduzido, com caminhos de execução em
   `.agents/`. A instalação local `.agents/` deste checkout não é atualizada pelo gerador.
+- **OpenCode:** copie `opencode/.opencode/` para `.opencode/` no projeto de destino e
+  mescle `opencode/AGENTS.md` no `AGENTS.md` da raiz. Veja `opencode/README.md`.
 
 A geração monta arquivos para distribuição; não instala pacotes em outros
 projetos, não inicia MCPs e não altera configurações pessoais dos assistentes.

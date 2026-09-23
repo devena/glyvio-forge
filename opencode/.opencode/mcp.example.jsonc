@@ -1,0 +1,15 @@
+// Optional: merge the desired server into opencode.jsonc.
+{
+  "mcp": {
+    "servers": {
+      "playwright": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "@modelcontextprotocol/server-playwright"
+        ]
+      }
+    }
+  }
+}

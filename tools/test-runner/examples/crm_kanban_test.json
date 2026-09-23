@@ -1,0 +1,16 @@
+{
+  "name": "CRM Client Kanban Load & Filter Test",
+  "plugin": "crm",
+  "steps": [
+    {
+      "action": "navigate",
+      "path": "/crm/clients/kanban"
+    },
+    {
+      "action": "waitForIdle"
+    },
+    {
+      "action": "describeScreens"
+    }
+  ]
+}

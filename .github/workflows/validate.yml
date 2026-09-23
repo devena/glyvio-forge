@@ -14,7 +14,7 @@ jobs:
       - run: python3 -m unittest discover -s tools/tests -v
       - name: Check helper syntax
         run: |
-          for package in claude codex antigravity agy; do
+          for package in claude codex antigravity agy opencode/.opencode; do
             node --check "$package/scripts/chrome_inspector.js"
             node --check "$package/scripts/validate_glyvio_rules.js"
           done

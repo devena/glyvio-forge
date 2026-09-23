@@ -133,9 +133,11 @@ def build(root: Path) -> dict[str, bytes]:
         if not adapter.is_dir():
             continue
         target = adapter.name
-        if target not in {'claude', 'antigravity', 'codex', 'agy'}:
+        if target not in {'claude', 'antigravity', 'codex', 'agy', 'opencode'}:
             raise ValueError(f'Unknown output package: {target}')
         config = json.loads((adapter / 'config.json').read_text())
+        output_root = config.get('output', target)
+        files_output_root = config.get('files_output', output_root)
         if config['agents'] and set(config['agents'].values()) != set(agent_sources):
             raise ValueError(f'{target} must map every canonical agent exactly once')
         if len(config['agents']) != len(set(config['agents'].values())):
@@ -150,8 +152,8 @@ def build(root: Path) -> dict[str, bytes]:
                     # Only instruction Markdown is templated; assets and executable helpers
                     # must retain their original bytes (including binary files).
                     content = render(path.read_text(), config) if path.suffix == '.md' else path.read_bytes()
-                    emit(f'{target}/skills/{name}/{path.relative_to(directory).as_posix()}',
-                         content, path)
+            emit(f'{output_root}/skills/{name}/{path.relative_to(directory).as_posix()}',
+                          content, path)
         for filename, name in sorted(config['agents'].items()):
             source = agent_sources[name]
             meta, body = split_frontmatter(source.read_text())
@@ -169,10 +171,10 @@ def build(root: Path) -> dict[str, bytes]:
             else:
                 meta['description'] = render(meta['description'], config)
                 text = markdown_header({**meta, **config['agent_metadata']}, body)
-            emit(f'{target}/agents/{filename}', text, source)
+            emit(f'{output_root}/agents/{filename}', text, source)
         if config['catalog']:
             source = src / 'component_catalog.md'
-            emit(f'{target}/{config["catalog"]}', render(source.read_text(), config), source)
+            emit(f'{output_root}/{config["catalog"]}', render(source.read_text(), config), source)
         for source in sorted((src / 'references').rglob('*')):
             if not source.is_file():
                 continue
@@ -180,9 +182,9 @@ def build(root: Path) -> dict[str, bytes]:
             directory = config['references']
             if relative == 'architecture_rules.md' and target in {'antigravity', 'agy'}:
                 directory = 'rules'
-            emit(f'{target}/{directory}/{relative}', render(source.read_text(), config), source)
+            emit(f'{output_root}/{directory}/{relative}', render(source.read_text(), config), source)
         for source in sorted((src / 'scripts').glob('*.js')):
-            emit(f'{target}/scripts/{source.name}', render(source.read_text(), config), source)
+            emit(f'{output_root}/scripts/{source.name}', render(source.read_text(), config), source)
         source = src / 'mcp.json'
         if config['format'] == 'codex':
             servers = json.loads(source.read_text())['mcpServers']
@@ -190,12 +192,24 @@ def build(root: Path) -> dict[str, bytes]:
             for name, server in servers.items():
                 text += f'[mcp_servers.{json.dumps(name)}]\n'
                 text += ''.join(f'{key} = {json.dumps(value)}\n' for key, value in server.items())
+        elif config['format'] == 'opencode':
+            servers = json.loads(source.read_text())['mcpServers']
+            converted = {}
+            for name, server in servers.items():
+                if 'command' not in server:
+                    raise ValueError(f'OpenCode MCP server requires command: {name}')
+                converted[name] = {
+                    'type': 'local',
+                    'command': [server['command'], *server.get('args', [])],
+                }
+            text = ('// Optional: merge the desired server into opencode.jsonc.\n'
+                    + json.dumps({'mcp': {'servers': converted}}, indent=2) + '\n')
         else:
             text = source.read_text()
-        emit(f'{target}/{config["mcp"]}', text, source)
+        emit(f'{output_root}/{config["mcp"]}', text, source)
         for source in sorted((adapter / 'files').rglob('*')):
             if source.is_file():
-                emit(f'{target}/{source.relative_to(adapter / "files").as_posix()}',
+                emit(f'{files_output_root}/{source.relative_to(adapter / "files").as_posix()}',
                      render(source.read_text(), config), source)
     for source in sorted((src / 'examples').rglob('*.md')):
         emit(f'docs/examples/{source.relative_to(src / "examples").as_posix()}', source.read_text(), source)
