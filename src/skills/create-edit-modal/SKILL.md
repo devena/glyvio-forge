@@ -67,6 +67,44 @@ The executing agent MUST strictly adhere to these rules:
 
 ---
 
+## 📎 Dropped Files: Attach vs. Read
+
+Two different features accept a dragged file — pick by what the file is **for**:
+
+| Goal | Use | Callback | Wiring |
+| --- | --- | --- | --- |
+| **Attach** the file (keep it as an `Attachment` linked to a record) | `design.allowDropAttachment = true` — the whole container becomes a drop target | `onFileUploaded(state, attachment, extras)` on the view (and `attachmentOnFilesUploaded` when an `AttachmentsEditSection` is embedded) | none beyond the flag |
+| **Read** the file's content (import an OFX, CSV, XML, JSON…) | a `glyvio_core.FileDropAreaDesign` box in the body (drop **or** tap to pick), or `this.extensionsManager.file.readFiles({ extensions, as, extras })` from a button | `fileOnFilesLoaded(state, { files, rejected, extras })` — each file has `name`, `extension`, `size`, `content` (text, or base64 with `readAs: 'base64'`) | `this.extensionsManager.registerFile(this)` in the constructor + `implements glyvio_core.FileExtensionDelegate<S>` |
+
+- `allowDropFile` is the **deprecated** old name of `allowDropAttachment` (same flag, same JSON). Write `allowDropAttachment` in new code; leave existing screens alone unless you are already editing them.
+- The attach flag uploads the file to storage as a temporary attachment — it never gives you the content. Do not use it (and then download the attachment) to parse a file; use `FileDropAreaDesign`/`readFiles`.
+- The flag is honored on modals, sidebars, tab sidebars, carts and rule sections. **Pages (`SimpleEditPage`) ignore it** in the app today — on a page, put a `FileDropAreaDesign` in the body instead.
+- Text is decoded as UTF-8 with a windows-1252 fallback (Brazilian bank OFX files are often `CHARSET:1252`), so accents arrive intact. Files over `maxSizeBytes` (default 20 MB) or with another extension come back in `rejected`, not in `files`.
+
+```typescript
+// Reading an OFX dropped on the screen
+constructor() {
+  super();
+  this.extensionsManager.registerFile(this);
+}
+
+// in getDesign
+new glyvio_core.FileDropAreaDesign({
+  key: 'ofx.drop',
+  title: 'Arraste o arquivo OFX aqui',
+  subtitle: 'ou clique para escolher',
+  extensions: ['ofx'],
+});
+
+async fileOnFilesLoaded(state: S, loaded: glyvio_core.FilesLoaded): Promise<void> {
+  const [file] = loaded.files;
+  if (!file) return;
+  // file.content is the OFX text
+}
+```
+
+---
+
 ## 📋 Execution Steps
 
 The agent must perform the following actions:
