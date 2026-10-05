@@ -91,12 +91,10 @@ The access segment and the auth parameter change **together**.
 
 ### ⚠️ `{BASE_URL}` is not the app's host
 
-Measured live: on `app.example.com` the app serves only static assets and the API is
-`api.example.com`. Pointing at the app host returns the SPA fallback HTML with **HTTP 200** —
-no error, wrong body. Discover it instead of guessing: the app calls
-`POST {BASE_URL}/query/{companyId}/<internal-endpoint>` right after login; strip that suffix and the
-remainder is `BASE_URL`. Automated by `discover_base_url.js` (skill `test-plugin-browser`, §1.5).
-On some environments the API is same-host under a prefix such as `/web-api`.
+In several environments the app serves only static assets and the API lives on another host.
+Pointing at the app host returns the SPA fallback HTML with **HTTP 200** — no error, wrong body.
+Ask the Glyvio operator for the API base URL instead of guessing — and, from inside the app, open
+pages with `openCustomPage`, which resolves the host by itself.
 
 ---
 
@@ -128,8 +126,8 @@ export class <ClassName> extends glyvio_core.SimpleController<void, string> {
   handle(_request: glyvio_core.WebRequest<void>): string {
     // Bind every caller-influenced value via `params` — never interpolate into the SQL string.
     const rows = glyvio_core.queryService.find<<RowType>>(
-      `SELECT /* columns */ FROM /* table */ WHERE /* condition */ = $1`,
-      [/* bound value */],
+      `SELECT /* columns */ FROM /* table */ WHERE /* condition */ = ?`,
+      [{ dataType: 'TEXT', value: /* bound value */ '' }],
     );
     return this.buildHtml(rows);
   }
@@ -230,8 +228,8 @@ handle(request: glyvio_core.WebRequest<void>): string {
     throw new glyvio_core.GlyvioError({ message: 'saleId é obrigatório' });
   }
   const rows = glyvio_core.queryService.find<<RowType>>(
-    `SELECT /* columns */ FROM /* table */ WHERE id = $1 /* AND <scope by session> */`,
-    [saleId],
+    `SELECT /* columns */ FROM /* table */ WHERE id = ? /* AND <scope by session> */`,
+    [{ dataType: 'TEXT', value: saleId }],
   );
   return this.buildHtml(rows);
 }
@@ -248,7 +246,7 @@ pnpm pretty && pnpm lint && pnpm build
 ```
 
 For a live check against a real backend without publishing, use the `fork-company-script` skill.
-Discover `BASE_URL` with `discover_base_url.js` and open the page URL in a browser.
+Ask the operator for the API `BASE_URL` and open the page URL in a browser (or open it from the app with `openCustomPage`).
 
 ### Step 5 — Offer the button (ALWAYS ASK)
 
@@ -266,7 +264,7 @@ Let the user describe the place in their own words, then map it to the concrete 
 | "na tela de listagem de X" | `getDesign` of the X list/table page → `appBar.putButtonOn(...)` |
 | "quando abro um registro de X" | the X sidebar / tab-sidebar → a button passing that record id as a parameter |
 | "num item da lista" | the page's row/cell design → a per-row action |
-| "no menu" | a menu item via `FullMenuPage.fullMenuGroupAdd` on a route that opens the page |
+| "no menu" | a menu item via `menuRegistryService.addGroup` on a route that opens the page |
 
 If the user says no, or wants it delivered as a plain link, stop here — the page is already usable
 by URL.

@@ -1,3 +1,4 @@
+const TEST_ENV = require('./test_env');
 const C = require('./financial_common');
 
 (async () => {
@@ -11,7 +12,7 @@ const C = require('./financial_common');
   const designStr = JSON.stringify(design);
   console.log('design length:', designStr.length);
   require('fs').writeFileSync(
-    '<local-path>',
+    TEST_ENV.shotDir + '/plugin_manager_design.json',
     JSON.stringify(design, null, 2),
   );
   await page.screenshot({ path: C.shot('dbg_plugin_manager2.png') });

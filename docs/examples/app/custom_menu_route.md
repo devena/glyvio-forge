@@ -54,8 +54,8 @@ export class AdminStatsPageRoute extends glyvio_core.CorePageRoute<glyvio_core.C
    * Permissions required to view this route.
    */
   getRoutePermission(): glyvio_permissions.Permission | undefined {
-    // Use permissions generated from the manifest file
-    return glyvio_permissions.Permission.admin_view;
+    // a permission declared in your manifest.json (generated into glyvio_permissions), or undefined
+    return undefined;
   }
 }
 
@@ -67,8 +67,8 @@ export class AdminStatsPageRoute extends glyvio_core.CorePageRoute<glyvio_core.C
 glyvio_core.routerService.loadRoutes([AdminStatsPageRoute]);
 
 // 2. Add a navigation link to this page in the main sidebar under the "Admin" section
-glyvio_core.FullMenuPage.fullMenuGroupAdd({
-  key: 'main-admin-group', // Key of the menu group to append to or create
+glyvio_core.menuRegistryService.addGroup({
+  key: 'my_plugin.main', // namespaced key of the menu group to append to or create
   name: 'Administration',
   position: 10, // Order of the menu group
   items: [
@@ -93,7 +93,7 @@ glyvio_core.FullMenuPage.fullMenuGroupAdd({
    - `getRouteSubtype()` returns UI presentation modes (e.g., `'NATIVE'`).
 2. **`glyvio_core.routerService.loadRoutes`**:
    - Informs Glyvio's internal router about the route definition so that it compiles and links navigation actions.
-3. **`glyvio_core.FullMenuPage.fullMenuGroupAdd`**:
+3. **`glyvio_core.menuRegistryService.addGroup`**:
    - Dynamically registers menu sections or individual buttons/items.
    - Groups are created if they do not exist; otherwise, items are appended.
    - Uses standard properties like `iconName`, `title`, and binds them directly to a `route` object.

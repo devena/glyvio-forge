@@ -5,6 +5,10 @@ description: "Generates a standard entity creation/modification form inside a mo
 <!-- Generated from src/skills/create-edit-modal/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom Edit Modal View in Glyvio
 
+> **Padrão visual moderno:** monte o conteúdo com `glyvio_core.ui` e `SurfaceDesign`/`StackLayoutDesign`/`GridLayoutDesign`
+> (guia `.opencode/references/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
+> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`.opencode/references/i18n.md`) e prints em 1440×900 e 390×844.
+
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional edit modal view (extending `SimpleEditModal`) within a Glyvio plugin project.
 
 ---
@@ -65,6 +69,46 @@ The executing agent MUST strictly adhere to these rules:
 9. **`ChoiceMultipleTextfieldDesign` has a confirmed add-after-selection bug — think twice before using it for an editable multi-select**: the underlying Flutter widget's duplicate check indexes the selection list as if it were a `List<Map>` when it is actually `List<String>`, so **adding an item throws once the selection already has 1+ items** — the user can remove items freely but can never add another after the first. This is a framework bug, not a plugin bug, and there is no app-layer workaround. If the field is genuinely meant to be edited back and forth (not just filled once), warn the user of this limitation or prefer an alternative (`EntityAutocompleteMultipleTextfieldDesign` if the options can be modeled as a pseudo-entity, or individual toggle buttons). See `component_catalog_full.md`'s `ChoiceMultipleTextfieldDesign` entry for the confirmed root cause.
 10. **Tabbed sections (`showSectionsInTabs`) — optional, use only for multi-section forms**: `SimpleEditModalDesign.showSectionsInTabs?: boolean | string` switches `sectionsDesign` from one continuous scroll into a tabbed layout. Every section in `sectionsDesign` needs a `key` (they already do — see rule about the blueprint). By default each section becomes its own tab, titled from that section's own `appBarDesign`. Use `design.tabsDesign?: SimpleCartTabGroupDesign[]` (`{ title: string; sectionKeys: string[] }`) to group multiple section keys under one custom-titled tab instead. Use `design.pinnedSectionKeysTop?: string[]` / `design.pinnedSectionKeysBottom?: string[]` to keep specific section keys (e.g. a summary banner) rendered above/below the tabs on every tab, instead of living inside one — a key can be pinned Top or Bottom, never both, and a pinned key must not also appear in `tabsDesign`. Only turn this on when the form genuinely has multiple distinct sections/steps worth separating — a single-section form should leave `showSectionsInTabs` unset. See "Optional: Tabbed Sections" below for a full example.
 11. **New records require `userGroupId` (NON-NEGOTIABLE)**: `FormEntityLayoutDesign` must keep `actionKeyChangeUserGroup` and `events()` must assign its value. Before saving a new entity, ensure that `userGroupId` is present and authorized; if the entity is derived from an owner, inherit the owner's group. Do not save an unscoped entity, trust an arbitrary route/action value, or overwrite the group on a normal update.
+12. **Required fields and validation — declare, don't hand-roll**: put `required: true` (and optionally `helperText: '...'`) on the field design; the core adds the " *" to the label and draws the helper line. In the save handler call `if (!(await this.validateForm(state))) return 'STATE_UPDATE';` — it flags every empty required field, every text longer than its field's `maxLength`, every field already showing an explicit `errorText`, and whatever `getFieldErrors(state)` returns (rules like e-mail format), shows the errors under the fields, focuses the first one and shows a toast. For a length limit put `maxLength: N` on the `StringTextfieldDesign` (the app blocks typing past it and shows a counter). Do not use the deprecated `StringTextfieldDesign.isTooBig/isTooShort`, nor the old `errorText: TextFieldDesign.isRequired(state, ...)` (it only paints the field red from the moment the modal opens and never blocks saving), and do not append `*` to labels yourself. Mark `required` only what is really mandatory (a `notNull` column, or a name/identifier) — a required checkbox means "must be checked". A field's error clears as soon as the user edits it.
+13. **Discard confirmation**: set `design.popAction` (the close action) and `design.confirmOnDiscard = true`; when the user has edited any field, closing asks "Descartar alterações?" before running `popAction`. After a successful save call `this.markFormClean(state)` (if the modal stays open).
+
+---
+
+## 📎 Dropped Files: Attach vs. Read
+
+Two different features accept a dragged file — pick by what the file is **for**:
+
+| Goal | Use | Callback | Wiring |
+| --- | --- | --- | --- |
+| **Attach** the file (keep it as an `Attachment` linked to a record) | `design.allowDropAttachment = true` — the whole container becomes a drop target | `onFileUploaded(state, attachment, extras)` on the view (and `attachmentOnFilesUploaded` when an `AttachmentsEditSection` is embedded) | none beyond the flag |
+| **Read** the file's content (import an OFX, CSV, XML, JSON…) | a `glyvio_core.FileDropAreaDesign` box in the body (drop **or** tap to pick), or `this.extensionsManager.file.readFiles({ extensions, as, extras })` from a button | `fileOnFilesLoaded(state, { files, rejected, extras })` — each file has `name`, `extension`, `size`, `content` (text, or base64 with `readAs: 'base64'`) | `this.extensionsManager.registerFile(this)` in the constructor + `implements glyvio_core.FileExtensionDelegate<S>` |
+
+- `allowDropFile` is the **deprecated** old name of `allowDropAttachment` (same flag, same JSON). Write `allowDropAttachment` in new code; leave existing screens alone unless you are already editing them.
+- The attach flag uploads the file to storage as a temporary attachment — it never gives you the content. Do not use it (and then download the attachment) to parse a file; use `FileDropAreaDesign`/`readFiles`.
+- The flag is honored on modals, sidebars, tab sidebars, carts and rule sections. **Pages (`SimpleEditPage`) ignore it** in the app today — on a page, put a `FileDropAreaDesign` in the body instead.
+- Text is decoded as UTF-8 with a windows-1252 fallback (Brazilian bank OFX files are often `CHARSET:1252`), so accents arrive intact. Files over `maxSizeBytes` (default 20 MB) or with another extension come back in `rejected`, not in `files`.
+
+```typescript
+// Reading an OFX dropped on the screen
+constructor() {
+  super();
+  this.extensionsManager.registerFile(this);
+}
+
+// in getDesign
+new glyvio_core.FileDropAreaDesign({
+  key: 'ofx.drop',
+  title: 'Arraste o arquivo OFX aqui',
+  subtitle: 'ou clique para escolher',
+  extensions: ['ofx'],
+});
+
+async fileOnFilesLoaded(state: S, loaded: glyvio_core.FilesLoaded): Promise<void> {
+  const [file] = loaded.files;
+  if (!file) return;
+  // file.content is the OFX text
+}
+```
 
 ---
 
@@ -240,6 +284,9 @@ export class <EntityName>EditModal extends glyvio_core.SimpleEditModal<<EntityNa
    */
   async events(state: <EntityName>EditModalState, action: glyvio_core.Action): Promise<glyvio_core.EventReturn> {
     if (action.key === 'save') {
+      if (!(await this.validateForm(state))) {
+        return 'STATE_UPDATE'; // the errors show under the fields
+      }
       await this.actionSave(state);
       return 'STATE_FREEZED';
     }
@@ -324,7 +371,7 @@ export class <EntityName>EditModal extends glyvio_core.SimpleEditModal<<EntityNa
     design.sectionsDesign = [
       new glyvio_core.FormSectionDesign({
         key: 'main.section',
-        childDesign: new FormEntityLayoutDesign({
+        childDesign: new glyvio_core.FormEntityLayoutDesign({
           columnSize: 280,
           key: 'main.layout',
           name: 'state.<entityNameCamelCase>',
@@ -342,7 +389,7 @@ export class <EntityName>EditModal extends glyvio_core.SimpleEditModal<<EntityNa
               columns: 1,
               key: '<fieldName1>.formField',
               child: new glyvio_core.StringTextfieldDesign({
-                errorText: glyvio_core.TextFieldDesign.isRequired(state, 'state.<entityNameCamelCase>.<fieldName1>'),
+                required: true,
                 name: 'state.<entityNameCamelCase>.<fieldName1>',
                 label: '<FieldLabel1>',
                 autofocus: true,

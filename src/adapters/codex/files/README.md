@@ -1,6 +1,6 @@
 # Glyvio para Codex
 
-Pacote gerado a partir dos **6 agents e 56 skills específicos do Glyvio** em `src/`.
+Pacote gerado a partir dos **5 agents e 94 skills específicos do Glyvio** em `src/`.
 São instruções e referências carregadas no contexto do Codex, não treinamento dos
 pesos do modelo. O conteúdo técnico e os exemplos do Glyvio foram preservados,
 incluindo as diferenças reconciliadas entre Claude e Antigravity. Para atualizar
@@ -11,11 +11,11 @@ o pacote no Glyvio Forge, edite `src/` e execute `python3 tools/generate.py`.
 ```text
 codex/
 ├── AGENTS.md               # Roteamento e convenções comuns
-├── agents/*.toml           # 6 agentes personalizados nativos do Codex
-├── skills/*/SKILL.md        # 56 workflows do Glyvio
+├── agents/*.toml           # 5 agentes personalizados nativos do Codex
+├── skills/*/SKILL.md        # 94 workflows do Glyvio
 ├── component_catalog.md    # Catálogo visual resumido
 ├── references/             # Catálogo completo
-├── scripts/                # Linter Glyvio e inspetor Chrome
+├── scripts/                # Linter Glyvio, inspetor Chrome, i18n_check e check_icons
 └── mcp.example.toml         # Exemplo opcional de configuração MCP
 ```
 
@@ -28,7 +28,7 @@ automaticamente todos os agents e skills.
    instruções partem da raiz do projeto.
 2. No `AGENTS.md` da **raiz do projeto**, acrescente o trecho abaixo. Se já houver
    instruções, preserve-as e resolva eventuais conflitos de escopo.
-3. Para disponibilizar os agents para delegação, copie os seis arquivos
+3. Para disponibilizar os agents para delegação, copie os cinco arquivos
    `codex/agents/*.toml` para `.codex/agents/` no projeto. Preserve configurações
    existentes e mantenha essas cópias sincronizadas quando atualizar o pacote.
 4. Para descoberta das skills e uso por `$nome`, crie `.agents/skills/` e, para
@@ -115,7 +115,6 @@ foi validada nesta migração. Não é necessária para ler os agents e skills.
 | --- | --- |
 | `glyvio-app-chart.md` | [glyvio-app-chart.toml](agents/glyvio-app-chart.toml) |
 | `glyvio-app-coordinator.md` | [glyvio-app-coordinator.toml](agents/glyvio-app-coordinator.toml) |
-| `glyvio-doc-agent.md` | [glyvio-doc-agent.toml](agents/glyvio-doc-agent.toml) |
 | `glyvio-environment-agent.md` | [glyvio-environment-agent.toml](agents/glyvio-environment-agent.toml) |
 | `glyvio-report-agent.md` | [glyvio-report-agent.toml](agents/glyvio-report-agent.toml) |
 | `glyvio-server-coordinator.md` | [glyvio-server-coordinator.toml](agents/glyvio-server-coordinator.toml) |
@@ -146,6 +145,7 @@ Todas correspondem às pastas de mesmo nome em `src/skills/`.
 - [create-gantt-page-interceptor](skills/create-gantt-page-interceptor/SKILL.md)
 - [create-grid-page](skills/create-grid-page/SKILL.md)
 - [create-grid-page-interceptor](skills/create-grid-page-interceptor/SKILL.md)
+- [create-import-wizard](skills/create-import-wizard/SKILL.md)
 - [create-kanban-page](skills/create-kanban-page/SKILL.md)
 - [create-kanban-page-interceptor](skills/create-kanban-page-interceptor/SKILL.md)
 - [create-list-modal](skills/create-list-modal/SKILL.md)

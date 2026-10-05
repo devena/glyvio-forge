@@ -7,7 +7,6 @@
   "instructions": "CLAUDE.md",
   "skills": "*",
   "agents": {
-    "glyvio_doc_agent_prompt.md": "glyvio-doc-agent",
     "glyvio_app_coordinator_agent_prompt.md": "glyvio-app-coordinator",
     "glyvio_environment_agent.md": "glyvio-environment-agent",
     "glyvio_report_agent.md": "glyvio-report-agent",

@@ -1,7 +1,7 @@
-require('dotenv').config({ path: '<local-path>' });
+const TEST_ENV = require('./test_env');
 const { chromium } = require('playwright');
 
-const SHOT_DIR = '<local-path>';
+const SHOT_DIR = TEST_ENV.shotDir;
 
 function shot(sub, n) {
   return SHOT_DIR + '/' + sub + '/' + n;

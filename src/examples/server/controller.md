@@ -141,7 +141,7 @@ A controller's `path` is not itself a reachable URL — the real server route is
 `/custom/<public|private|external>/sync/<companyId>/<controllerId>`, and `plugin/app` (TS) code
 has no way to resolve `companyId` itself. Always call a controller via
 `glyvio_core.restService.postController`/`putController`/`getController`, which send just the
-visibility scope and `controllerId` and let the Dart client build the real path and resolve
+visibility scope and `controllerId` and let the app build the real path and resolve
 `companyId` — never hand-build a `/custom/...` (or any other) path with `restService.post`/`put`/`get`.
 
 ```typescript

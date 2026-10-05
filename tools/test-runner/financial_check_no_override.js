@@ -1,5 +1,5 @@
 const { launch, shot } = require('./financial_common');
-require('dotenv').config({ path: '<local-path>' });
+require('./test_env');
 
 (async () => {
   const { browser, context, page } = await launch({ reuseSession: false });

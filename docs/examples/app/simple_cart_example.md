@@ -71,6 +71,10 @@ export class UserSelectionCart extends glyvio_core.SimpleCart<UserSelectionCartS
     super(UserSelectionCartRoute);
   }
 
+  async events(_state: UserSelectionCartState, _action: glyvio_core.Action): Promise<glyvio_core.EventReturn> {
+    return undefined; // handle your own action keys here
+  }
+
   /**
    * Configures the layout and visual properties of the simple cart design.
    */
@@ -171,7 +175,7 @@ export class UserSelectionCart extends glyvio_core.SimpleCart<UserSelectionCartS
     extras?: unknown,
   ): Promise<void> {
     // Process CSV uploads, user lists, or associated document logs
-    await this.showToastSuccess(state, `Processed attachment: ${attachment.name}`);
+    await this.showToastSuccess(state, `Processed attachment: ${attachment.fileName}`);
   }
 }
 

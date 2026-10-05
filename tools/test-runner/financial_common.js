@@ -1,7 +1,7 @@
-require('dotenv').config({ path: '<local-path>' });
+require('./test_env');
 const { chromium } = require('playwright');
 
-const PROJECT_DIR = '<local-path>';
+const PROJECT_DIR = process.env.G_PROJECT_DIR || process.cwd();
 const SHOT_DIR = PROJECT_DIR + '/screenshots';
 
 function shot(n) {

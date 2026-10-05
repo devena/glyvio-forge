@@ -5,6 +5,10 @@ description: "Generates a standard data table search and selection modal, with l
 <!-- Generated from src/skills/create-table-modal/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom SimpleTableModal View in Glyvio
 
+> **Padrão visual moderno:** monte o conteúdo com `glyvio_core.ui` e `SurfaceDesign`/`StackLayoutDesign`/`GridLayoutDesign`
+> (guia `.opencode/references/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
+> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`.opencode/references/i18n.md`) e prints em 1440×900 e 390×844.
+
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional table search and selection modal (extending `SimpleTableModal`) within a Glyvio plugin project.
 
 ---
@@ -144,38 +148,94 @@ export class <EntityName>TableModal extends glyvio_core.SimpleTableModal<
     appBar.title = 'Select <EntityName>';
 
     design.mainColumns = [
-      new glyvio_core.TableLayoutHeaderDesign({
-        key: 'code',
-        title: 'Code',
+      new glyvio_core.TableLayoutColumnDesign({
+        key: 'code.column',
+        columnName: 'code',
         width: 120,
+        padding: '4',
+        child: new glyvio_core.StringTextDesign({ value: 'Code' }),
       }),
-      new glyvio_core.TableLayoutHeaderDesign({
-        key: 'name',
-        title: 'Name',
+      new glyvio_core.TableLayoutColumnDesign({
+        key: 'name.column',
+        columnName: 'name',
         width: 250,
+        padding: '4',
+        child: new glyvio_core.StringTextDesign({ value: 'Name' }),
       }),
     ];
 
-    // Configure sidebar filter layout
-    design.filterSectionsDesign?.push(
+    // Search box (the base already put a developer section in headerDesign: push, do not replace)
+    design.headerDesign ??= [];
+    design.headerDesign.push(
       new glyvio_core.FormSectionDesign({
-        key: 'filters.section',
-        childDesign: new glyvio_core.FormLayoutDesign({
-          key: 'filter.layout',
-          columnSize: 280,
+        key: 'main.text.section',
+        childDesign: new glyvio_core.RowLayoutDesign({
+          key: 'main.text.layout',
+          crossAlignment: 'CENTER',
           children: [
-            new glyvio_core.FormLayoutFieldDesign({
-              key: 'showInactive.formField',
-              child: new glyvio_core.BooleanTextfieldDesign({
-                key: 'showInactive.textfield',
-                name: 'state.filtersSidebar.showInactive',
-                label: 'Show Inactive',
+            new glyvio_core.RowLayoutFieldDesign({
+              key: 'main.text.formField',
+              isExpanded: true,
+              child: new glyvio_core.StringTextfieldDesign({
+                key: 'main.text.textfield',
+                name: 'state.text',
+                label: 'Search',
+                onSubmittedAction: new glyvio_core.Action({ key: 'onTapFind' }),
               }),
+            }),
+            new glyvio_core.ActionButtonDesign({
+              key: 'moreFilters.button',
+              type: 'SECONDARY',
+              variant: 'ghost',
+              iconName: 'sax_linear_filter',
+              action: new glyvio_core.Action({ key: 'moreFilters' }),
             }),
           ],
         }),
       }),
     );
+  }
+
+  /**
+   * Filters panel (opened by the "moreFilters" button). Modals have no filterSectionsDesign:
+   * filters live in a side panel returned here, bound to state.filtersSidebar.*.
+   */
+  getRightSidebar(_state: <EntityName>TableModalState): glyvio_core.SimpleSidePanelDesign | undefined {
+    return new glyvio_core.SimpleSidePanelDesign({
+      width: 360,
+      appBarDesign: new glyvio_core.SimpleAppBarDesign({
+        key: 'filters.appBar',
+        title: 'Filters',
+        buttons: [
+          new glyvio_core.ActionButtonDesign({
+            key: 'onTapFind.button',
+            type: 'SECONDARY',
+            variant: 'ghost',
+            iconName: 'sax_linear_search_normal_1',
+            action: new glyvio_core.Action({ key: 'onTapFind' }),
+          }),
+        ],
+      }),
+      sectionsDesign: [
+        new glyvio_core.FormSectionDesign({
+          key: 'filters.section',
+          childDesign: new glyvio_core.FormLayoutDesign({
+            key: 'filter.layout',
+            columnSize: 280,
+            children: [
+              new glyvio_core.FormLayoutFieldDesign({
+                key: 'showInactive.formField',
+                child: new glyvio_core.BooleanTextfieldDesign({
+                  key: 'showInactive.textfield',
+                  name: 'state.filtersSidebar.showInactive',
+                  label: 'Show Inactive',
+                }),
+              }),
+            ],
+          }),
+        }),
+      ],
+    });
   }
 
   /**
@@ -185,13 +245,15 @@ export class <EntityName>TableModal extends glyvio_core.SimpleTableModal<
     return new glyvio_core.TableLayoutRowDesign({
       cells: [
         new glyvio_core.TableLayoutCellDesign({
-          key: 'code',
+          key: 'code.cell',
+          columnName: 'code',
           child: new glyvio_core.StringTextDesign({
             value: `$S{item.code}`,
           }),
         }),
         new glyvio_core.TableLayoutCellDesign({
-          key: 'name',
+          key: 'name.cell',
+          columnName: 'name',
           child: new glyvio_core.StringTextDesign({
             value: `$S{item.name}`,
           }),
@@ -234,10 +296,12 @@ export class <EntityName>TableModal extends glyvio_core.SimpleTableModal<
    */
   async onRowTap(state: <EntityName>TableModalState, item: glyvio_entity.<EntityName>): Promise<void> {
     if (state.routeParams.popActionKey) {
-      await this.popModal({
-        key: state.routeParams.popActionKey,
-        data: item,
-      });
+      await this.popModal(
+        new glyvio_core.Action({
+          key: state.routeParams.popActionKey,
+          data: item,
+        }),
+      );
     } else {
       await this.popModal();
     }
@@ -254,11 +318,15 @@ export class <EntityName>TableModal extends glyvio_core.SimpleTableModal<
   }
 
   async events(state: <EntityName>TableModalState, action: glyvio_core.Action): Promise<glyvio_core.EventReturn> {
+    if (action.key == 'moreFilters') {
+      await this.showRightSidebar();
+      return 'STATE_FREEZED';
+    }
+    if (action.key == 'onTapFind') {
+      this.callRefreshState(); // reloads with state.text and state.filtersSidebar
+      return 'STATE_FREEZED';
+    }
     // New state-mutating key → return 'STATE_UPDATE'
-    // if (action.key === 'myKey') {
-    //   state.myProperty = action.data;
-    //   return 'STATE_UPDATE';
-    // }
     return undefined;
   }
 }

@@ -5,6 +5,14 @@ description: "Generates a standard entity grid/gallery page with responsive grid
 <!-- Generated from src/skills/create-grid-page/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom Grid Page View in Glyvio
 
+> **Padrão visual moderno:** monte o conteúdo com `glyvio_core.ui` e `SurfaceDesign`/`StackLayoutDesign`/`GridLayoutDesign`
+> (guia `.claude/references/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
+> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`.claude/references/i18n.md`) e prints em 1440×900 e 390×844.
+
+> **Filtros:** adicione só os campos em `design.filterSectionsDesign?.push(glyvio_core.FilterSidebar.section(...))`
+> e descreva os filtros ativos em `getActiveFilterChips`/`clearFilter` — cabeçalho, busca, filtros salvos, rodapé e a
+> linha de chips vêm da base (guia `.claude/references/filters_and_headers.md`).
+
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional grid page view (extending `SimpleGridPage`) within a Glyvio plugin project.
 
 ---
@@ -50,7 +58,7 @@ To run this skill, the agent must obtain or ask for the following inputs:
    - **Cell Width** (e.g., `400`): Horizontal width of each card in pixels.
 6. **Sidebar Filters** (e.g., `status`, `category`): Fields to build filter controls for.
 7. **Main Search Fields** (e.g., `name`, `code`): Fields matched when typing in the top search bar.
-8. **Menu Group** (e.g., `Administration` group key: `main-admin`): Where to place the menu item.
+8. **Menu Group** (a namespaced group of your plugin, e.g. `my_plugin.main`; settings screens go to the admin screen — see `register-menu-and-admin`): Where to place the menu item.
 
 ---
 
@@ -91,7 +99,7 @@ glyvio_core.routerService.loadRoutes([
 Register the view in the main app menu sidebar:
 
 ```typescript
-glyvio_core.FullMenuPage.fullMenuGroupAdd({
+glyvio_core.menuRegistryService.addGroup({
   key: 'group_key',
   name: 'Group Name',
   position: 100, // Customize positioning
@@ -241,7 +249,7 @@ export class <EntityName>GridPage extends glyvio_core.SimpleGridPage<<EntityName
    */
   getDesignForCell(state: <EntityName>GridPageState, item: glyvio_entity.<EntityName>): glyvio_core.CardCellDesign {
     return new glyvio_core.CardCellDesign({
-      colorTheme: item.deleted ? 'RED' : null,
+      colorTheme: item.deleted ? 'RED' : undefined,
       padding: '12 16',
       child: new glyvio_core.ColumnLayoutDesign({
         children: [

@@ -36,7 +36,7 @@ Recall from `create-gantt-page`: `SimpleGanttPage` has no separate "row" concept
    - Create a file `src/interceptors/views/spy_interceptor.ts`.
    - Implement `SpyInterceptor` extending `<TargetBaseInterceptorClass>` to capture the `design` in `getDesign(state: <TargetStateClass>, design: glyvio_core.SimpleGanttPageDesign)`:
      ```typescript
-     export class SpyInterceptor extends <TargetBaseInterceptorClass> {
+     export class SpyInterceptor extends <TargetBaseInterceptorClass> { // the specialized interceptor of the target, or the family base WITH its generics
        override getListenerId(): string {
          return '<plugin>_SpyInterceptor';
        }
@@ -45,7 +45,7 @@ Recall from `create-gantt-page`: `SimpleGanttPage` has no separate "row" concept
        }
        override getDesign(state: <TargetStateClass>, design: glyvio_core.SimpleGanttPageDesign): void {
          if (typeof window !== 'undefined') {
-           (window as any).__finalDesign = JSON.parse(JSON.stringify(design));
+           (globalThis as unknown as { __finalDesign?: unknown }).__finalDesign = JSON.parse(JSON.stringify(design));
            console.log("SPY_INTERCEPTOR: Design captured successfully!", JSON.stringify(design));
          }
        }
@@ -286,7 +286,7 @@ export class <InterceptorClassName> extends <TargetBaseInterceptorClass> {
   override async onBarChange(
     state: <TargetStateClass>,
     change: glyvio_core.SimpleGanttBarChange,
-    queue: glyvio_entity.EntityServiceQueue,
+    queue: glyvio_core.EntityServiceQueue,
     item: glyvio_entity.<TargetEntityName>,
   ): Promise<void> {
     // 💡 Example: Log an audit trail entry when a bar's dates change

@@ -72,7 +72,7 @@ async function run() {
     console.log(`  - Title: "${page.title}", URL: "${page.url}"`);
   }
 
-  // We find the page that matches Glyvio or look for the one with app.example.com or glyvio in general
+  // Pick the tab whose URL or title mentions Glyvio, falling back to the first tab
   const targetPage = pages.find((p) => p.url.includes('glyvio') || p.title.includes('Glyvio')) || pages[0];
 
   let id = 1;

@@ -1,6 +1,7 @@
+const TEST_ENV = require('./test_env');
 const C = require('./financial_common');
 
-const GROUP_ID = '00000000-0000-0000-0000-000000000000';
+const GROUP_ID = TEST_ENV.userGroupId;
 const BUNDLE_URL = 'http://localhost:3001/bundle.js';
 
 (async () => {

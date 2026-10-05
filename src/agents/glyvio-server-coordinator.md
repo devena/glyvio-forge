@@ -21,7 +21,7 @@ You operate **exclusively inside the project root** — the current workspace di
 - **Never** read, write, list, search, copy, or `cd` into any path outside the project root: not the home directory (`~`, `$HOME`), not parent directories (`../`, `../../`), not system or temp paths (`/etc`, `/usr`, `/tmp`, `/var`, `/Users/<user>`), and not any sibling repository.
 - **Always use project-relative paths.** Never escape the root with `..`, and never resolve an absolute path that lands outside the workspace.
 - **Never run shell commands that reach outside the project** (e.g. `cd /`, `cat ~/...`, `find / ...`, `cp /Users/<user> .`, or globbing from `/`). Keep every command rooted at the workspace.
-- Everything you legitimately need — `plugin/server/src`, `manifest.json`, `@types`, `dist/bundle.d.ts`, helper scripts like `run_helper.sh` — lives **within** the project root. There is never a valid reason to leave it.
+- Everything you legitimately need — `plugin/server/src`, `manifest.json`, `@types` (incl. `glyvio_core.d.ts`), helper scripts like `run_helper.sh` — lives **within** the project root. There is never a valid reason to leave it.
 - When delegating to coder/schema-editor subagents, restate this boundary to them.
 - If a task appears to require a file outside the project, **stop and tell the user** rather than reaching outside. Do not guess at or browse external locations.
 
@@ -102,6 +102,15 @@ Before writing any TypeScript manually, check whether a dedicated skill covers t
 | Deferred/deduplicated operation via `QueueList` | **`schedule-queued-operation`** |
 | Any `manifest.json` change (entities, fields, permissions, sequences) | **`modify-manifest`** (always followed by `run_helper.sh`) |
 | On-demand read/trigger against a third-party datasource already registered in `glyvio-plugin-sync` (ad-hoc query, force a task now, ignore a record) — **not** reactive to inbound sync data | **`query-external-datasource`** |
+| Let a trusted flow pass a guard interceptor, suppress an automatic interceptor, dedupe re-entrant work in one request | **`use-execution-flags`** |
+| Serialize concurrent writes on the same resource (reservations, claims) | **`use-lock-service`** |
+| Cache derived, read-heavy data across requests (with eviction interceptors) | **`use-cache-service`** |
+| Cross-plugin provider contract (define one, or implement another plugin's) | **`create-plugin-service`** |
+| Human-readable sequential numbers (order/invoice numbers) | **`generate-sequence-number`** |
+| Call an operation in the customer's environment (external API, local network) from server code | **`create-environment-action`** |
+| Inbound messages / webhooks of a chat channel plugin | **`create-chat-channel-integration`** |
+| Notification to users / timeline entry from server code | **`create-notification`** / **`create-timeline-entry`** |
+| API for a separate, non-Glyvio frontend (portal, external app) | **`external-user-api`** |
 
 - **`@Strategy` vs. app-layer `CoreAppStrategyAsync`/`CoreAppStrategySync`**: `create-strategy` (`@glyvio_core.Strategy`, `SimpleStrategy<T,R>`) is a **server-side**, queued/deduplicated pattern — it is not the same mechanism as `CoreAppStrategyAsync`/`CoreAppStrategySync` (`plugin/app`, singleton registered by event key via `appStrategyService.registerStrategies`, resolved with `.run(request)`), which powers overridable app-layer extension points such as `EntityHasAttachmentTypesStrategy`. If a request is really about overriding one of those app-layer strategies (or defining a new one), that's `plugin/app` work — hand it to `glyvio-app-coordinator` rather than treating it as a `create-strategy` job.
 - **Invoke the matching skill first**, providing it the interceptor/entity id, target entity, and the business logic specification from Phase 2. The skill produces the complete, correctly structured file — including listener-id convention and `src/index.ts` registration — do not rewrite it by hand.

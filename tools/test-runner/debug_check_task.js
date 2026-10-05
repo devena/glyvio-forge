@@ -1,13 +1,14 @@
+const TEST_ENV = require('./test_env');
 const { chromium } = require('playwright');
 const fs = require('fs');
-const shot = (n) => '<local-path>' + n;
+const shot = (n) => TEST_ENV.shotDir + '/' + n;
 
 const CREDS = {
-  serverUrl: 'https://api.example.com',
-  companyId: '00000000-0000-0000-0000-000000000000',
-  serviceId: '00000000-0000-0000-0000-000000000000',
-  environmentId: 'env-novo',
-  email: 'inbox-user@example.com',
+  serverUrl: TEST_ENV.apiUrl,
+  companyId: TEST_ENV.companyId,
+  serviceId: TEST_ENV.serviceId,
+  environmentId: TEST_ENV.environmentId,
+  email: TEST_ENV.inboxUsername,
   senha: process.env.JEANNIE_INBOX_PASSWORD,
 };
 
@@ -15,7 +16,7 @@ const CREDS = {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'pt-BR', ignoreHTTPSErrors: true });
   const page = await context.newPage();
-  await page.goto('https://jeannie.example.com/jeannie/index.html', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.goto(TEST_ENV.jeannieUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForTimeout(1000);
   await page.evaluate((creds) => localStorage.setItem('jeannie.inboxTest.settings', JSON.stringify(creds)), CREDS);
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -29,7 +30,7 @@ const CREDS = {
       catch (e) { return { error: e.message }; }
     }
     return {
-      byId: await safe('SELECT id, name, deleted, done, status_id, type_id, user_group_id, created_at FROM task WHERE id = ?', [{value:'00000000-0000-0000-0000-000000000000', dataType:'TEXT'}]),
+      byId: await safe('SELECT id, name, deleted, done, status_id, type_id, user_group_id, created_at FROM task WHERE id = ?', [{value:TEST_ENV.taskId, dataType:'TEXT'}]),
       byName: await safe("SELECT id, name, deleted, done, status_id, type_id, user_group_id, created_at FROM task WHERE name ILIKE '%Teste de aprovacao%'", []),
     };
   });

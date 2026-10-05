@@ -1,7 +1,8 @@
+const TEST_ENV = require('./test_env');
 require('dotenv').config();
 const { chromium } = require('playwright');
 const fs = require('fs');
-const shot = (n) => '<local-path>' + n;
+const shot = (n) => TEST_ENV.shotDir + '/' + n;
 
 async function waitBridgeReady(page, timeoutMs = 60000) {
   await page.waitForFunction(() => typeof window.__GLYVIO_AI__?.setPluginDevOverride === 'function', { timeout: timeoutMs });

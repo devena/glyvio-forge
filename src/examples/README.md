@@ -28,6 +28,7 @@ Below are the examples grouped by subproject:
 Examples of building user interfaces, menus, routes, and custom screens.
 
 - [Custom Menu and Pages](app/custom_menu_route.md) — How to define pages, routes, and link them to menus.
+- [Modern Sidebar Example](app/modern_sidebar_example.md) — Sidebar in the modern visual pattern (`glyvio_core.ui`, Surface/Grid, ICU, key preservation).
 - [List Page Example](app/simple_list_page_example.md) — How to build and search entity lists with SimpleListPage.
 - Edit Page Example (exemplo ainda não incluído) — How to construct form-based edit views using SimpleEditPage.
 - Table Page Example (exemplo ainda não incluído) — How to implement custom spreadsheet grid layout views using SimpleTablePage.

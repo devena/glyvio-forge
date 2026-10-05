@@ -1,3 +1,4 @@
+const TEST_ENV = require('./test_env');
 const C = require('./financial_common');
 
 (async () => {
@@ -5,7 +6,7 @@ const C = require('./financial_common');
   const seen = new Set();
   page.on('request', (r) => {
     const u = new URL(r.url());
-    if (u.hostname !== 'app.example.com' && !seen.has(u.hostname)) {
+    if (u.hostname !== new URL(TEST_ENV.appUrl).hostname && !seen.has(u.hostname)) {
       seen.add(u.hostname);
       console.log('[other-host]', u.hostname, r.url());
     }

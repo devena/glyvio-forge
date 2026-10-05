@@ -10,7 +10,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
 >
 > **Not a substitute for `create-sync-interceptor`.** That skill is *reactive* — it fires automatically when the scheduled sync pipeline pulls a record in. This skill is for code that *actively* asks the sync engine to read or trigger something **right now** (e.g. a button, an `@Action`, a Jeannie `@CustomTool`).
 >
-> **Not a config-authoring skill.** `dataSources`, `tasks`, and `scheduledTasks` are configured by the end user through the Sync plugin's own admin page (`sync_config_edit_page.ts`). This skill never creates or edits that config — it only discovers existing names (via `getConfig()`) and writes code against them.
+> **Not a config-authoring skill.** `dataSources`, `tasks`, and `scheduledTasks` are configured by the end user through the Sync plugin's own admin page in the app. This skill never creates or edits that config — it only discovers existing names (via `getConfig()`) and writes code against them.
 
 ---
 

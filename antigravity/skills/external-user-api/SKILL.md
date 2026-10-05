@@ -29,6 +29,10 @@ This is a **pattern reference**, not a code generator — apply the parts that f
   - Header: `Authorization: Bearer <jwt>` — used by any real HTTP client (the frontend's own API calls).
   - Query string: `?auth_token=<jwt>` — used when a link must open in a new tab with no way to attach a custom header (e.g. `<a href target="_blank">`). Confirmed: `?auth_token=malformed` fails the exact same way as a malformed `Authorization` header (`400 invalid_token`) — it's the same validation path, just a different transport.
 - A controller receives the resolved `externalUser: glyvio_entity.ExternalUser` as the second argument to `handle(request, externalUser)` — never re-derive identity from the raw token yourself.
+- **The JWT is issued by the platform when the `ExternalUser` is saved** — no plugin code signs tokens. Confirmed live (2026-09-25): saving a new `ExternalUser` (the `token` column is NOT NULL, so fill it with any placeholder such as `uuidService.v4()`) replaces `external_user.token` with a platform-signed JWT — `alg: RS256`, `aud: external-user`, `iss: {BASE_URL}`, and an `exp` about 150 years ahead (effectively non-expiring). That stored value is the `auth_token` of the access link (`{portal URL}?auth_token={token}`), so an "invite" flow is just: create the `ExternalUser` → read `token` back → deliver the link.
+  - **Revocation = delete the `ExternalUser`**: the same token answers `403 {"type":"permission","permission":"non_informed"}` on the very next request. Because the token never expires on its own, deleting (or re-creating) the row is the only way to cut or rotate access.
+  - The token is stored in plain text. Treat any internal route/screen that returns it as sensitive (internal permission only), and never return it from an `external`/`public` route.
+  - Not confirmed yet: whether the placeholder you send is used at all, and whether editing an existing `ExternalUser` re-issues the token.
 - Controllers are framework-managed entrypoints: **never instantiate a controller manually**, inject
   one, or call another controller's `handle()` for reuse. Each route must extend
   `ExternalSimpleController` (or the applicable controller base) and be registered with
@@ -45,18 +49,17 @@ POST {BASE_URL}/custom/external/write/{companyId}/{path}   — mutations
 GET  {BASE_URL}/custom/external/page/{companyId}/{path}?...&auth_token=<jwt>    — opened as a plain link, not called via the app's HTTP client
 ```
 
-> ⚠️ **`{BASE_URL}` is the API base, which is frequently NOT the app's host.** Measured live: on
-> `app.example.com` the app serves only static assets while every API call goes to
-> `api.example.com`; on other environments the API sits on the same host under a prefix such
-> as `/web-api`. Pointing at the app host returns the SPA's fallback HTML with HTTP 200 — no error,
-> just the wrong body. Never hardcode it: the app reveals it by calling
-> `POST {BASE_URL}/query/{companyId}/<internal-endpoint>` right after login, so stripping that suffix
-> yields `BASE_URL`. The `test-plugin-browser` skill automates this (`discover_base_url.js`).
+> ⚠️ **`{BASE_URL}` is the API base, which is frequently NOT the app's host.** In several
+> environments the app serves only static assets while the API lives on another host (or under a
+> prefix such as `/web-api`). Pointing at the app host returns the SPA's fallback HTML with HTTP
+> 200 — no error, just the wrong body. Never hardcode or guess it: ask the Glyvio operator for the
+> API base URL of the target environment.
 >
 > The private (internal, logged-in user) counterpart of the `page` route is
-> `{BASE_URL}/custom/private/page/{companyId}/{path}?authorization=Bearer%20<jwt>`, and the
-> unauthenticated one is `{BASE_URL}/custom/public/page/{companyId}/{path}` — the access segment
-> and the auth parameter always change together.
+> `{BASE_URL}/custom/private/page/{companyId}/{path}` (open it from the app with `openCustomPage`,
+> which attaches the session), and the unauthenticated one is
+> `{BASE_URL}/custom/public/page/{companyId}/{path}` — the access segment and the auth parameter
+> always change together.
 >
 > ⚠️ **Migration in progress: `report` → `page`.** This route used to be `…/report/…`; that
 > segment is now reserved for the **Report Record** model (`glyvio_entity.Report`, configured in
@@ -103,6 +106,8 @@ Once the operator has answered the "ask first" question above and there's a conc
 - **No `AppUser` session exists for an external user** — use `glyvio_core.entityService.saveEntityWithoutPermission(entity)` / `saveListWithoutPermission([...])` (not `saveEntity`/`saveList`, which check permissions against a session that doesn't exist here).
 - **NOT NULL FK to `AppUser` on content the external user "creates"** (e.g. an audit/timeline entry with a mandatory `userId`): resolve a stable system/service `AppUser` once (by name, cached) to satisfy the FK, and — if the real external identity's name should be *displayed* — add a separate nullable `authorName`-style field alongside it, populated from the resolution chain. Reads should prefer the nullable display name when present, falling back to the system user's name for content that didn't originate externally.
 - **Pre-generate ids with `glyvio_core.uuidService.v4()`** before a save whenever a just-created id is needed later in the same request (e.g. to link a second entity to it) — this pattern already exists elsewhere in Glyvio server code; it's not external-API-specific but comes up constantly here because external creates often need to link a freshly-created id to another freshly-created row in the same request. `glyvio_core.entityService.saveListWithoutPermission([entityA, entityB, ...])` saves a mixed batch in one call when both need to land together (verified: batch saves of unrelated entity types in one array do work).
+- **FKs are validated inside the same batch.** A mixed `saveListWithoutPermission([...])` works for unrelated entities, but a row pointing to *another row of the same batch* through a checked FK can fail with `400 invalid_value_for_field` (confirmed: `person.main_person_contact_id` → a `person_contact` saved in the same list). Save the batch without that FK, then set it afterwards (`entityService.saveInputWithoutPermission({ main_person_contact_id }, 'person', personId)`).
+- **Serialize "claim a unit" writes with `glyvio_core.lockService` — it fails fast, it doesn't wait.** For reservations/stock claims, acquire one lock per unit (e.g. `` `myplugin:stock:${id}` ``), in sorted id order to avoid deadlocks, re-check availability *after* acquiring, and release in `finally`. When another request holds the lock, `acquireLock` does **not** block: the request ends with `400 {"errors":[{"reason":"cannot_acquire_lock"}]}` (confirmed: 4 simultaneous reservations of the same item → 1 success, 3 × `cannot_acquire_lock`). Document `cannot_acquire_lock` in the API contract as "retry". Open question: the lock is released in `finally`, before the transaction commits — a request landing exactly in that window could still read pre-commit state.
 - **Set `userGroupId` on every new entity before saving.** There is no AppUser session to infer it from here: resolve the authorized group from the external identity's already-validated business scope, or inherit it from the owner entity for child/join records. Never accept a client-supplied group id as the authorization decision and never default it blindly to `core_admin`.
 
 ---
@@ -118,6 +123,8 @@ None of this is Angular-specific; adapt the mechanism (interceptor, middleware, 
    - `401`/`403`, or a `400` whose body reports a token-related reason → treat as "access denied" / force re-auth.
    - A `428` with an empty body → the company/environment is still initializing; retry with backoff (a few attempts, capped), not an immediate hard failure.
    - A `400` with a specific business-error `reason` → surface that reason as a user-facing message, don't lump it in with access-denied handling.
+   - **Real body shapes (confirmed live):** a `throw new glyvio_core.GlyvioError({ message: 'not_found' })` reaches the client as `400 {"type":"validation","errors":[{"reason":"not_found","args":{"jsMessage":"not_found",...}}]}` — the code is in `errors[0].reason`, not in a top-level `message`. A missing token is `401`; an invalid/revoked token (or a token the platform can't resolve to an `ExternalUser`) is `403 {"type":"permission","permission":"non_informed"}`. Platform-raised errors use the same `validation` shape with their own reason (e.g. `cannot_acquire_lock`, `invalid_value_for_field`, `invalid_query`). Throwing short, stable codes as the `GlyvioError` message gives the frontend a clean `reason` to switch on.
+   - Keys whose value is `null` are **omitted** from JSON responses — the client must treat "missing" and `null` as the same.
    (The exact status/reason table is project-specific — this is the *shape* to build, not literal values to copy.)
 
 ---

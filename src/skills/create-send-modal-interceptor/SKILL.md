@@ -26,7 +26,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
    - Create a file `src/interceptors/views/spy_interceptor.ts`.
    - Implement `SpyInterceptor` extending `<TargetBaseInterceptorClass>` to capture the `design` in `getDesign(state: <TargetStateClass>, design: glyvio_core.SimpleSendModalDesign)`:
      ```typescript
-     export class SpyInterceptor extends <TargetBaseInterceptorClass> {
+     export class SpyInterceptor extends <TargetBaseInterceptorClass> { // the specialized interceptor of the target, or the family base WITH its generics
        override getListenerId(): string {
          return '<plugin>_SpyInterceptor';
        }
@@ -35,7 +35,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
        }
        override getDesign(state: <TargetStateClass>, design: glyvio_core.SimpleSendModalDesign): void {
          if (typeof window !== 'undefined') {
-           (window as any).__finalDesign = JSON.parse(JSON.stringify(design));
+           (globalThis as unknown as { __finalDesign?: unknown }).__finalDesign = JSON.parse(JSON.stringify(design));
            console.log("SPY_INTERCEPTOR: Design captured successfully!", JSON.stringify(design));
          }
        }

@@ -1,7 +1,7 @@
-require('dotenv').config({ path: '<local-path>' });
+const TEST_ENV = require('./test_env');
 const { chromium } = require('playwright');
 
-const shot = (n) => '<local-path>' + n;
+const shot = (n) => TEST_ENV.shotDir + '/dbg_' + n;
 
 (async () => {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });

@@ -1,3 +1,4 @@
+const TEST_ENV = require('./test_env');
 require('dotenv').config();
 const { chromium } = require('playwright');
 
@@ -15,7 +16,7 @@ const { chromium } = require('playwright');
       if (u.hostname.includes('glyvio') && !u.hostname.includes('app-beta')) hosts.add(u.hostname + ' :: ' + u.pathname.split('/').slice(0,3).join('/'));
     } catch(e) {}
   });
-  await page.goto('https://app.example.com', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.goto(TEST_ENV.appUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForTimeout(15000);
   console.log([...hosts].join('\n'));
   await browser.close();

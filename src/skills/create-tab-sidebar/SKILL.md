@@ -4,6 +4,10 @@ description: "Generates a standard tabbed details sidebar panel container, manag
 ---
 # Agent Skill: Create Custom TabSidebar View in Glyvio
 
+> **Padrão visual moderno:** monte o conteúdo com `glyvio_core.ui` e `SurfaceDesign`/`StackLayoutDesign`/`GridLayoutDesign`
+> (guia `@@REFERENCES@@/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
+> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`@@REFERENCES@@/i18n.md`) e prints em 1440×900 e 390×844.
+
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional tabbed sidebar panel drawer (extending `TabSidebar`) within a Glyvio plugin project.
 
 ---

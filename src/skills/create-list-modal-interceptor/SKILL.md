@@ -1,6 +1,6 @@
 ---
 name: create-list-modal-interceptor
-description: "Generates a custom class extending an abstract `SimpleListModalInterceptor` to dynamically modify list modal layouts, cell style rendering, database query filters, sidebar layouts, and sidebar load actions, and registers it."
+description: "Generates a custom class extending an abstract `SimpleListModalInterceptor` to dynamically modify list modal layouts, cell style rendering, database query filters, and the left/right sidebar panels (filters), and registers it."
 ---
 # Agent Skill: Create SimpleListModal Interceptor in Glyvio
 
@@ -11,7 +11,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
 ## 🎯 Skill Metadata
 
 - **Name**: `create_list_modal_interceptor`
-- **Description**: Generates a custom class extending an abstract `SimpleListModalInterceptor` to dynamically modify list modal layouts, cell style rendering, database query filters, sidebar layouts, and sidebar load actions, and registers it.
+- **Description**: Generates a custom class extending an abstract `SimpleListModalInterceptor` to dynamically modify list modal layouts, cell style rendering, database query filters, and the left/right sidebar panels (filters), and registers it.
 - **Audience**: AI agents or developers with write access to a Glyvio plugin codebase.
 
 ---
@@ -26,7 +26,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
    - Create a file `src/interceptors/views/spy_interceptor.ts`.
    - Implement `SpyInterceptor` extending `<TargetBaseInterceptorClass>` to capture the `design` in `getDesign(state: <TargetStateClass>, design: glyvio_core.SimpleListModalDesign)`:
      ```typescript
-     export class SpyInterceptor extends <TargetBaseInterceptorClass> {
+     export class SpyInterceptor extends <TargetBaseInterceptorClass> { // the specialized interceptor of the target, or the family base WITH its generics
        override getListenerId(): string {
          return '<plugin>_SpyInterceptor';
        }
@@ -35,7 +35,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
        }
        override getDesign(state: <TargetStateClass>, design: glyvio_core.SimpleListModalDesign): void {
          if (typeof window !== 'undefined') {
-           (window as any).__finalDesign = JSON.parse(JSON.stringify(design));
+           (globalThis as unknown as { __finalDesign?: unknown }).__finalDesign = JSON.parse(JSON.stringify(design));
            console.log("SPY_INTERCEPTOR: Design captured successfully!", JSON.stringify(design));
          }
        }
@@ -107,7 +107,7 @@ To run this skill, the agent must obtain or ask for the following inputs:
    - **Modal Design Modifications**: Customize headers, app bars, or sidebar filters.
    - **Cell Layout Modifications**: Customize rendering styles or color themes for specific row items.
    - **Query Modifications**: Enforce additional query restrictions (e.g., workspace-specific filters) or ordering.
-   - **Sidebar Configurations**: Return or modify left/right sidebars or intercept dynamic sidebar load events.
+   - **Sidebar Configurations**: Return or modify the left/right sidebar panels (`getLeftSidebar`/`getRightSidebar`, typed `WidgetDesign`).
 
 ---
 
@@ -233,8 +233,8 @@ export class <InterceptorClassName> extends <TargetBaseInterceptorClass> {
    */
   override getLeftSidebar(
     state: <TargetStateClass>,
-    design: glyvio_core.SimpleListSidebarModalDesign | undefined,
-  ): glyvio_core.SimpleListSidebarModalDesign | undefined {
+    design: glyvio_core.WidgetDesign | undefined,
+  ): glyvio_core.WidgetDesign | undefined {
     return design;
   }
 
@@ -243,23 +243,9 @@ export class <InterceptorClassName> extends <TargetBaseInterceptorClass> {
    */
   override getRightSidebar(
     state: <TargetStateClass>,
-    design: glyvio_core.SimpleListSidebarModalDesign | undefined,
-  ): glyvio_core.SimpleListSidebarModalDesign | undefined {
+    design: glyvio_core.WidgetDesign | undefined,
+  ): glyvio_core.WidgetDesign | undefined {
     return design;
-  }
-
-  /**
-   * Hook called when a left sidebar load action is triggered.
-   */
-  override async loadLeftSidebar(state: <TargetStateClass>, item: glyvio_entity.<TargetEntityName>): Promise<void> {
-    // 💡 Example: Fetch extra information to populate leftState
-  }
-
-  /**
-   * Hook called when a right sidebar load action is triggered.
-   */
-  override async loadRightSidebar(state: <TargetStateClass>, item: glyvio_entity.<TargetEntityName>): Promise<void> {
-    // 💡 Example: Fetch extra information to populate rightState
   }
 
   /**

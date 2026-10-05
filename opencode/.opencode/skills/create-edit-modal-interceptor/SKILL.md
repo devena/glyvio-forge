@@ -5,6 +5,10 @@ description: "Generates a custom class extending an abstract `SimpleEditModalInt
 <!-- Generated from src/skills/create-edit-modal-interceptor/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Edit Modal Interceptor in Glyvio
 
+> **Padrão visual moderno:** ao reorganizar o design de uma tela existente, siga `.opencode/references/modern_layout.md` e
+> **preserve as `key`s** que outros interceptors procuram com `findWidgetByKey` (widgets com key podem ir para dentro de
+> um card; renomear a key quebra outros plugins em runtime).
+
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register an interceptor/listener to customize the behavior of an existing `SimpleEditModal` view in another project.
 
 ---
@@ -27,7 +31,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
    - Create a file `src/interceptors/views/spy_interceptor.ts`.
    - Implement `SpyInterceptor` extending `<TargetBaseInterceptorClass>` to capture the `design` in `getDesign(state: <TargetStateClass>, design: glyvio_core.SimpleEditModalDesign)`:
      ```typescript
-     export class SpyInterceptor extends <TargetBaseInterceptorClass> {
+     export class SpyInterceptor extends <TargetBaseInterceptorClass> { // the specialized interceptor of the target, or the family base WITH its generics
        override getListenerId(): string {
          return '<plugin>_SpyInterceptor';
        }
@@ -36,7 +40,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
        }
        override getDesign(state: <TargetStateClass>, design: glyvio_core.SimpleEditModalDesign): void {
          if (typeof window !== 'undefined') {
-           (window as any).__finalDesign = JSON.parse(JSON.stringify(design));
+           (globalThis as unknown as { __finalDesign?: unknown }).__finalDesign = JSON.parse(JSON.stringify(design));
            console.log("SPY_INTERCEPTOR: Design captured successfully!", JSON.stringify(design));
          }
        }
@@ -196,7 +200,7 @@ export class <InterceptorClassName> extends <TargetBaseInterceptorClass> {
    * Hook called prior to database save operations.
    * Modifies the queue or performs pre-save side effects.
    */
-  override async onSave(state: <TargetStateClass>, queue: glyvio_entity.EntityServiceQueue): Promise<void> {
+  override async onSave(state: <TargetStateClass>, queue: glyvio_core.EntityServiceQueue): Promise<void> {
     // 💡 Example: Set auditing info or validate custom rules
   }
 

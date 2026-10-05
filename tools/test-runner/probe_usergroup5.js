@@ -1,6 +1,7 @@
+const TEST_ENV = require('./test_env');
 const C = require('./financial_common');
 
-const GROUP_ID = '00000000-0000-0000-0000-000000000000'; // "Integrador" user group
+const GROUP_ID = TEST_ENV.userGroupId; // "Integrador" user group
 
 (async () => {
   const { browser, page } = await C.launch();

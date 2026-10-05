@@ -21,13 +21,30 @@
 | **Sidebar com Abas**| `TabSidebarDesign` | Container lateral de abas | `create-tab-sidebar` |
 | **Carrinho Simples**| `SimpleCartDesign` | Drawer de carrinho / seleção temporária | `create-simple-cart` |
 | **Carrinho em Lote**| `SimpleBatchCartDesign` | Drawer de carrinho estilo planilha em lote | `create-simple-batch-cart` |
-| **Master-Detail** | `SimpleMasterDetailPageDesign` | Lista/árvore à esquerda + painel de detalhe à direita, cada lado com refresh próprio | Sem skill dedicada ainda — ver `component_catalog_full.md §16` |
+| **Assistente em passos** | `SimpleWizardModal` + `StepperDesign` | Modal com stepper, Voltar/Avançar e validação por passo (cadastro guiado, importação) | `create-wizard-modal` (genérico) / `create-import-wizard` (importação de planilha) |
+| **Master-Detail** | `SimpleMasterDetailPageDesign` | Lista/árvore à esquerda + painel de detalhe à direita, cada lado com refresh próprio | `create-master-detail-page` (+ `create-side-panel`) |
+| **Dashboard (no app)** | `SimpleDashboardPageDesign` | Seções de células (KPI, gráfico, tabela) carregadas por chave | `create-dashboard-page` |
+| **Mapa** | `SimpleMapPageDesign` | Pins por latitude/longitude, carregados pela área visível | `create-map-page` |
+| **Formulário em tela cheia** | `SimpleEditPageDesign` | Formulário longo/configurações, seções ou abas | `create-edit-page` |
+| **Fluxo / Processo** | `SimpleWorkflowPageDesign` | Grafo de etapas com links rotulados e "+ etapa" | `create-workflow-page` |
+| **Sidebar com tabela** | `SimpleTableSidebarDesign` | Registros relacionados com busca, filtros rápidos e grupos | `create-table-sidebar` |
+| **Painel embutido** | `SimpleSidePanelDesign` + `SidePanelReferenceDesign` | Painel independente dentro de cart, modal ou master-detail | `create-side-panel` |
+| **Diálogos prontos** | `SimpleChoiceModalRoute`, `*TextfieldModalRoute`, `showConfirmation*` | Escolher opção, digitar um valor, confirmar, progresso | `use-builtin-dialogs` |
+| **Ação rápida (menu)** | `menuRegistryService.addAction` | Item `ACTION` do menu/favoritos/Ctrl+K/Jeannie que executa código | `create-quick-action` |
 
 ---
 
+## 🧱 Padrão Visual Moderno (use em telas novas)
+
+- **Blocos prontos**: `glyvio_core.ui` — `page`, `card`, `grid`, `row`/`column`/`grow`, `stat` (KPI), `listRow`/`list`, `badge`, `iconTile`, `banner`, `option`, `field`/`fields`, `button`.
+- **Layouts modernos**: `SurfaceDesign` (card/painel/tile, `surface: 'card'|'muted'|'inverse'|'<COR>'`), `StackLayoutDesign` + `StackItemDesign` (gap constante, `flex`), `GridLayoutDesign` + `GridItemDesign` (12 colunas, responsivo pela largura do próprio grid).
+- **Filtro lateral / linha de filtros**: `FilterSidebar.section(...)` em `filterSectionsDesign` + `getActiveFilterChips`/`clearFilter`; filtros rápidos em `SimpleTableSidebar.getQuickFilters`.
+- **Abas / passos / escolhas**: `SegmentedControlDesign` (`variant: 'underline'|'pill'`, `actionKeyOnSelect`).
+- Guias: [modern_layout.md](./references/modern_layout.md), [filters_and_headers.md](./references/filters_and_headers.md), [i18n.md](./references/i18n.md).
+
 ## 🎨 Principais Widgets Atômicos & Containeres
 
-- **Status / Pills**: `ChipDesign` (badge colorido com texto) — *Atenção: evite condicionais Handlebars aninhadas dentro do texto; resolva a cor/label no TypeScript*.
+- **Status / Pills**: `BadgeCellDesign` (`ui.badge`, `variant: 'subtle'`, `dot`, `icon`) para status de leitura; `ChipDesign` (badge colorido com texto, `onTap`/`onTapDelete`) para chips interativos — *Atenção: evite condicionais Handlebars aninhadas dentro do texto; resolva a cor/label no TypeScript*.
 - **Totalizadores / Métricas**: `HorizontalTotalizerBoxDesign` ou `TwoLinesTotalizerBoxDesign`
 - **Pessoas / Usuários**: `AvatarDesign` ou `UserGroupDesign`
 - **Layouts**: `RowLayoutDesign` (horizontal), `ColumnLayoutDesign` (vertical), `TableLayoutDesign` (grade), `TreeLayoutDesign` (árvore hierárquica retrátil)

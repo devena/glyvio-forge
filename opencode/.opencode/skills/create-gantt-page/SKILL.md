@@ -66,7 +66,7 @@ To run this skill, the agent must obtain or ask for the following inputs:
 5. **Group Field on Target Entity** (e.g., `statusId`, `sprintId`): FK linking the bar entity to its group.
 6. **Start/End Date Fields** (e.g., `startTime`/`endTime`): Real `DateTime` columns on the target entity. **Confirm these actually exist and are populated before generating this page** — see rule 7 below.
 7. **Title Field** (e.g., `name`, `code`): What text renders on the bar.
-8. **Menu Group** (e.g., `Administration` group key: `main-admin`): Where to place the menu item.
+8. **Menu Group** (a namespaced group of your plugin, e.g. `my_plugin.main`; settings screens go to the admin screen — see `register-menu-and-admin`): Where to place the menu item.
 
 ---
 
@@ -87,7 +87,7 @@ The executing agent MUST strictly adhere to these rules:
    - `$T{...}` → Translation/i18n key.
 7. **The target entity needs real, populated start/end `DateTime` columns.** Unlike Kanban (which only needs a status FK), a Gantt bar is meaningless without a date range. If the entity doesn't have them yet, **stop and ask the user** whether to add a schema migration (`modify-manifest` skill) before generating this page — do not invent synthetic dates as a permanent solution; that's only acceptable for a throwaway validation page, never for a shipped feature.
 8. **Nullable entity getters vs. non-null design fields**: entity getters (e.g. `item.status?.color`) are frequently typed `string | null`, while some design fields you'll plug them into (e.g. `AvatarDesign.colorTheme?: string`, no `null`) are not. Coerce with `?? undefined` at the assignment site — a raw `null` there is a real, confirmed TypeScript compile error (`TS2322`), not just a lint nit.
-9. **`SimpleGanttBarChange`/`_ON_BAR_CHANGE` wire contract is flat**: the bridge action's `data` object carries `groupKey`/`start`/`end` as top-level keys (not nested under a `change` object). If you ever touch the underlying `SimpleGanttPage`/Dart cubit code (framework-level, not plugin-level), keep both sides byte-for-byte in sync — a mismatched key here fails silently as a bad/undefined date on the Dart side rather than a compile error.
+9. **Read a bar change through `SimpleGanttBarChange` only**: the drag-to-reschedule handler receives the change already typed (`groupKey`, `start`, `end`); use those fields as given instead of reading raw action data.
 10. **Don't forget the barrel export.** After creating the file, if the plugin's `src/index.ts` (or a routines/views barrel it re-exports) uses `export * from './path/to/file'` for sibling pages, add the same line for your new file. A page whose **route** is registered (`routerService.loadRoutes([...])`) but whose **class** was never re-exported through the barrel reaches the global runtime object incompletely — navigating to it throws `Class (<PageName>) of namespace <namespace> not found` at runtime, even though everything compiled cleanly. This is a real bug this exact pattern produced once already; always double-check the export, not just the route registration.
 
 ---
@@ -116,7 +116,7 @@ If routes for this plugin are declared via `export *` barrels (see rule 10 above
 ### Step 3: Register the Main Navigation Menu Item
 
 ```typescript
-glyvio_core.FullMenuPage.fullMenuGroupAdd({
+glyvio_core.menuRegistryService.addGroup({
   key: 'group_key',
   name: 'Group Name',
   position: 100, // Customize positioning
@@ -389,7 +389,7 @@ export class <EntityName>GanttPage extends glyvio_core.SimpleGanttPage<
   async onBarChange(
     state: <EntityName>GanttPageState,
     change: glyvio_core.SimpleGanttBarChange,
-    queue: glyvio_entity.EntityServiceQueue,
+    queue: glyvio_core.EntityServiceQueue,
     item: glyvio_entity.<EntityName>,
   ): Promise<void> {
     const input: Record<string, unknown> = {

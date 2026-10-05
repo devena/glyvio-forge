@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '<local-path>' });
+const TEST_ENV = require('./test_env');
 const { chromium } = require('playwright');
 const fs = require('fs');
 
@@ -68,16 +68,16 @@ function unwrap(v) {
   const cb = screens[0]?.callbackId;
 
   const design = unwrap(await page.evaluate((cb) => window.__GLYVIO_AI__.getDesign(cb), cb));
-  fs.writeFileSync('<local-path>', JSON.stringify(design, null, 2));
+  fs.writeFileSync(TEST_ENV.shotDir + '/entry_table_design.json', JSON.stringify(design, null, 2));
   console.log('design written, length:', JSON.stringify(design).length);
 
   const state = unwrap(await page.evaluate((cb) => window.__GLYVIO_AI__.getState(cb), cb));
-  fs.writeFileSync('<local-path>', JSON.stringify(state, null, 2));
+  fs.writeFileSync(TEST_ENV.shotDir + '/entry_table_state.json', JSON.stringify(state, null, 2));
 
   const errs = await page.evaluate((cb) => window.__GLYVIO_AI__.getErrors({ callbackId: cb, limit: 20 }), cb);
   console.log('errors:', JSON.stringify(errs));
 
-  await page.screenshot({ path: '<local-path>' });
+  await page.screenshot({ path: TEST_ENV.shotDir + '/diag_entry_table.png' });
 
   await browser.close();
 })().catch((e) => { console.error('SCRIPT ERROR', e.message); process.exit(1); });

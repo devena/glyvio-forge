@@ -1,8 +1,8 @@
-require('dotenv').config({ path: '<local-path>' });
+const TEST_ENV = require('./test_env');
 const { chromium } = require('playwright');
 const fs = require('fs');
 
-const SHOT_DIR = '<local-path>';
+const SHOT_DIR = TEST_ENV.shotDir;
 const LOCAL_BUNDLE = 'http://localhost:3100/bundle.js';
 const NS = 'financial';
 
@@ -163,7 +163,7 @@ function record(step, ok, detail) {
       if (financialRoutes.length > 0) break;
       await page.waitForTimeout(1000);
     }
-    fs.writeFileSync('<local-path>', JSON.stringify(financialRoutes, null, 2));
+    fs.writeFileSync(TEST_ENV.shotDir + '/financial_routes.json', JSON.stringify(financialRoutes, null, 2));
     record('listRoutes (financial namespace)', financialRoutes.length > 0, `${financialRoutes.length} routes found`);
 
     // ---- 1. Dashboard ----
@@ -268,10 +268,10 @@ function record(step, ok, detail) {
       shotIdx++;
     }
 
-    fs.writeFileSync('<local-path>', JSON.stringify(results, null, 2));
+    fs.writeFileSync(TEST_ENV.shotDir + '/verify_results.json', JSON.stringify(results, null, 2));
   } catch (e) {
     console.error('SCRIPT ERROR', e.message);
-    fs.writeFileSync('<local-path>', JSON.stringify(results, null, 2));
+    fs.writeFileSync(TEST_ENV.shotDir + '/verify_results.json', JSON.stringify(results, null, 2));
     process.exitCode = 1;
   } finally {
     await browser.close();

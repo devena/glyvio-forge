@@ -1,177 +1,125 @@
 <!-- Generated from src/examples/app/simple_map_page_example.md by tools/generate.py. Edit the source, not this file. -->
 # Simple Map Page Example
 
-This example demonstrates how to implement a custom map page using `glyvio_core.SimpleMapPage` to display geolocation points of `AppUser` entities. It showcases custom routing, state definition, map viewport query filtering, cell/marker layout configuration, and interceptor support.
+A map page (`glyvio_core.SimpleMapPage`) that plots `Address` records (which have `latitude`/`longitude`
+`Decimal` columns) as pins, loading only the records inside the visible area. Generated from the
+`create-map-page` skill and compiled against `@types/glyvio_core.d.ts`; the interceptor counterpart
+is in the `create-map-page-interceptor` skill.
+
+Key points:
+
+- `populateAreaFilter` restricts both coordinates with `addFilterBetween` (its parameters are the
+  **global** `Decimal` type).
+- The query uses the real `QueryBuilder` API (`setFromEntity`, `addFilterOperator`, `addFilterILike`,
+  `addFilterBetween`, `addFilter(new glyvio_core.QueryBuilderFilter({ ors }))`). There is no
+  `addSelect`, `filter()`, `.equals()` or `.like()`.
+- No `any`: entity getters are typed (`item.latitude?.toNumber()`).
 
 ```typescript
-// Define state filters for the sidebar
-export interface AppUserMapFilter extends glyvio_core.SimpleMapPageStateFilter {
-  role?: string;
-  isActive?: boolean;
+export interface AddressMapFilter extends glyvio_core.SimpleMapPageStateFilter {
+  city?: string;
 }
 
-// Define route parameters
-export interface AppUserMapRouteParams extends glyvio_core.SimpleMapPageRouteParams<AppUserMapFilter> {}
+export interface AddressMapRouteParams extends glyvio_core.SimpleMapPageRouteParams<AddressMapFilter> {}
 
-// Define the page state
-export interface AppUserMapPageState extends glyvio_core.SimpleMapPageState<AppUserMapRouteParams, AppUserMapFilter> {}
+export interface AddressMapPageState extends glyvio_core.SimpleMapPageState<AddressMapRouteParams, AddressMapFilter> {}
 
-// Define the route definition
-export class AppUserMapPageRoute extends glyvio_core.SimpleMapPageRoute<AppUserMapRouteParams> {
-  getRoutePath(): string {
-    return '/app-users-map';
+export class AddressMapPageRoute extends glyvio_core.SimpleMapPageRoute<AddressMapRouteParams> {
+  getRoutePermission(): glyvio_permissions.Permission | undefined {
+    return undefined;
   }
-
+  getRoutePath(): string {
+    return '/address-map';
+  }
   getRouteNameSpace(): string {
     return 'my_plugin';
   }
-
   getRouteNameObject(): string {
-    return 'AppUserMapPage';
+    return 'AddressMapPage';
   }
 }
 
-// Implement the map page class
-export class AppUserMapPage extends glyvio_core.SimpleMapPage<AppUserMapPageState, glyvio_entity.AppUser> {
+export class AddressMapPage extends glyvio_core.SimpleMapPage<AddressMapPageState, glyvio_entity.Address> {
   constructor() {
-    super(AppUserMapPageRoute);
+    super(AddressMapPageRoute);
   }
 
-  /**
-   * Customizes the visual layout and configuration of the map page design.
-   */
-  getDesign(state: AppUserMapPageState, design: glyvio_core.SimpleMapPageDesign): void {
-    design.appBarDesign!.title = 'User Location Map';
+  async initState(state: AddressMapPageState): Promise<void> {
+    await super.initState(state);
+    state.userConfigKey = 'MY_PLUGIN_ADDRESS_MAP_PAGE';
+    await this.loadUserConfig(state);
+  }
 
-    // Add custom filter form components to the sidebar
+  async events(_state: AddressMapPageState, _action: glyvio_core.Action): Promise<glyvio_core.EventReturn> {
+    return undefined;
+  }
+
+  getDesign(state: AddressMapPageState, design: glyvio_core.SimpleMapPageDesign): void {
+    const appBar = design.appBarDesign as glyvio_core.SimpleAppBarDesign | undefined;
+    if (appBar) {
+      appBar.title = '$T{my_plugin_addressMap_title}';
+    }
     design.filterSectionsDesign?.push(
-      new glyvio_core.FormSectionDesign({
-        childDesign: new glyvio_core.ColumnLayoutDesign({
-          children: [
-            new glyvio_core.StringTextfieldDesign({
-              name: 'state.filtersSidebar.role',
-              label: 'Filter by Role',
-            }),
-          ],
+      glyvio_core.FilterSidebar.section('addressMap.filters', '$T{my_plugin_addressMap_filters}', [
+        new glyvio_core.StringTextfieldDesign({
+          name: 'state.filtersSidebar.city',
+          label: '$T{my_plugin_addressMap_city}',
         }),
-      }),
+      ]),
     );
   }
 
-  /**
-   * Generates and returns a custom map cell/pin design mapping properties
-   * of the user record to geographic coordinates.
-   */
-  getDesignForCell(state: AppUserMapPageState, item: glyvio_entity.AppUser): glyvio_core.SimpleMapCellDesign {
-    // Assume latitude and longitude are stored as properties of AppUser, or mock them
-    const latVal = (item as any).latitude ?? 0.0;
-    const lngVal = (item as any).longitude ?? 0.0;
-
+  getDesignForCell(_state: AddressMapPageState, item: glyvio_entity.Address): glyvio_core.SimpleMapCellDesign {
     return new glyvio_core.SimpleMapCellDesign({
-      title: item.name ?? 'Unknown User',
-      latitude: typeof latVal === 'object' && latVal !== null && 'toNumber' in latVal ? latVal.toNumber() : latVal,
-      longitude: typeof lngVal === 'object' && lngVal !== null && 'toNumber' in lngVal ? lngVal.toNumber() : lngVal,
-      description: item.email ?? 'No email',
+      latitude: item.latitude?.toNumber() ?? null,
+      longitude: item.longitude?.toNumber() ?? null,
+      title: item.name ?? '',
+      description: item.formattedAddress ?? '',
+      colorTheme: 'BLUE',
     });
   }
 
-  /**
-   * Configures the query builder properties to select AppUser attributes.
-   */
-  populateQueryBuilder(
-    state: AppUserMapPageState,
-    queryBuilder: glyvio_core.QueryBuilder<glyvio_entity.AppUser>,
-  ): void {
-    queryBuilder.setFromEntity(glyvio_structure.AllEntities.appUser);
-    queryBuilder.addSelect('id');
-    queryBuilder.addSelect('name');
-    queryBuilder.addSelect('email');
-
-    // Apply role sidebar filter if specified
-    if (state.filtersSidebar?.role) {
-      queryBuilder.addFilter(queryBuilder.filter().equals('role', state.filtersSidebar.role));
+  populateQueryBuilder(state: AddressMapPageState, queryBuilder: glyvio_core.QueryBuilder<glyvio_entity.Address>): void {
+    const e = glyvio_structure.AllEntities.address;
+    queryBuilder.setFromEntity(e);
+    queryBuilder.addFilterOperator(e.deleted, false);
+    if (state.filtersSidebar?.city) {
+      queryBuilder.addFilterILike(e.city, state.filtersSidebar.city);
     }
   }
 
-  /**
-   * Creates search filters based on search bar text query.
-   */
-  populateMainFilter(state: AppUserMapPageState, text: string): glyvio_core.QueryBuilderFilter {
-    const qb = new glyvio_core.QueryBuilder<glyvio_entity.AppUser>();
-    return qb.filter().or([qb.filter().like('name', `%${text}%`), qb.filter().like('email', `%${text}%`)]);
+  populateMainFilter(_state: AddressMapPageState, text: string): glyvio_core.QueryBuilderFilter {
+    const e = glyvio_structure.AllEntities.address;
+    return new glyvio_core.QueryBuilderFilter({
+      ors: [
+        new glyvio_core.QueryBuilderFilterILike({ field: e.name, value: text }),
+        new glyvio_core.QueryBuilderFilterILike({ field: e.formattedAddress, value: text }),
+      ],
+    });
   }
 
-  /**
-   * Applies geographic boundaries to only load users within the visible map viewport.
-   */
   populateAreaFilter(
-    state: AppUserMapPageState,
-    queryBuilder: glyvio_core.QueryBuilder<glyvio_entity.AppUser>,
+    _state: AddressMapPageState,
+    queryBuilder: glyvio_core.QueryBuilder<glyvio_entity.Address>,
     southWestLatitude: Decimal,
     southWestLongitude: Decimal,
     northEastLatitude: Decimal,
     northEastLongitude: Decimal,
   ): void {
-    queryBuilder.addFilter(
-      queryBuilder
-        .filter()
-        .greaterThanOrEqual('latitude', southWestLatitude)
-        .lessThanOrEqual('latitude', northEastLatitude)
-        .greaterThanOrEqual('longitude', southWestLongitude)
-        .lessThanOrEqual('longitude', northEastLongitude),
-    );
+    const e = glyvio_structure.AllEntities.address;
+    queryBuilder.addFilterBetween(e.latitude, southWestLatitude, northEastLatitude);
+    queryBuilder.addFilterBetween(e.longitude, southWestLongitude, northEastLongitude);
   }
 
-  /**
-   * Event handler triggered when a user marker pin is tapped on the map interface.
-   */
-  async onCellTap(state: AppUserMapPageState, item: glyvio_entity.AppUser): Promise<void> {
-    console.log(`User marker tapped: ${item.name}`);
+  async onCellTap(_state: AddressMapPageState, item: glyvio_entity.Address): Promise<void> {
+    // e.g. await this.pushSidebar(new AddressSidebarRoute({ id: item.id! }));
   }
 
-  /**
-   * Configures reactive tracking details for updates of this model.
-   */
-  getEntityToTracking(item: glyvio_entity.AppUser): { structureName: string; objectId: string } | undefined {
+  getEntityToTracking(item: glyvio_entity.Address): { structureName: string; objectId: string } | undefined {
     return {
-      structureName: 'AppUser',
+      structureName: glyvio_structure.AllEntities.address.getStructureName(),
       objectId: item.id!,
     };
-  }
-}
-
-// Implement a corresponding Interceptor
-export class AppUserMapPageInterceptor extends glyvio_core.SimpleMapPageInterceptor<
-  AppUserMapPageState,
-  glyvio_entity.AppUser
-> {
-  getListenerRoute(): new () => glyvio_core.CoreRoute<any> {
-    return AppUserMapPageRoute;
-  }
-
-  getDesign(state: AppUserMapPageState, design: glyvio_core.SimpleMapPageDesign): void {
-    if (design.appBarDesign) {
-      design.appBarDesign.title = 'Intercepted User Map';
-    }
-  }
-
-  getDesignForCell(
-    state: AppUserMapPageState,
-    item: glyvio_entity.AppUser,
-    design: glyvio_core.SimpleMapCellDesign,
-  ): void {
-    design.colorTheme = 'GREEN';
-  }
-
-  populateQueryBuilder(
-    state: AppUserMapPageState,
-    queryBuilder: glyvio_core.QueryBuilder<glyvio_entity.AppUser>,
-  ): void {
-    queryBuilder.limit(100);
-  }
-
-  populateMainFilter(state: AppUserMapPageState, filter: glyvio_core.QueryBuilderFilter, text: string): void {
-    // Customize or override filter behavior
   }
 }
 ```

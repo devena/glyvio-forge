@@ -26,6 +26,7 @@ To run this skill, the agent must obtain or ask for the following inputs:
    - **New Entity**: Add a completely new database table.
    - **New/Modified Fields**: Add or change fields on existing entities.
    - **Sequences**: Add an auto-increment sequence and bind it to a field.
+   - **Dependencies**: Declare another plugin this one builds on (its entities, classes or services).
 2. **Parameters for Permissions**:
    - `key` (e.g., `invoice_list_page`): Unique key for the permission.
    - `subtype` (e.g., `invoice`): Context/Entity classification.
@@ -46,7 +47,7 @@ The executing agent MUST strictly adhere to these rules:
 3. **Unique Permission Keys**: The permission `key` must be globally unique inside the manifest file.
 4. **Valid Data Types**: Ensure `dataType` matches one of the supported database types: `TEXT`, `BOOLEAN`, `INTEGER`, `DECIMAL`, `TIMESTAMP`, `JSON`, etc.
 5. **Foreign Keys**: When creating a foreign key, the `entity` name must match the friendlyName of the referenced entity and the friendlyName of the field must end with `_id`.
-6. **Name length limits (confirmed, not documented anywhere else)**: `entity_dts_generator.dart` (run via `run_helper.sh`) rejects an entity `friendlyName` longer than roughly **20 characters** and a field `friendlyName` longer than roughly **30 characters**, throwing `Entity name X is too big (N)` (or the field equivalent) at generation time. Confirmed independently in two unrelated plugins — `purchase_invoice_stats` had to be shortened to `prchse_invoice_stats`, and `financial_cost_center` to `financial_costcenter`/`financial_entry_split` to `financial_split`. **Check the length of every new entity/field `friendlyName` against these limits before writing the manifest change** — going over is a hard generator failure, not a lint warning.
+6. **Name length limits (confirmed, not documented anywhere else)**: The type generator (run via `run_helper.sh`) rejects an entity `friendlyName` longer than roughly **20 characters** and a field `friendlyName` longer than roughly **30 characters**, throwing `Entity name X is too big (N)` (or the field equivalent) at generation time. Confirmed independently in two unrelated plugins — `purchase_invoice_stats` had to be shortened to `prchse_invoice_stats`, and `financial_cost_center` to `financial_costcenter`/`financial_entry_split` to `financial_split`. **Check the length of every new entity/field `friendlyName` against these limits before writing the manifest change** — going over is a hard generator failure, not a lint warning.
    - **The generator still enforces this on a `"deleted": true` entity/field in a later version** — soft-deleting an over-length entity and recreating it under a new version does **not** work around the limit; the old name is still validated. If an existing entity/field is already over the limit, the only fix is renaming it in place (a schema change to that field's own definition, following rule #1), which then requires manually updating every `.ts` file referencing the old class/property name (imports, `AllEntities.<name>`, entity class name) — there is no automated rename tool.
 7. **Verify a column actually exists before building on it, for *existing* entities**: `manifest.json` can drift from the actually-deployed schema for a given company/environment (a field declared in the manifest but never actually migrated/applied there). Confirmed multiple times in one project (`story.acceptance_criteria`, `story.story_points`, `project_task.parent_task_id` all declared but absent from a live schema, failing with `column "..." does not exist` on raw SQL). Before writing code against a field of an **existing** entity that you didn't just add yourself in this same task, do a low-cost sanity check (a scalar-only `SELECT` or a quick raw query) rather than trusting the manifest file alone.
 
@@ -63,6 +64,28 @@ Locate the `manifest.json` file in the root of the plugin project.
 ### Step 2: Apply Permissions Modification (If Required)
 
 To register a new permission (for example, to restrict access to a new view page or modal), append a new object to the root-level `"permissions"` array.
+
+### Step 2b: Declare Plugin Dependencies (If Required)
+
+The root-level `"dependencies"` array lists the plugins this plugin builds on. `glyvio_core` is always
+there. Add another plugin when your code uses its entities (`glyvio_entity.*` it creates), its exported
+classes/screens (`crm.ClientSingleTextfield`, `financial.FinancialBillingProvider`), its services
+(`sync.SyncClient`) or intercepts its screens:
+
+```json
+"dependencies": [
+  { "pluginName": "glyvio_core", "version": "latest" },
+  { "pluginName": "crm", "version": "latest" },
+  { "pluginName": "sync", "version": "latest" }
+]
+```
+
+- `pluginName` is the plugin's namespace (the global name its classes live under).
+- After changing dependencies, run `./run_helper.sh` to regenerate `@types`: each dependency becomes
+  `plugin/<layer>/@types/<pluginName>.d.ts`, and its entities join `entity.d.ts`.
+- The dependency must be installed in the company where your plugin is installed; code that
+  references a plugin not listed here fails to compile (missing types) or at runtime (missing global).
+- Do not add dependencies "just in case": each one forces its installation.
 
 ### Step 3: Apply Database Schema Migration (If Required)
 

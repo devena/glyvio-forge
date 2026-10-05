@@ -108,12 +108,15 @@ controller — never bypass the controller lifecycle.
    ```
    Never hardcode entity name strings directly.
 
-10. **SQL Injection — ALWAYS parameterize `queryService.find`, never string-interpolate a caller-supplied value into the SQL text (NON-NEGOTIABLE)**: `queryService.find<T>(sql, params?)` accepts a second `params` argument specifically so that any value coming from `request.body`, a route param, or any other caller-controlled input is bound safely instead of concatenated into the query string. A real SQL-injection bug was shipped this way in two report controllers of a production plugin (fixed by switching to parameterized calls) — treat this as a hard rule, not a style preference:
+10. **SQL Injection — ALWAYS parameterize `queryService.find`, never string-interpolate a caller-supplied value into the SQL text (NON-NEGOTIABLE)**: `queryService.find<T>(sql, params?)` uses `?` placeholders and a second `params` argument of typed values — `{ dataType: 'INTEGER' | 'DECIMAL' | 'TEXT' | 'BOOLEAN' | 'JSON' | 'DATE' | 'TIMESTAMP', value }` (`glyvio_core.queryDataType`), in placeholder order — specifically so that any value coming from `request.body`, a route param, or any other caller-controlled input is bound safely instead of concatenated into the query string. A real SQL-injection bug was shipped this way in two report controllers of a production plugin (fixed by switching to parameterized calls) — treat this as a hard rule, not a style preference:
     ```typescript
-    // ✅ Correct — value is bound as a parameter
+    // ✅ Correct — `?` placeholders, values bound as typed parameters ({ dataType, value })
     glyvio_core.queryService.find<Row>(
-      `SELECT * FROM sale WHERE company_id = $1 AND created_at >= $2`,
-      [companyId, sinceDate],
+      `SELECT * FROM sale WHERE company_id = ? AND created_at >= ?`,
+      [
+        { dataType: 'TEXT', value: companyId },
+        { dataType: 'TIMESTAMP', value: sinceDate },
+      ],
     );
 
     // ❌ WRONG — never do this with any value that isn't a literal you wrote yourself
@@ -138,6 +141,15 @@ controller — never bypass the controller lifecycle.
     ```
 
     `putController`/`getController` take the same `(visibility, controllerId[, data])` shape. There is no compile-time link between the controller's `path` and the caller's `controllerId` string, nor between `visibility` and the controller's `allow*Access` flags — a typo or a mismatched visibility silently 404s/misroutes instead of failing to build, so double-check both explicitly whenever wiring the caller side of a new controller.
+
+
+14. **Error shape the caller receives (confirmed live)**: `throw new glyvio_core.GlyvioError({ message: 'not_found' })` arrives as `400 {"type":"validation","errors":[{"reason":"not_found","args":{"jsMessage":"not_found",...}}]}` — the text you throw is in `errors[0].reason`. `GlyvioPermissionError` and auth failures arrive as `401`/`403` (`{"type":"permission",...}`). Prefer short, stable error codes as the message when a frontend has to branch on them, and document them in the API contract.
+
+15. **A `catch` does not undo a platform rollback**: when a platform call fails inside the request (a save rejected by validation, a failed `updateTags`, a failed lock), the transaction is marked rollback-only **before** the exception reaches your code. Catching and returning normally does not save the request — the response becomes `500 UnexpectedRollbackException: Transaction rolled back because it has been marked as rollback-only`, and the original message is lost. Let such exceptions propagate (the platform then answers with the real reason), or check preconditions before calling. When debugging, a bare `UnexpectedRollbackException` means "an exception was swallowed somewhere" — remove the `catch` to see the real error.
+
+16. **`glyvio_core.lockService.acquireLock(key)` fails fast**: despite the JSDoc ("blocks until the lock is acquired"), a lock held by another request makes the call fail and the request ends with `400 {"errors":[{"reason":"cannot_acquire_lock"}]}` (confirmed with 4 concurrent requests on the same key: 1 succeeded, 3 got `cannot_acquire_lock`). That is usually what you want for "claim a unit" flows (reservations): acquire one key per unit in sorted order, re-validate after acquiring, release in `finally`, and let the caller retry on `cannot_acquire_lock`.
+
+17. **Only use documented contracts.** Build calls with `restService.postController`/`getController`/`putController` (app) and the URL contract in `create-custom-page` (pages). Do not hand-build or probe other platform routes; if something you need is not in `@types/glyvio_core.d.ts`, ask the Glyvio team.
 
 ---
 
@@ -197,8 +209,8 @@ export class <ClassName> extends glyvio_core.SimpleController<void, <ResponseTyp
     // 💡 Rule #10: bind every value via `params`, never interpolate it into the SQL string —
     // even a value read from the current session/request, not just `request.body`.
     return glyvio_core.queryService.find<<ResponseTypeName>>(
-      `SELECT /* columns */ FROM /* table */ WHERE /* condition */ = $1`,
-      [/* bound value */],
+      `SELECT /* columns */ FROM /* table */ WHERE /* condition */ = ?`,
+      [{ dataType: 'TEXT', value: /* bound value */ '' }],
     );
   }
 }
@@ -306,8 +318,8 @@ export class <ClassName> extends glyvio_core.SimpleController<void, string> {
   handle(_request: glyvio_core.WebRequest<void>): string {
     // 💡 Rule #10: bind every value via `params`, never interpolate it into the SQL string.
     const data = glyvio_core.queryService.find<<DataRow>>(
-      `SELECT /* columns */ FROM /* table */ WHERE /* condition */ = $1`,
-      [/* bound value */],
+      `SELECT /* columns */ FROM /* table */ WHERE /* condition */ = ?`,
+      [{ dataType: 'TEXT', value: /* bound value */ '' }],
     );
 
     return this.buildHtml(data);
@@ -344,10 +356,9 @@ invocado pelo botão nativo de report das telas (aquele lista apenas registros
   legado ainda responde enquanto a migração não termina.
 - Para uma página HTML completa (dashboard/relatório), prefira a skill **`create-custom-page`**,
   que cobre modo de acesso, registro, URL e como expor na tela.
-- **`{BASE_URL}` não é o host do app.** Em vários ambientes a API vive em outro host (ex.: app em
-  `app.example.com`, API em `api.example.com`); apontar para o host do app devolve o
-  HTML de fallback da SPA com HTTP 200, sem erro. Descubra o valor real com
-  `discover_base_url.js` (skill `test-plugin-browser`, seção 1.5) em vez de assumir.
+- **`{BASE_URL}` não é o host do app.** Em vários ambientes a API vive em outro host; apontar para
+  o host do app devolve o HTML de fallback da SPA com HTTP 200, sem erro. Peça ao operador a URL da
+  API do ambiente em vez de assumir.
 
 Para abrir a partir de uma tela, chame `await this.openCustomPage(name, isPublic?, parameters?)`
 — o cliente Flutter resolve BASE_URL, company id e token sozinho, então **não monte a URL à mão**.

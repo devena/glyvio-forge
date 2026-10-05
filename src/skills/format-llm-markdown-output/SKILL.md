@@ -1,10 +1,10 @@
 ---
 name: format-llm-markdown-output
-description: "Constrains any LLM-facing prompt (System Tool / Custom Tool response, \"Instructions for the LLM\" block, or a JSON field the LLM fills with markdown) to the exact markdown syntax the glyvio_app renderer supports, preventing the AI Agent from producing HTML or unsupported markdown that renders as broken literal text."
+description: "Constrains any LLM-facing prompt (System Tool / Custom Tool response, \"Instructions for the LLM\" block, or a JSON field the LLM fills with markdown) to the exact markdown syntax the Glyvio app's markdown renderer supports, preventing the AI Agent from producing HTML or unsupported markdown that renders as broken literal text."
 ---
 # Agent Skill: Format LLM Markdown Output
 
-This skill applies whenever a prompt instructs the AI Agent (Jeannie) to produce text that will ultimately be **rendered to the end user as markdown inside `glyvio_app`** — a chat reply, an `Instructions for the LLM: ...` block appended by a `@SystemTool`/`@CustomTool`, or a JSON field (e.g. an alert's `description`) that is itself markdown.
+This skill applies whenever a prompt instructs the AI Agent (Jeannie) to produce text that will ultimately be **rendered to the end user as markdown inside the Glyvio app** — a chat reply, an `Instructions for the LLM: ...` block appended by a `@SystemTool`/`@CustomTool`, or a JSON field (e.g. an alert's `description`) that is itself markdown.
 
 > Use this skill together with `create-system-tool` / `create-custom-agent` whenever the tool's returned string will be shown to the user as formatted text. Do **not** use it for tools that ask the LLM to respond with strict JSON and no markdown (e.g. a tool whose instructions say "responda exclusivamente com um objeto JSON válido, sem formatação markdown") — there is nothing to constrain there.
 
@@ -12,17 +12,17 @@ This skill applies whenever a prompt instructs the AI Agent (Jeannie) to produce
 
 ## 🎯 Why this exists
 
-The end-user renderer, `TextMarkdown` (`glyvio_app/lib/widgets/text/text_markdown.dart`), uses the `gpt_markdown` package, which has **no HTML support at all**. If the LLM is told only "responda em markdown" with no further constraint, it is free to invent `<div>`, `<b>`, nested HTML, footnotes, or other syntax `gpt_markdown` doesn't recognize — none of that errors, it just prints as literal text on screen, silently breaking the UI. The fix is to always give the LLM a closed, enumerated list of what it may use.
+The app's markdown renderer has **no HTML support at all**. If the LLM is told only "responda em markdown" with no further constraint, it is free to invent `<div>`, `<b>`, nested HTML, footnotes, or other syntax the renderer doesn't recognize — none of that errors, it just prints as literal text on screen, silently breaking the UI. The fix is to always give the LLM a closed, enumerated list of what it may use.
 
 ---
 
 ## 📐 The Allowed Tag Map
 
-This is the complete set `TextMarkdown` renders. Anything outside it is NOT safe to let the LLM produce:
+This is the complete set the app's markdown renderer supports. Anything outside it is NOT safe to let the LLM produce:
 
 | Category | Syntax | Effect |
 |---|---|---|
-| Standard (gpt_markdown) | `# `, `## `, `### ` | Headings |
+| Standard markdown | `# `, `## `, `### ` | Headings |
 | | `**text**` | Bold |
 | | `*text*` / `_text_` | Italic |
 | | `~~text~~` | Strikethrough |
@@ -55,7 +55,7 @@ Only the **standard markdown** row and the **color tag** row are safe to offer a
 1. **One shared constant per plugin.** Plugins are independent codebases/builds — don't try to import across plugin repos. Each plugin that generates LLM-facing markdown gets its own local `markdown_instructions.ts` with the constant below, reused by every tool in that plugin.
 2. **Never let a tool describe the allowlist in its own words.** Free-hand descriptions drift (some tools list all 7 colors, some forget the `</>` closing rule, some allow HTML implicitly by omission). Always import and interpolate the shared constant instead of writing new prose.
 3. **Don't add attachment or user tags to this instruction.** Those are structural tags with real ids behind them — an LLM asked to "use" them will hallucinate ids that don't exist.
-4. **If a new custom tag is needed**, it must be added as a `gpt_markdown` inline component in `glyvio_app/lib/widgets/text/text_markdown.dart` first, then reflected in the constant below — never invent a tag on the prompt side that the renderer doesn't know about.
+4. **Never invent a new custom tag.** A plugin cannot extend the app's renderer; a tag that is not in the table above prints as literal text.
 
 ---
 
@@ -65,13 +65,9 @@ Only the **standard markdown** row and the **color tag** row are safe to offer a
 
 ```typescript
 /**
- * Instrução compartilhada para prompts de LLM que geram texto exibido no glyvio_app via
- * `TextMarkdown` (`glyvio_app/lib/widgets/text/text_markdown.dart`), renderizado pelo pacote
- * `gpt_markdown` - que não tem suporte a HTML. Qualquer tag fora desta lista vira texto cru
+ * Instrução compartilhada para prompts de LLM que geram texto exibido como markdown no app
+ * Glyvio - o renderizador não tem suporte a HTML. Qualquer tag fora desta lista vira texto cru
  * na tela em vez de ser renderizada.
- *
- * Mantenha esta lista sincronizada com `text_markdown.dart` caso novas tags customizadas
- * (attachment, user tag, cor) sejam adicionadas ou removidas por lá.
  */
 export const MARKDOWN_ALLOWLIST_INSTRUCTION =
   'Formate o texto usando apenas: títulos (# , ##), **negrito**, *itálico*, listas (- , 1. ), tabelas (| col |), ' +

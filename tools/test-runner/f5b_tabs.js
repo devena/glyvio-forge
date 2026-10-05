@@ -1,7 +1,8 @@
+const TEST_ENV = require('./test_env');
 const C = require('./financial_common');
 
-const GROUP_ID = '00000000-0000-0000-0000-000000000000';
-const ENTRY_ID = '00000000-0000-0000-0000-000000000000'; // Conta de Internet - Agosto (overdue)
+const GROUP_ID = TEST_ENV.userGroupId;
+const ENTRY_ID = TEST_ENV.entryId; // Conta de Internet - Agosto (overdue)
 
 (async () => {
   const { browser, page } = await C.launch();

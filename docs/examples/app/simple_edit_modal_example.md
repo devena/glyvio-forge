@@ -76,6 +76,9 @@ export class CustomUserEditModal extends glyvio_core.SimpleEditModal<CustomUserE
    */
   async events(state: CustomUserEditModalState, action: glyvio_core.Action): Promise<glyvio_core.EventReturn> {
     if (action.key === 'save') {
+      if (!(await this.validateForm(state))) {
+        return 'STATE_UPDATE'; // the errors show under the fields
+      }
       await this.actionSave(state);
       return 'STATE_FREEZED';
     }
@@ -160,7 +163,7 @@ export class CustomUserEditModal extends glyvio_core.SimpleEditModal<CustomUserE
               columns: 1,
               key: 'name.formField',
               child: new glyvio_core.StringTextfieldDesign({
-                errorText: glyvio_core.TextFieldDesign.isRequired(state, 'state.appUser.name'),
+                required: true,
                 name: 'state.appUser.name',
                 label: 'Full Name',
                 autofocus: true,
@@ -170,7 +173,7 @@ export class CustomUserEditModal extends glyvio_core.SimpleEditModal<CustomUserE
               columns: 1,
               key: 'email.formField',
               child: new glyvio_core.StringTextfieldDesign({
-                errorText: glyvio_core.TextFieldDesign.isRequired(state, 'state.appUser.email'),
+                required: true,
                 name: 'state.appUser.email',
                 label: 'Email Address',
               }),

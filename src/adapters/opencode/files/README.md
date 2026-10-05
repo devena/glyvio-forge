@@ -22,3 +22,17 @@ project's `.opencode/opencode.jsonc`.
 OpenCode discovers directory-based agents and skills automatically. The generated
 `opencode.jsonc` contains only the official schema reference, so it is safe to merge
 with an existing project configuration.
+
+## Global installation from a Forge checkout
+
+To use the Forge as the shared OpenCode baseline while keeping it live as the checkout
+changes, run this from the Forge root:
+
+```bash
+python3 tools/link_opencode_global.py
+```
+
+It creates only missing symbolic links under `~/.config/opencode/` for agents, skills,
+references, scripts, the component catalog, `AGENTS.md`, and the optional MCP example.
+It never overwrites existing global files or directories. OpenCode discovers global
+agents and skills automatically; start a new session after linking or regenerating.

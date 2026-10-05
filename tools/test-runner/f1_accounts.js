@@ -1,6 +1,7 @@
+const TEST_ENV = require('./test_env');
 const C = require('./financial_common');
 
-const GROUP_ID = '00000000-0000-0000-0000-000000000000'; // "Integrador" user group (required by this company, not exposed in the form)
+const GROUP_ID = TEST_ENV.userGroupId; // "Integrador" user group (required by this company, not exposed in the form)
 
 const ACCOUNTS = [
   { name: 'Banco Itaú - Conta Corrente Principal', code: 'ITAU-01', accountType: 'CHECKING', bankCode: '341', agency: '1234', accountNumber: '56789-0', initialBalance: 15000, editExisting: true },

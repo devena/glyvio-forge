@@ -6,7 +6,7 @@ description: "Adds a \"Links\" section to an existing sidebar (or tab-sidebar), 
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to add a "Links" (Vínculos) section to an existing `SimpleSidebar`/`TabSidebar` — a generic, entity-type-agnostic way to attach/detach references to other records (e.g. a Complaint linked to a Sale and a Client, a Task linked to a Meeting).
 
-This exact ~110-line workflow has already been hand-copied at least three times across independent plugins (`glyvio-plugin-core`'s `TaskSidebar`/`TimelinePage` as the original reference, then re-implemented for `ComplaintSidebar` in `glyvio-plugin-crm` and for `MeetingSidebar` in `glyvio-plugin-travel`, each citing "same pattern as TaskSidebar/core" in its commit message). This skill exists so the next occurrence is a skill invocation instead of a fourth from-scratch copy.
+This exact ~110-line workflow has already been hand-copied at least three times across independent plugins (the core `TaskSidebar`/`TimelinePage` as the original reference, then re-implemented for `ComplaintSidebar` in `glyvio-plugin-crm` and for `MeetingSidebar` in `glyvio-plugin-travel`, each citing "same pattern as TaskSidebar/core" in its commit message). This skill exists so the next occurrence is a skill invocation instead of a fourth from-scratch copy.
 
 ---
 

@@ -112,7 +112,7 @@ def build(root: Path) -> dict[str, bytes]:
         elif destination.endswith('.toml'):
             content = f'# Generated from {origin} by tools/generate.py.\n' + content
             tomllib.loads(content)
-        elif destination.endswith('.js'):
+        elif destination.endswith(('.js', '.mjs')):
             notice = f'// Generated from {origin} by tools/generate.py.\n'
             if content.startswith('#!'):
                 first, rest = content.split('\n', 1)
@@ -183,7 +183,7 @@ def build(root: Path) -> dict[str, bytes]:
             if relative == 'architecture_rules.md' and target in {'antigravity', 'agy'}:
                 directory = 'rules'
             emit(f'{output_root}/{directory}/{relative}', render(source.read_text(), config), source)
-        for source in sorted((src / 'scripts').glob('*.js')):
+        for source in sorted(p for p in (src / 'scripts').iterdir() if p.suffix in {'.js', '.mjs'}):
             emit(f'{output_root}/scripts/{source.name}', render(source.read_text(), config), source)
         source = src / 'mcp.json'
         if config['format'] == 'codex':

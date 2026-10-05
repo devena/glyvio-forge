@@ -5,6 +5,10 @@ description: "Generates a standard details or configuration sidebar view, with l
 <!-- Generated from src/skills/create-sidebar/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom SimpleSidebar View in Glyvio
 
+> **Padrão visual moderno:** monte o conteúdo com `glyvio_core.ui` e `SurfaceDesign`/`StackLayoutDesign`/`GridLayoutDesign`
+> (guia `antigravity/rules/references/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
+> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`antigravity/rules/references/i18n.md`) e prints em 1440×900 e 390×844.
+
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional side-drawer panel / sidebar (extending `SimpleSidebar`) within a Glyvio plugin project.
 
 ---
@@ -26,7 +30,7 @@ To run this skill, the agent must obtain or ask for the following inputs:
 3. **Route Path** (e.g., `/task-type-sidebar`): The URL path (must start with `/` and be a single word/slug).
 4. **Layout Components**:
    - **Sections** (e.g., `GridSectionDesign`, `FormSectionDesign`): Sections structure for rendering the sidebar body.
-   - **Upload Support**: Whether the sidebar should allow dragging/dropping files (e.g. `allowDropFile = true`).
+   - **Upload Support**: Whether files dropped on the sidebar should be **attached** (`allowDropAttachment = true`) or have their **content read** (`FileDropAreaDesign`) — see "Dropped Files: Attach vs. Read".
 5. **Route Parameters**: Parameters passed when loading the sidebar (e.g. `entityId`, `entityName`).
 
 ---
@@ -41,6 +45,44 @@ The executing agent MUST strictly adhere to these rules:
 3. **No any or force cast**: Do not use `any` or force cast to `any` to resolve type errors. Find another way to solve the problem.
 4. **`events()` — EventReturn rule**: Every new `action.key` handler added to `events()` **must** return `'STATE_UPDATE'` when it mutates state properties directly. Use `'STATE_FREEZED'` only for navigation actions (`pushPage`, `pushModal`, `popModal`). Never return `undefined` from a newly added key — that is a silent no-op.
 5. **A table/grid-like section embedded inside a sidebar needs its own `userConfigKey`, separate from the sidebar's own**: if a `sectionsDesign` entry renders a `TableLayoutDesign`/`TableSectionDesign` or grid with user-configurable columns/layout (not just the sidebar's own `state.userConfigKey` set in `initState`), that section needs a distinct `userConfigKey` of its own so column/layout preferences persist independently of the sidebar shell. This has been retrofitted after the fact in multiple plugins because it's easy to assume the sidebar-level `userConfigKey` already covers an embedded table — it doesn't cover per-widget config the same way a full `SimpleTablePage` does. Set it explicitly wherever a sidebar embeds a configurable table/grid.
+
+---
+
+## 📎 Dropped Files: Attach vs. Read
+
+Two different features accept a dragged file — pick by what the file is **for**:
+
+| Goal | Use | Callback | Wiring |
+| --- | --- | --- | --- |
+| **Attach** the file (keep it as an `Attachment` linked to a record) | `design.allowDropAttachment = true` — the whole container becomes a drop target | `onFileUploaded(state, attachment, extras)` on the view (and `attachmentOnFilesUploaded` when an `AttachmentsEditSection` is embedded) | none beyond the flag |
+| **Read** the file's content (import an OFX, CSV, XML, JSON…) | a `glyvio_core.FileDropAreaDesign` box in the body (drop **or** tap to pick), or `this.extensionsManager.file.readFiles({ extensions, as, extras })` from a button | `fileOnFilesLoaded(state, { files, rejected, extras })` — each file has `name`, `extension`, `size`, `content` (text, or base64 with `readAs: 'base64'`) | `this.extensionsManager.registerFile(this)` in the constructor + `implements glyvio_core.FileExtensionDelegate<S>` |
+
+- `allowDropFile` is the **deprecated** old name of `allowDropAttachment` (same flag, same JSON). Write `allowDropAttachment` in new code; leave existing screens alone unless you are already editing them.
+- The attach flag uploads the file to storage as a temporary attachment — it never gives you the content. Do not use it (and then download the attachment) to parse a file; use `FileDropAreaDesign`/`readFiles`.
+- The flag is honored on modals, sidebars, tab sidebars, carts and rule sections. **Pages (`SimpleEditPage`) ignore it** in the app today — on a page, put a `FileDropAreaDesign` in the body instead.
+- Text is decoded as UTF-8 with a windows-1252 fallback (Brazilian bank OFX files are often `CHARSET:1252`), so accents arrive intact. Files over `maxSizeBytes` (default 20 MB) or with another extension come back in `rejected`, not in `files`.
+
+```typescript
+// Reading an OFX dropped on the screen
+constructor() {
+  super();
+  this.extensionsManager.registerFile(this);
+}
+
+// in getDesign
+new glyvio_core.FileDropAreaDesign({
+  key: 'ofx.drop',
+  title: 'Arraste o arquivo OFX aqui',
+  subtitle: 'ou clique para escolher',
+  extensions: ['ofx'],
+});
+
+async fileOnFilesLoaded(state: S, loaded: glyvio_core.FilesLoaded): Promise<void> {
+  const [file] = loaded.files;
+  if (!file) return;
+  // file.content is the OFX text
+}
+```
 
 ---
 
@@ -138,8 +180,9 @@ export class <SidebarName>Sidebar extends glyvio_core.SimpleSidebar<<SidebarName
       ],
     });
 
-    // Enable dragging and dropping files onto the sidebar drawer
-    design.allowDropFile = true;
+    // Files dropped on the drawer are uploaded as attachments (-> onFileUploaded).
+    // To read a file's content instead, use a FileDropAreaDesign (see "Dropped Files: Attach vs. Read").
+    design.allowDropAttachment = true;
 
     design.sectionsDesign = [
       // e.g. GridSectionDesign, FormSectionDesign, ListSectionDesign
@@ -147,7 +190,7 @@ export class <SidebarName>Sidebar extends glyvio_core.SimpleSidebar<<SidebarName
   }
 
   /**
-   * Callback fired when files are dropped or uploaded via the sidebar drawer.
+   * Callback fired when a file dropped on the sidebar drawer has been uploaded as a temporary attachment.
    */
   async onFileUploaded(state: <SidebarName>SidebarState, attachment: glyvio_entity.Attachment, extras?: unknown): Promise<void> {
     // 💡 Example: Save attachment entity linkage

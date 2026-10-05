@@ -101,8 +101,7 @@ export class UserBatchCart extends glyvio_core.SimpleBatchCart<UserBatchCartStat
    */
   override getDesign(state: UserBatchCartState, design: glyvio_core.SimpleBatchCartDesign): void {
     design.appBarDesign!.title = 'Bulk User Imports & Updates';
-    design.allowUpload = true;
-    design.allowDownload = true;
+    // spreadsheet import/export buttons come from SimpleBatchCart itself (there is no allowUpload/allowDownload)
   }
 
   /**

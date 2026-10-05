@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const TEST_ENV = require('./test_env');
 
 /**
  * Glyvio AI Bridge Automated Test Runner
@@ -140,7 +141,7 @@ async function run() {
   program
     .name('glyvio-test')
     .description('Glyvio AI Bridge Test Runner for Hosted App')
-    .option('--url <url>', 'Glyvio App base URL', process.env.GLYVIO_APP_URL || 'https://app.example.com/')
+    .option('--url <url>', 'Glyvio App base URL', process.env.GLYVIO_APP_URL || TEST_ENV.appUrl)
     .option('--project <path>', 'Plugin project root directory', process.cwd())
     .option('--plugin-name <name>', 'Plugin namespace name (e.g. crm, project, travel)')
     .option('--bundle-dir <dir>', 'Directory containing dist/bundle.js')

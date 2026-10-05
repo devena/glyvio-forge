@@ -1,6 +1,6 @@
-require('dotenv').config({ path: '<local-path>' });
+const TEST_ENV = require('./test_env');
 const { chromium } = require('playwright');
-const shot = (n) => '<local-path>' + n;
+const shot = (n) => TEST_ENV.shotDir + '/' + n;
 
 async function waitBridgeReady(page, timeoutMs = 60000) {
   await page.waitForFunction(() => typeof window.__GLYVIO_AI__?.setPluginDevOverride === 'function', { timeout: timeoutMs });
@@ -23,7 +23,7 @@ async function waitBridgeReady(page, timeoutMs = 60000) {
   page.on('pageerror', (err) => console.log('[pageerror]', err.message));
 
   console.log('=== goto ===');
-  await page.goto(process.env.GLYVIO_APP_URL || 'https://app.example.com/', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.goto(process.env.GLYVIO_APP_URL || TEST_ENV.appUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await waitBridgeReady(page);
   console.log('bridge ready');
   await page.screenshot({ path: shot('f1_login_page.png') });
@@ -43,7 +43,7 @@ async function waitBridgeReady(page, timeoutMs = 60000) {
   let settled = false;
   for (let i = 0; i < 20; i++) {
     const url = page.url();
-    if (url.includes('company-select') || url === (process.env.GLYVIO_APP_URL || 'https://app.example.com/')) {
+    if (url.includes('company-select') || url === (process.env.GLYVIO_APP_URL || TEST_ENV.appUrl)) {
       settled = true;
       break;
     }

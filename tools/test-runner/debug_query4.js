@@ -1,23 +1,24 @@
+const TEST_ENV = require('./test_env');
 const { chromium } = require('playwright');
 const fs = require('fs');
 
 const CREDS = {
-  serverUrl: 'https://api.example.com',
-  companyId: '00000000-0000-0000-0000-000000000000',
-  serviceId: '00000000-0000-0000-0000-000000000000',
-  environmentId: 'env-novo',
-  email: 'inbox-user@example.com',
+  serverUrl: TEST_ENV.apiUrl,
+  companyId: TEST_ENV.companyId,
+  serviceId: TEST_ENV.serviceId,
+  environmentId: TEST_ENV.environmentId,
+  email: TEST_ENV.inboxUsername,
   senha: process.env.JEANNIE_INBOX_PASSWORD,
 };
 
-const CHAT_SESSION_IDS = ['00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000000'];
+const CHAT_SESSION_IDS = [TEST_ENV.chatSessionId, TEST_ENV.targetId];
 const SESSION_IDENTIFIERS = ['jn3-00000000-0000-0000-0000-000000000000|aae7f875', 'jn3-00000000-0000-0000-0000-000000000000|94609394'];
 
 (async () => {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'pt-BR', ignoreHTTPSErrors: true });
   const page = await context.newPage();
-  await page.goto('https://jeannie.example.com/jeannie/index.html', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.goto(TEST_ENV.jeannieUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForTimeout(1000);
   await page.evaluate((creds) => localStorage.setItem('jeannie.inboxTest.settings', JSON.stringify(creds)), CREDS);
   await page.reload({ waitUntil: 'domcontentloaded' });
@@ -47,7 +48,7 @@ const SESSION_IDENTIFIERS = ['jn3-00000000-0000-0000-0000-000000000000|aae7f875'
   }, { csIds: CHAT_SESSION_IDS, sIdents: SESSION_IDENTIFIERS });
 
   fs.writeFileSync(
-    '<local-path>',
+    TEST_ENV.shotDir + '/42_chat_message_check.json',
     JSON.stringify(result, null, 2)
   );
   console.log(JSON.stringify(result, null, 2));

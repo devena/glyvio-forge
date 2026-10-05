@@ -5,6 +5,10 @@ description: "Generates a standard entity search and selection modal, with cell 
 <!-- Generated from src/skills/create-list-modal/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom SimpleListModal View in Glyvio
 
+> **Padrão visual moderno:** monte o conteúdo com `glyvio_core.ui` e `SurfaceDesign`/`StackLayoutDesign`/`GridLayoutDesign`
+> (guia `antigravity/rules/references/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
+> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`antigravity/rules/references/i18n.md`) e prints em 1440×900 e 390×844.
+
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional list search and selection modal (extending `SimpleListModal`) within a Glyvio plugin project.
 
 ---
@@ -141,26 +145,78 @@ export class <EntityName>ListModal extends glyvio_core.SimpleListModal<
     const appBar = design.appBarDesign as glyvio_core.SimpleAppBarDesign;
     appBar.title = 'Select <EntityName>';
 
-    // Configure sidebar filter layout
-    design.filterSectionsDesign?.push(
+    // Search box (the base already put a developer section in headerDesign: push, do not replace)
+    design.headerDesign ??= [];
+    design.headerDesign.push(
       new glyvio_core.FormSectionDesign({
-        key: 'filters.section',
-        childDesign: new glyvio_core.FormLayoutDesign({
-          key: 'filter.layout',
-          columnSize: 280,
+        key: 'main.text.section',
+        childDesign: new glyvio_core.RowLayoutDesign({
+          key: 'main.text.layout',
+          crossAlignment: 'CENTER',
           children: [
-            new glyvio_core.FormLayoutFieldDesign({
-              key: 'showInactive.formField',
-              child: new glyvio_core.BooleanTextfieldDesign({
-                key: 'showInactive.textfield',
-                name: 'state.filtersSidebar.showInactive',
-                label: 'Show Inactive',
+            new glyvio_core.RowLayoutFieldDesign({
+              key: 'main.text.formField',
+              isExpanded: true,
+              child: new glyvio_core.StringTextfieldDesign({
+                key: 'main.text.textfield',
+                name: 'state.text',
+                label: 'Search',
+                onSubmittedAction: new glyvio_core.Action({ key: 'onTapFind' }),
               }),
+            }),
+            new glyvio_core.ActionButtonDesign({
+              key: 'moreFilters.button',
+              type: 'SECONDARY',
+              variant: 'ghost',
+              iconName: 'sax_linear_filter',
+              action: new glyvio_core.Action({ key: 'moreFilters' }),
             }),
           ],
         }),
       }),
     );
+  }
+
+  /**
+   * Filters panel (opened by the "moreFilters" button). Modals have no filterSectionsDesign:
+   * filters live in a side panel returned here, bound to state.filtersSidebar.*.
+   */
+  getRightSidebar(_state: <EntityName>ListModalState): glyvio_core.SimpleSidePanelDesign | undefined {
+    return new glyvio_core.SimpleSidePanelDesign({
+      width: 360,
+      appBarDesign: new glyvio_core.SimpleAppBarDesign({
+        key: 'filters.appBar',
+        title: 'Filters',
+        buttons: [
+          new glyvio_core.ActionButtonDesign({
+            key: 'onTapFind.button',
+            type: 'SECONDARY',
+            variant: 'ghost',
+            iconName: 'sax_linear_search_normal_1',
+            action: new glyvio_core.Action({ key: 'onTapFind' }),
+          }),
+        ],
+      }),
+      sectionsDesign: [
+        new glyvio_core.FormSectionDesign({
+          key: 'filters.section',
+          childDesign: new glyvio_core.FormLayoutDesign({
+            key: 'filter.layout',
+            columnSize: 280,
+            children: [
+              new glyvio_core.FormLayoutFieldDesign({
+                key: 'showInactive.formField',
+                child: new glyvio_core.BooleanTextfieldDesign({
+                  key: 'showInactive.textfield',
+                  name: 'state.filtersSidebar.showInactive',
+                  label: 'Show Inactive',
+                }),
+              }),
+            ],
+          }),
+        }),
+      ],
+    });
   }
 
   /**
@@ -229,10 +285,12 @@ export class <EntityName>ListModal extends glyvio_core.SimpleListModal<
    */
   async onCellTap(state: <EntityName>ListModalState, item: glyvio_entity.<EntityName>): Promise<void> {
     if (state.routeParams.popActionKey) {
-      await this.popModal({
-        key: state.routeParams.popActionKey,
-        data: item,
-      });
+      await this.popModal(
+        new glyvio_core.Action({
+          key: state.routeParams.popActionKey,
+          data: item,
+        }),
+      );
     } else {
       await this.popModal();
     }
@@ -249,11 +307,15 @@ export class <EntityName>ListModal extends glyvio_core.SimpleListModal<
   }
 
   async events(state: <EntityName>ListModalState, action: glyvio_core.Action): Promise<glyvio_core.EventReturn> {
+    if (action.key == 'moreFilters') {
+      await this.showRightSidebar();
+      return 'STATE_FREEZED';
+    }
+    if (action.key == 'onTapFind') {
+      this.callRefreshState(); // reloads with state.text and state.filtersSidebar
+      return 'STATE_FREEZED';
+    }
     // New state-mutating key → return 'STATE_UPDATE'
-    // if (action.key === 'myKey') {
-    //   state.myProperty = action.data;
-    //   return 'STATE_UPDATE';
-    // }
     return undefined;
   }
 }

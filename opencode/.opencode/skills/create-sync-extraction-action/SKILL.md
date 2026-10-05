@@ -81,7 +81,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
 
 ## 📋 Execution Steps
 
-1. **Confirm `glyvio_core.SimpleSyncAction`/`DataExtractionActionRequest` are available** (check the plugin's `@types`/`bundle.d.ts` for the plugin-core dependency it was generated from). These live in `glyvio-plugin-core`'s `plugin/environment/src/actions/simple_sync_action.ts` and `data_extraction_action.ts`, exported alongside `GenericActionOnEnvironment` — they are not authored per-plugin.
+1. **Confirm `glyvio_core.SimpleSyncAction`/`DataExtractionActionRequest` are available** (check the plugin's `@types/glyvio_core.d.ts` for the plugin-core dependency it was generated from). These live in `glyvio-plugin-core`'s `plugin/environment/src/actions/simple_sync_action.ts` and `data_extraction_action.ts`, exported alongside `GenericActionOnEnvironment` — they are not authored per-plugin.
 2. **Create `<action_id>_config.ts`** with the source-specific `Request extends glyvio_core.DataExtractionActionRequest` interface only, every field commented (purpose, required/optional, expected format — future readers, human or LLM, rely on this to configure the task mapping correctly). No response interface is needed.
 3. **Create `<action_id>.ts`** with the action class per the blueprint below, extending `glyvio_core.SimpleSyncAction<RequestTypeName>` and implementing `fetch`.
 4. **Wire the source connection** using whatever driver/HTTP client `sourceKind` calls for; translate `limit`/`offset` per constraint 11, and make sure every row carries `integration_code` (constraint 9) and any relations as `<relation>_ic` (constraint 10).

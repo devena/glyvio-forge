@@ -4,6 +4,10 @@ description: "Generates a custom class extending an abstract `SimpleSidebarInter
 ---
 # Agent Skill: Create SimpleSidebar Interceptor in Glyvio
 
+> **Padrão visual moderno:** ao reorganizar o design de uma tela existente, siga `@@REFERENCES@@/modern_layout.md` e
+> **preserve as `key`s** que outros interceptors procuram com `findWidgetByKey` (widgets com key podem ir para dentro de
+> um card; renomear a key quebra outros plugins em runtime).
+
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register an interceptor/listener to customize the behavior of an existing `SimpleSidebar` view in another project.
 
 ---
@@ -18,7 +22,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
 
 ## 🔌 Available Interceptor Hooks (`SimpleSidebarInterceptor<S>`)
 
-`SimpleSidebarInterceptor<S>` extends `CoreAppInterceptorView<S, SimpleSidebar<S>>`. Between the two classes, these are **all** the overridable members (verified against `CoreAppInterceptorView`/`SimpleSidebarInterceptor` in `plugin/app/dist/bundle.d.ts`) — do not assume any hook exists beyond this list without re-checking the `.d.ts`:
+`SimpleSidebarInterceptor<S>` extends `CoreAppInterceptorView<S, SimpleSidebar<S>>`. Between the two classes, these are **all** the overridable members (verified against `CoreAppInterceptorView`/`SimpleSidebarInterceptor` in `plugin/app/@types/glyvio_core.d.ts`) — do not assume any hook exists beyond this list without re-checking the `.d.ts`:
 
 - `getListenerRoute(): new () => CoreRoute<any>` — **abstract, required.** Binds the interceptor to the target sidebar's route class.
 - `getDesign(state, design: SimpleSidebarDesign): void` — customizes the sidebar's visual layout (app bar, sections, buttons) after the concrete view's own `getDesign` has run.
@@ -35,24 +39,13 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
 
 ### `onEvent` — precise semantics (do not oversell this hook)
 
-Verified in `plugin/app/src/views/core_view.ts`, `_internalBridge()`:
-
-```typescript
-} else {
-  action.data = serializeService.bridgeDeserialize(action.data ?? {});
-  let re = await this.events(state, action);           // 1. the concrete view's own handler runs FIRST, to completion
-  await this.runInterceptorsAsync<CoreAppInterceptorView<S, CoreView<S>>>(async (l) => {
-    await l.onEvent(state, action.key!, action.data);   // 2. interceptors only run AFTER, as pure side-effects
-    re ??= 'STATE_UPDATE';
-  });
-  ...
-```
+For every regular (non-reserved) action, the framework runs the concrete view's own `events(state, action)` **first, to completion**, and only then calls `onEvent(state, actionKey, data)` on each registered interceptor, as a pure side effect.
 
 Consequences:
 - `onEvent` fires **after** `events()` has already fully executed for that action key. It **cannot prevent, cancel, or alter** what the concrete view already did — it is not a "before" hook and has no way to short-circuit the response.
 - Its only influence on control flow is: if the view's `events()` returned `undefined` for a key it didn't recognize, the interceptor firing forces the response to `'STATE_UPDATE'`. That lets an interceptor react to a **brand-new custom key it made up itself** (e.g. one added via its own extra button in `getDesign`) — it does not let it hijack a key the concrete view already handles.
-- This also applies to `AttachmentSidebar`/`AttachmentSidePanel`: `onEvent` does receive the `newFile`, `onAttachmentVisibilityChosen`, `onSelectAttachmentType` keys (they are regular, non-underscore actions), but only after `AttachmentSidebar.events()` (`plugin/app/src/views/routines/attachment/attachment_sidebar.ts`) has already called `callFilePicker`/`finishFileUpload`/`saveAttachmentType`. There is nothing left to prevent by the time the interceptor sees it — at most it can chain an additional side-effect (log, notify, refresh something else).
-- The actual byte-delivery of an uploaded file never reaches `onEvent` at all: it arrives as the **internal** action `_ON_FILE_UPLOADED`, handled in `SimpleSidebar._internalEvents()` (`plugin/app/src/views/core/sidebars/simple_sidebar.ts`, lines ~56-60), a completely separate branch of `_internalBridge` that never calls `runInterceptorsAsync(... onEvent ...)`. Contrast this with `_GET_JEANNIE_CONTEXT` a few lines below in the same method, which *does* explicitly call `runInterceptorsAsync<SimpleSidebarInterceptor<S>>(... populateJeannieContext ...)` — i.e. the framework author deliberately wired an interceptor hook for Jeannie context but deliberately did not wire one for file upload.
+- Framework-reserved actions (keys starting with `_`, such as file uploads delivered by the app) never reach `onEvent` at all. Only the hooks listed above (e.g. `populateJeannieContext`) are wired for interceptors.
+- Example: the core `AttachmentSidebar`/`AttachmentSidePanel` handle the `newFile`, `onAttachmentVisibilityChosen` and `onSelectAttachmentType` buttons in their own `events()`. An interceptor's `onEvent` sees those keys only after the upload flow already ran — at most it can chain an additional side effect (log, notify, refresh something else).
 
 ---
 
@@ -66,7 +59,7 @@ Consequences:
    - Create a file `src/interceptors/views/spy_interceptor.ts`.
    - Implement `SpyInterceptor` extending `<TargetBaseInterceptorClass>` to capture the `design` in `getDesign(state: <TargetStateClass>, design: glyvio_core.SimpleSidebarDesign)`:
      ```typescript
-     export class SpyInterceptor extends <TargetBaseInterceptorClass> {
+     export class SpyInterceptor extends <TargetBaseInterceptorClass> { // the specialized interceptor of the target, or the family base WITH its generics
        override getListenerId(): string {
          return '<plugin>_SpyInterceptor';
        }
@@ -75,7 +68,7 @@ Consequences:
        }
        override getDesign(state: <TargetStateClass>, design: glyvio_core.SimpleSidebarDesign): void {
          if (typeof window !== 'undefined') {
-           (window as any).__finalDesign = JSON.parse(JSON.stringify(design));
+           (globalThis as unknown as { __finalDesign?: unknown }).__finalDesign = JSON.parse(JSON.stringify(design));
            console.log("SPY_INTERCEPTOR: Design captured successfully!", JSON.stringify(design));
          }
        }
@@ -133,7 +126,7 @@ To run this skill, the agent must obtain or ask for the following inputs:
 6. **Modifications Required**:
    - **Sidebar Design Modifications**: Customize titles, App Bar options, section designs, or inject new layout structures dynamically.
    - **Lifecycle side-effects**: Run extra logic on `onInitState`/`onRefreshState`/`onUpdateState`/`onRunStrategy`, or react (observe-only, see hook list above) to an existing or self-added custom event key via `onEvent`.
-   - Before promising anything involving file uploads, attachments, or any other behavior specific to the target sidebar's own logic, read **Known Limitations** below and confirm in the concrete view's source (not just the `.d.ts`) that the desired behavior actually flows through a method `SimpleSidebarInterceptor` exposes.
+   - Before promising anything involving file uploads, attachments, or any other behavior specific to the target sidebar's own logic, read **Known Limitations** below and confirm (at runtime, if needed) that the desired behavior actually flows through a method `SimpleSidebarInterceptor` exposes.
 
 ---
 
@@ -141,9 +134,9 @@ To run this skill, the agent must obtain or ask for the following inputs:
 
 **An interceptor cannot add lifecycle hooks that the concrete core view did not deliberately expose.** `SimpleSidebarInterceptor<S>` only lets you override the members listed in "Available Interceptor Hooks" above — nothing else, no matter how plausible it sounds.
 
-The concrete, confirmed example: **file upload behavior on `AttachmentSidebar`/`AttachmentSidePanel` (both in `glyvio-plugin-core`, `plugin/app/src/views/routines/attachment/`) is NOT customizable via `create-sidebar-interceptor`.** The method that actually controls that flow, `onFileUploaded(state, attachment, extras)`, is a plain method on `SimpleSidebar` itself (`plugin/app/src/views/core/sidebars/simple_sidebar.ts`), never invoked through `runInterceptorsAsync`, and therefore not part of `SimpleSidebarInterceptor`'s contract. The interceptor's `onEvent` does receive the surrounding button-tap keys (`newFile`, `onAttachmentVisibilityChosen`, `onSelectAttachmentType`) but only *after* the concrete view has already fully processed them (see the `onEvent` semantics above) — it cannot prevent, redirect, or validate an upload before it happens. The only way to change that behavior is to edit `AttachmentSidebar`/`AttachmentSidePanel` directly in `glyvio-plugin-core` (i.e. the same customization is possible when *creating* a brand-new sidebar from scratch with `create-sidebar`, by overriding `onFileUploaded` on your own `SimpleSidebar` subclass — just not when *intercepting* an existing, concrete one).
+The concrete, confirmed example: **file upload behavior on the core `AttachmentSidebar`/`AttachmentSidePanel` is NOT customizable via `create-sidebar-interceptor`.** The method that controls that flow, `onFileUploaded(state, attachment, extras)`, is a plain method on `SimpleSidebar` itself, not part of `SimpleSidebarInterceptor`'s contract. The interceptor's `onEvent` does receive the surrounding button-tap keys (`newFile`, `onAttachmentVisibilityChosen`, `onSelectAttachmentType`) but only *after* the concrete view has already processed them — it cannot prevent, redirect, or validate an upload before it happens. The same customization IS possible when *creating* a brand-new sidebar with `create-sidebar`, by overriding `onFileUploaded` on your own `SimpleSidebar` subclass — just not when *intercepting* an existing, concrete one.
 
-**Before telling a user a customization is possible via this skill, verify it against the target view's actual source file (not only `bundle.d.ts`).** The `.d.ts` only tells you a hook exists on the interceptor base class; it does not tell you whether the concrete view you're intercepting actually routes the behavior you care about through that hook, or handles it internally/via a separate native-bridge action the interceptor never sees (as is the case for file uploads).
+**Before telling a user a customization is possible via this skill, check that the behavior goes through a hook the interceptor base class declares in `@types/glyvio_core.d.ts`.** A hook existing on the interceptor class does not guarantee the concrete view routes every behavior through it; when in doubt, prove it at runtime (register the interceptor, log inside the hook, and exercise the screen with `test-plugin-browser`) before promising it.
 
 ---
 

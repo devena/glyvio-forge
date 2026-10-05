@@ -25,7 +25,7 @@
 4. **Layouts** organizam o espaço; **boxes/texts/cells** preenchem. Toda tela é
    uma árvore:
    `Page → Section → Layout → (Layout | Box | Text | Cell | Textfield)`.
-5. Use **apenas** componentes que existam em `@types` / `dist/bundle.d.ts`. Este
+5. Use **apenas** componentes que existam em `@types` (`plugin/<layer>/@types/glyvio_core.d.ts` and the other `@types/*.d.ts`). Este
    catálogo lista o que está exportado em `plugin/app/src/designs/designs.ts`,
    mas **confirme no `@types`** antes de instanciar — nunca invente uma classe.
 
@@ -169,6 +169,20 @@ Layouts não têm aparência própria; eles **arranjam** filhos. Escolha pela
 
 ---
 
+### 3.1. Layouts modernos (`SurfaceDesign`, `StackLayoutDesign`, `GridLayoutDesign`) e `glyvio_core.ui`
+
+| Design | Uso | Props-chave |
+| --- | --- | --- |
+| `SurfaceDesign` | Card, painel, tile, banner | `child`, `surface` (`card`/`page`/`muted`/`brand`/`transparent`/`inverse`/`<COR>`), `padding`, `radius`, `border`, `shadow`, `selected`, `onTap`, `minHeight`, `visible` |
+| `StackLayoutDesign` | Filhos com `gap` constante | `direction`, `gap`, `padding`, `mainAlignment`, `crossAlignment`, `wrap` |
+| `StackItemDesign` | Filho que cresce/some | `flex`, `visible` |
+| `GridLayoutDesign` / `GridItemDesign` | Grade responsiva de 12 colunas | grid: `columns`, `gap`, `equalHeight`; item: `span`, `spanMd`, `spanSm` |
+
+`padding` desses designs segue a **ordem CSS** com tokens (`none|xxs|xs|sm|md|lg|xl|xxl`),
+diferente dos layouts antigos (LTRB). Blocos prontos em `glyvio_core.ui` (`page`, `card`,
+`grid`, `stat`, `listRow`, `banner`, `option`, `badge`...). Guia completo com receitas:
+`modern_layout.md`.
+
 ## 4. Seções (blocos de uma página/sidebar) — `sections/`
 
 | Componente                     | Parece com                                                     | Use quando                                                              |
@@ -209,6 +223,10 @@ Layouts não têm aparência própria; eles **arranjam** filhos. Escolha pela
 | `EntityLinksDesign`            | Lista de links/chips para entidades relacionadas        | Mostrar/remover vínculos polimórficos a outras entidades (ver skill `create-entity-links-section`). | `links`, `actionKeyRemoveLink`                            |
 | `ObserversDesign`              | Avatares de observadores/seguidores                     | Lista de observadores de um registro.                 | `name`, `entityId`                                        |
 | `NotFoundBoxDesign`            | Estado vazio ("nada encontrado") com ícone/texto        | Empty state.                                          | —                                                         |
+| `ProgressBarDesign` / `ProgressCircleDesign` | Barra / anel de progresso, com rótulo e porcentagem | Meta, etapas concluídas, uso de limite. | `value`, `maxValue` (padrão 100), `valueText`, `label`, `colorTheme` — atalho: `ui.progress(value, { max, label, valueText })` |
+| `StepperDesign` | Indicador de passos: círculos numerados (✓ feito, ! erro), título/subtítulo, linha entre eles; no estreito vira "2/4 · Título" + barra | Fluxo em passos. **Num modal, use `SimpleWizardModal`**, que já desenha o stepper e os botões. | `steps` (`{ key, title, subtitle?, status? }`), `activeStep`, `onStepTap` (só passos feitos; manda `data.step`), `compact`, `colorTheme` |
+
+> ⚠️ **Progresso: use `value`/`maxValue`, não `initialValue`/`finalValue`.** O par antigo marca onde o segmento COMEÇA e TERMINA e adivinha a escala (`<= 1` fração, `> 1` porcentagem): `finalValue: 1` é a barra cheia mesmo querendo 1%. `value: 3, maxValue: 10` é 30%, sem ambiguidade.
 
 > ⚠️ **`ChipDesign`/status colorido — evite condicionais Handlebars aninhadas dentro de `label`/`value` interpolados.** Um `{{#if}}...{{else}}{{#if}}...{{/if}}{{/if}}` complexo dentro de uma string interpolada de chip já renderizou o texto literal `"ERROR ON PROCESS PARSE"` para o usuário final em produção — sem erro em build/dev, só na renderização real. Prefira computar o label/cor final em `refreshState`/`getDesign` (uma variável TypeScript comum, com `if`/`switch` de verdade) e só então interpolar o valor já resolvido (`$S{state.computedLabel}`), em vez de montar a lógica condicional dentro da própria string de template.
 
@@ -276,7 +294,7 @@ controle.
 | `RangeDateTextfieldDesign`                                              | Intervalo de datas (de–até)                       | Filtro por período.                                     |
 | `RangeDateTimeTextfieldDesign`                                          | Intervalo de data/hora                            | Filtro por período com hora.                            |
 | `RangeNumberTextfieldDesign`                                            | Intervalo numérico (min–max)                      | Filtro por faixa de valor.                              |
-| `ChoiceSingleTextfieldDesign` (+ `ChoiceSingleTextfieldOption`)         | Dropdown/seletor de uma opção fixa                | Escolha única entre opções fixas (não-entidade).        |
+| `ChoiceSingleTextfieldDesign` (+ `ChoiceSingleTextfieldOption.simple`) | Seletor de uma opção fixa: chip + busca (padrão) ou `displayMode: 'DROPDOWN'` (select compacto) | Escolha única entre opções fixas (não-entidade). **Em coluna estreita ou barra de filtros use `displayMode: 'DROPDOWN'`** — o chip do modo padrão trunca ("Cob…"); `allowClear: true` permite limpar. |
 | `ChoiceMultipleTextfieldDesign` ⚠️                                      | Multi-seleção de opções fixas                     | Várias opções fixas — **ver bug confirmado abaixo antes de usar.** |
 | `EntitySelectTextfieldDesign`                                           | Seletor (dropdown) de entidade                    | Selecionar entidade de lista curta.                     |
 | `EntityAutocompleteSingleTextfieldDesign`                               | Autocomplete de 1 entidade (com chip)             | **FK/entidade única** — use a **subclasse específica**. |
@@ -400,8 +418,8 @@ controle.
 | ------------------------------------------------------------ | ----------------------------------------------------------- | -------------------------- | --------------------- |
 | `SimpleEditModalDesign`                                      | Overlay com formulário de criar/editar                      | Form de entidade em modal. | `create-edit-modal`   |
 | `SimpleEntityModalDesign`                                    | Overlay de busca/seleção de entidade (autocomplete + chips) | Selecionar entidade.       | `create-entity-modal` |
-| `SimpleListModalDesign` (+ `SimpleListSidebarModalDesign`)   | Overlay de lista com filtros                                | Selecionar de uma lista.   | `create-list-modal`   |
-| `SimpleTableModalDesign` (+ `SimpleTableSidebarModalDesign`) | Overlay de tabela com ações de linha                        | Selecionar de uma tabela.  | `create-table-modal`  |
+| `SimpleListModalDesign` (filtros via `getRightSidebar`) | Overlay de lista com filtros                                | Selecionar de uma lista.   | `create-list-modal`   |
+| `SimpleTableModalDesign` (filtros via `getRightSidebar`) | Overlay de tabela com ações de linha                        | Selecionar de uma tabela.  | `create-table-modal`  |
 | `SimpleSendModalDesign`                                      | Overlay de envio (email/WhatsApp, anexos)                   | Enviar mensagem/relatório. | `create-send-modal`   |
 | `ModalDesign` / `NativeModalDesign`                          | Base de modal                                               | Base — prefira concretas.  | —                     |
 
@@ -469,6 +487,17 @@ tom claro).
 | `REGULAR`    | `5B6663`        | fundo `FFFFFF`, borda `E8ECEA`, texto `5B6663` | contorno/texto `5B6663`                           | fundo `5B6663`, texto `FFFFFF` |
 | `WHITE`      | `9AA4A1`        | fundo `FFFFFF`, borda `E8ECEA`, texto `9AA4A1` | contorno/texto `9AA4A1`                           | fundo `9AA4A1`, texto `FFFFFF` |
 
+> **Código novo: prefira `colorTheme` base + `variant`.** Desde setembro/2026
+> `ActionButtonDesign`, `SimpleIconDesign`, `ChipDesign`, `AvatarDesign`,
+> `BadgeCellDesign`, `CardCellDesign`, `LineCellDesign`, `AlertBoxDesign` e
+> `SizedBoxDesign` aceitam `variant` (`solid` | `subtle` | `outline` | `ghost`,
+> conforme o design) — ex.: `colorTheme: 'GREEN', variant: 'subtle'`. Os sufixos
+> abaixo continuam valendo para telas antigas. Também são aceitos `AMBER`,
+> `NEUTRAL` e os semânticos `SUCCESS`/`PRIMARY` (verde), `INFO` (azul),
+> `WARNING` (âmbar) e `DANGER`/`ERROR` (vermelho). Layouts modernos
+> (`SurfaceDesign.surface`) aceitam qualquer nome de cor como tom suave. Ver
+> `modern_layout.md §3`.
+
 **Variantes — quando usar cada uma:**
 
 - **Base** (ex. `GREEN`): chip/box com **fundo claro** (pastel) e texto/ícone na
@@ -532,7 +561,7 @@ indicador secundário.
 ```typescript
 getDesignForCell(state: S, item: glyvio_entity.Entity): glyvio_core.CardCellDesign {
   return new glyvio_core.CardCellDesign({
-    colorTheme: item.deleted ? 'RED' : null,
+    colorTheme: item.deleted ? 'RED' : undefined,
     padding: '12 16',
     child: new glyvio_core.RowLayoutDesign({
       crossAlignment: 'CENTER',
@@ -572,7 +601,7 @@ descrição curta, data, etc.).
 ```typescript
 getDesignForCell(state: S, item: glyvio_entity.Entity): glyvio_core.CardCellDesign {
   return new glyvio_core.CardCellDesign({
-    colorTheme: item.deleted ? 'RED' : null,
+    colorTheme: item.deleted ? 'RED' : undefined,
     padding: '12 16',
     child: new glyvio_core.ColumnLayoutDesign({
       children: [
@@ -611,7 +640,7 @@ múltiplos campos informativos secundários.
 ```typescript
 getDesignForCell(state: S, item: glyvio_entity.Entity): glyvio_core.CardCellDesign {
   return new glyvio_core.CardCellDesign({
-    colorTheme: item.deleted ? 'RED' : null,
+    colorTheme: item.deleted ? 'RED' : undefined,
     padding: '12 16',
     child: new glyvio_core.ColumnLayoutDesign({
       children: [
@@ -677,7 +706,7 @@ tenha um campo de nome para iniciais.
 ```typescript
 getDesignForCell(state: S, item: glyvio_entity.Entity): glyvio_core.CardCellDesign {
   return new glyvio_core.CardCellDesign({
-    colorTheme: item.deleted ? 'RED' : null,
+    colorTheme: item.deleted ? 'RED' : undefined,
     padding: '12 16',
     child: new glyvio_core.RowLayoutDesign({
       crossAlignment: 'CENTER',
@@ -737,7 +766,7 @@ quantidade, prazo, etc.) que precisam de destaque visual.
 ```typescript
 getDesignForCell(state: S, item: glyvio_entity.Entity): glyvio_core.CardCellDesign {
   return new glyvio_core.CardCellDesign({
-    colorTheme: item.deleted ? 'RED' : null,
+    colorTheme: item.deleted ? 'RED' : undefined,
     padding: '12 16',
     child: new glyvio_core.ColumnLayoutDesign({
       children: [
@@ -827,8 +856,8 @@ design.masterPanelDesign = glyvio_core.SidePanelReferenceDesign.fromJson({
 
 ### Como um painel avisa outro painel (MASTER → DETAIL)
 
-Um painel **não tem link direto com seu irmão** — só o host (a página/cart) tem
-os dois no mapa `sidePanelRules`. A comunicação sobe um nível e desce outro,
+Um painel **não tem link direto com seu irmão** — só o host (a página/cart)
+conhece os dois. A comunicação sobe um nível e desce outro,
 espelhando `sendActionToSection` (Call Sections), só que com um hop a mais:
 
 ```typescript
@@ -845,20 +874,16 @@ await this.sendActionToParent(
 ```
 
 `sendActionToParent` (em `CoreSidePanel`) sobe pro host; o host já trata
-`_SEND_ACTION_TO_SIDE_PANEL` de graça (é a mesma mecânica de
+`_SEND_ACTION_TO_SIDE_PANEL` sem código extra (é a mesma mecânica de
 `sendActionToSidePanel`, que `SimpleMasterDetailPage`/`CoreCart` implementam).
-DETAIL recebe a action `select` e atualiza o próprio estado — **sem** o
-design/estado da página mudar, e sem recriar o cubit do DETAIL (só é
-recriado quando o `path` do `SidePanelReferenceDesign` muda, não quando só
-`routeParams` muda).
+DETAIL recebe a action `select` no próprio `events()` e atualiza o próprio estado
+— **sem** o design/estado da página mudar. O painel só é recriado quando o
+`path` do `SidePanelReferenceDesign` muda, não quando só `routeParams` muda.
 
-> ⚠️ Não existe skill `create-simple-master-detail-page` ainda. Montar à mão:
-> `SimpleMasterDetailPage extends CorePage` (não tem fetch/lista própria — só
-> declara os dois slots), + duas classes `SimpleSidePanel` (MASTER e DETAIL).
-> Exemplo completo funcionando (dados mock, sem banco) em
-> `glyvio-plugin-core/plugin/app/src/views/examples/master_detail_showcase_page.ts`,
-> reachable pelo item "Galeria de Componentes" no full menu
-> (`glyvio-plugin-core/plugin/app/src/views/examples/examples_hub_page.ts`).
+> Skills: `create-master-detail-page` (página + os dois painéis), `create-side-panel`
+> (painel isolado, também usado em carts) e `create-master-detail-page-interceptor`.
+> Exemplo funcionando (dados mock) no próprio app: `/examples/master-detail`, também
+> acessível pelo item "Galeria de Componentes" do menu.
 
 ---
 

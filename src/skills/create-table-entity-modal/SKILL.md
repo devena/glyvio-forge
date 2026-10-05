@@ -268,7 +268,7 @@ export abstract class <EntityName>TableEntityModalInterceptor extends glyvio_cor
 /**
  * Custom autocomplete single textfield design wrapper targeting this table-rendered modal.
  */
-export class <EntityName>TableSingleTextfield extends glyvio_core.EntityAutocompleteTableSingleTextfieldDesign {
+export class <EntityName>TableSingleTextfield extends glyvio_core.EntityAutocompleteSingleTextfieldDesign {
   constructor(args?: Partial<<EntityName>TableSingleTextfield>) {
     super(args);
     this.label = this.label ?? '<EntityName>';
@@ -281,7 +281,7 @@ export class <EntityName>TableSingleTextfield extends glyvio_core.EntityAutocomp
 /**
  * Custom autocomplete multiple textfield design wrapper targeting this table-rendered modal.
  */
-export class <EntityName>TableListTextfield extends glyvio_core.EntityAutocompleteTableMultipleTextfieldDesign {
+export class <EntityName>TableListTextfield extends glyvio_core.EntityAutocompleteMultipleTextfieldDesign {
   constructor(args?: Partial<<EntityName>TableListTextfield>) {
     super(args);
     this.label = this.label ?? '<EntityName> List';

@@ -1,9 +1,9 @@
-require('dotenv').config({ path: '<local-path>' });
+const TEST_ENV = require('./test_env');
 const { chromium } = require('playwright');
 
 const LOCAL_BUNDLE = 'http://localhost:3100/bundle.js';
 const NS = 'financial';
-const SHOT_DIR = '<local-path>';
+const SHOT_DIR = TEST_ENV.shotDir;
 
 (async () => {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-web-security'] });

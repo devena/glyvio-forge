@@ -1,6 +1,7 @@
+const TEST_ENV = require('./test_env');
 require('dotenv').config();
 const { chromium } = require('playwright');
-const shot = (n) => '<local-path>' + n;
+const shot = (n) => TEST_ENV.shotDir + '/' + n;
 
 function unwrap(v) {
   if (v === null || v === undefined || typeof v !== 'object') return v;

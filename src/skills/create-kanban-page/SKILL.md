@@ -4,6 +4,14 @@ description: "Generates a standard entity Kanban board page with status columns,
 ---
 # Agent Skill: Create Custom Kanban Page View in Glyvio
 
+> **Padrão visual moderno:** monte o conteúdo com `glyvio_core.ui` e `SurfaceDesign`/`StackLayoutDesign`/`GridLayoutDesign`
+> (guia `@@REFERENCES@@/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
+> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`@@REFERENCES@@/i18n.md`) e prints em 1440×900 e 390×844.
+
+> **Filtros:** adicione só os campos em `design.filterSectionsDesign?.push(glyvio_core.FilterSidebar.section(...))`
+> e descreva os filtros ativos em `getActiveFilterChips`/`clearFilter` — cabeçalho, busca, filtros salvos, rodapé e a
+> linha de chips vêm da base (guia `@@REFERENCES@@/filters_and_headers.md`).
+
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional Kanban board page view (extending `SimpleKanbanPage`) within a Glyvio plugin project.
 
 ---
@@ -42,7 +50,7 @@ To run this skill, the agent must obtain or ask for the following inputs:
 3. **Route Path** (e.g., `/tasks-kanban`): The URL path (must start with `/` and be a single word/slug).
 4. **Status Entity Name** (e.g., `TaskTypeStatus`, `ProjectStatus`): The entity defining the columns/statuses.
 5. **Status Field in Target Entity** (e.g., `statusId`, `status`): The field on the target entity linking it to the status entity.
-6. **Menu Group** (e.g., `Administration` group key: `main-admin`): Where to place the menu item.
+6. **Menu Group** (a namespaced group of your plugin, e.g. `my_plugin.main`; settings screens go to the admin screen — see `register-menu-and-admin`): Where to place the menu item.
 
 ---
 
@@ -88,7 +96,7 @@ glyvio_core.routerService.loadRoutes([
 Register the view in the main app menu sidebar:
 
 ```typescript
-glyvio_core.FullMenuPage.fullMenuGroupAdd({
+glyvio_core.menuRegistryService.addGroup({
   key: 'group_key',
   name: 'Group Name',
   position: 100, // Customize positioning
@@ -199,12 +207,13 @@ export class <EntityName>KanbanPage extends glyvio_core.SimpleKanbanPage<
     }
     const groupedCounts = await pqb.findGrouped<{ id: string; count: Decimal }>([
       {
-        field: glyvio_structure.AllEntities.<entityNameCamelCase>.<statusFieldCamelCase>.id,
+        // the FK column itself holds the status id (a relation field has no `.id` member)
+        field: glyvio_structure.AllEntities.<entityNameCamelCase>.<statusFieldCamelCase>,
         aliasField: 'id',
         type: 'TEXT',
       },
       {
-        field: glyvio_structure.AllEntities.<entityNameCamelCase>.<statusFieldCamelCase>.id,
+        field: glyvio_structure.AllEntities.<entityNameCamelCase>.id,
         aliasField: 'count',
         type: 'COUNT',
       },
@@ -397,7 +406,7 @@ export class <EntityName>KanbanPage extends glyvio_core.SimpleKanbanPage<
   async onColumnChange(
     state: <EntityName>KanbanPageState,
     columnState: <EntityName>KanbanPageColumnState,
-    queue: glyvio_entity.EntityServiceQueue,
+    queue: glyvio_core.EntityServiceQueue,
     item: glyvio_entity.<EntityName>,
   ): Promise<void> {
     queue.push({

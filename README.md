@@ -8,11 +8,11 @@ as pastas dos assistentes são geradas e continuam prontas para distribuição.
 
 ```text
 src/
-├── agents/                 # 6 papéis, com instruções independentes do assistente
+├── agents/                 # 5 papéis, com instruções independentes do assistente
 ├── skills/                 # Skills compartilhadas
 ├── component_catalog.md    # Índice visual
 ├── references/             # Catálogo completo e regras arquiteturais
-├── scripts/                # Helpers compartilhados
+├── scripts/                # Helpers compartilhados (linter, inspetor Chrome, i18n_check.mjs, check_icons.mjs)
 ├── examples/               # Exemplos por camada
 ├── plugin-development.md   # Guia de desenvolvimento de plugins
 ├── mcp.json                # Configuração MCP compartilhada
@@ -23,6 +23,7 @@ src/
     ├── agy/                # Seleção reduzida de skills para o pacote legado
     └── opencode/           # Configuração e layout nativos do OpenCode V2
 
+internal/                   # Material só para quem mantém o core (ex.: glyvio-doc-agent); não é distribuído
 tools/generate.py           # Geração determinística e verificação de divergências
 tools/tests/                # Testes do gerador em diretórios temporários
 .generated-files.json      # Arquivos gerenciados e hashes da última geração
@@ -104,6 +105,17 @@ Recursos não Markdown dentro das skills são copiados byte a byte.
 A geração monta arquivos para distribuição; não instala pacotes em outros
 projetos, não inicia MCPs e não altera configurações pessoais dos assistentes.
 
+## Público e escopo
+
+O pacote é escrito para quem **não tem acesso ao fonte do `glyvio-plugin-core`**: tudo o que as
+skills citam existe no `plugin/<camada>/@types/glyvio_core.d.ts` do plugin. As skills não
+documentam o protocolo interno entre o core e o app nem credenciais. O `glyvio-doc-agent`, que
+documenta o próprio core, fica em `internal/`, fora da distribuição.
+
+Lacuna conhecida: o **Workflow v2** (`glyvio_workflow.defineWorkflow`, blueprints, triggers e as step
+extensions do editor `CustomWorkflowPage`) existe no core, mas o `glyvio_workflow.d.ts` ainda não é
+distribuído para os plugins. Quando for, crie as skills correspondentes.
+
 ## Reconciliação e limites
 
 Veja [as decisões da migração](docs/reconciliation.md): o conteúdo foi reconciliado
@@ -111,7 +123,9 @@ entre Claude, Antigravity, AGY e a adaptação para Codex, preservando as altera
 locais de controllers, árvores e master-detail.
 
 `claude/skills/synced/`, `.agents/`, credenciais, caches e scripts locais do
-`tools/test-runner/` não são fontes nem saídas gerenciadas. O runner continua sendo
+`tools/test-runner/` não são fontes nem saídas gerenciadas. Os scripts do runner leem URLs,
+contas, senhas e ids do `.env` via `tools/test-runner/test_env.js` (modelo em `.env.test.example`);
+nunca escreva esses valores nos scripts. O runner continua sendo
 uma dependência opcional dos testes de navegador. O guia HTML em `docs/` também
 permanece independente; não é regenerado a partir de `src/` nesta migração.
 

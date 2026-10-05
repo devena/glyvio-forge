@@ -7,7 +7,6 @@
   "instructions": "AGENTS.md",
   "skills": "*",
   "agents": {
-    "glyvio-doc-agent.toml": "glyvio-doc-agent",
     "glyvio-app-coordinator.toml": "glyvio-app-coordinator",
     "glyvio-environment-agent.toml": "glyvio-environment-agent",
     "glyvio-report-agent.toml": "glyvio-report-agent",

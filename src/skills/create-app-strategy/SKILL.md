@@ -21,7 +21,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
 ## 📥 Required Input Parameters
 
 1. **Are you creating a brand-new strategy, or overriding an existing one?**
-   - **Overriding**: search `@types` / `dist/bundle.d.ts` for the existing abstract class (e.g. `EntityHasAttachmentTypesStrategy`). Confirm its `eventKey` (a `static eventKey` on the class, or read it off the JSDoc/source) and its `run(...)` request/response shape — you must match both exactly.
+   - **Overriding**: search `@types` (`plugin/<layer>/@types/glyvio_core.d.ts` and the other `@types/*.d.ts`) for the existing abstract class (e.g. `EntityHasAttachmentTypesStrategy`). Confirm its `eventKey` (a `static eventKey` on the class, or read it off the JSDoc/source) and its `run(...)` request/response shape — you must match both exactly.
    - **Creating new**: pick a unique `eventKey` string, and the request (`R`) / response (`Q`) types.
 2. **Sync or async?**: does the logic need to `await` anything (a DB query via `QueryBuilder`, another service call)? Use `CoreAppStrategyAsync<R, Q>` (`handle(request: R): Promise<Q>`). If it's pure, synchronous computation, use `CoreAppStrategySync<R, Q>` (`handle(request: R): Q`).
 3. **The business logic** to run inside `handle(request)`.

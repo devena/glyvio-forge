@@ -5,6 +5,10 @@ description: "Generates a standard cart drawer view for managing temporary item 
 <!-- Generated from src/skills/create-simple-cart/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Custom SimpleCart View in Glyvio
 
+> **Padrão visual moderno:** monte o conteúdo com `glyvio_core.ui` e `SurfaceDesign`/`StackLayoutDesign`/`GridLayoutDesign`
+> (guia `.opencode/references/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
+> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`.opencode/references/i18n.md`) e prints em 1440×900 e 390×844.
+
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional cart drawer panel (extending `SimpleCart`) within a Glyvio plugin project.
 
 ---
@@ -55,6 +59,44 @@ The executing agent MUST strictly adhere to these rules:
 6. **`userGroupId` on every new entity save (NON-NEGOTIABLE)**: In every custom cart handler that creates an entity, set an explicit, authorized `userGroupId` before calling a save API or adding it to a queue. Child/join records inherit their owning entity's group. Do not use an arbitrary client value, silently default a human action to `'core_admin'`, or replace the group during a normal update.
    - See the full "Attachments Section (optional)" recipe below for the matching `initState` seed and `getDesign` embedding — all four pieces plus the seed/embed must be present together for attachments to work end-to-end.
 5. **Tabbed sections (`showSectionsInTabs`) — optional, use only for multi-section carts**: `SimpleCartDesign.showSectionsInTabs?: boolean | string` switches `sectionsDesign` from one continuous scroll into a tabbed layout. Every section in `sectionsDesign` needs a `key`. By default each section becomes its own tab, titled from that section's own `appBarDesign`. Use `design.tabsDesign?: SimpleCartTabGroupDesign[]` (`{ title: string; sectionKeys: string[] }`) to group multiple section keys under one custom-titled tab instead. Use `design.pinnedSectionKeysTop?: string[]` / `design.pinnedSectionKeysBottom?: string[]` to keep specific section keys (e.g. cart totals/actions) rendered above/below the tabs on every tab, instead of living inside one — a key can be pinned Top or Bottom, never both, and a pinned key must not also appear in `tabsDesign`. Only turn this on when the cart genuinely has multiple distinct sections worth separating — a single-section cart should leave `showSectionsInTabs` unset.
+
+---
+
+## 📎 Dropped Files: Attach vs. Read
+
+Two different features accept a dragged file — pick by what the file is **for**:
+
+| Goal | Use | Callback | Wiring |
+| --- | --- | --- | --- |
+| **Attach** the file (keep it as an `Attachment` linked to a record) | `design.allowDropAttachment = true` — the whole container becomes a drop target | `onFileUploaded(state, attachment, extras)` on the view (and `attachmentOnFilesUploaded` when an `AttachmentsEditSection` is embedded) | none beyond the flag |
+| **Read** the file's content (import an OFX, CSV, XML, JSON…) | a `glyvio_core.FileDropAreaDesign` box in the body (drop **or** tap to pick), or `this.extensionsManager.file.readFiles({ extensions, as, extras })` from a button | `fileOnFilesLoaded(state, { files, rejected, extras })` — each file has `name`, `extension`, `size`, `content` (text, or base64 with `readAs: 'base64'`) | `this.extensionsManager.registerFile(this)` in the constructor + `implements glyvio_core.FileExtensionDelegate<S>` |
+
+- `allowDropFile` is the **deprecated** old name of `allowDropAttachment` (same flag, same JSON). Write `allowDropAttachment` in new code; leave existing screens alone unless you are already editing them.
+- The attach flag uploads the file to storage as a temporary attachment — it never gives you the content. Do not use it (and then download the attachment) to parse a file; use `FileDropAreaDesign`/`readFiles`.
+- The flag is honored on modals, sidebars, tab sidebars, carts and rule sections. **Pages (`SimpleEditPage`) ignore it** in the app today — on a page, put a `FileDropAreaDesign` in the body instead.
+- Text is decoded as UTF-8 with a windows-1252 fallback (Brazilian bank OFX files are often `CHARSET:1252`), so accents arrive intact. Files over `maxSizeBytes` (default 20 MB) or with another extension come back in `rejected`, not in `files`.
+
+```typescript
+// Reading an OFX dropped on the screen
+constructor() {
+  super();
+  this.extensionsManager.registerFile(this);
+}
+
+// in getDesign
+new glyvio_core.FileDropAreaDesign({
+  key: 'ofx.drop',
+  title: 'Arraste o arquivo OFX aqui',
+  subtitle: 'ou clique para escolher',
+  extensions: ['ofx'],
+});
+
+async fileOnFilesLoaded(state: S, loaded: glyvio_core.FilesLoaded): Promise<void> {
+  const [file] = loaded.files;
+  if (!file) return;
+  // file.content is the OFX text
+}
+```
 
 ---
 

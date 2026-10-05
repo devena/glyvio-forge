@@ -42,7 +42,7 @@ export class SlackNotificationAction extends glyvio_core.SimpleAction {
 
     // Retrieve webhook URL from environment config service (stored securely)
     // Assume we have a secret configured for this service
-    const slackSecret = glyvio_core.secretService.getPopulatedSecretById<{ webhookUrl: string }>(
+    const slackSecret = await glyvio_core.secretService.getPopulatedSecretById<{ webhookUrl: string }>(
       'slack-integration-webhook',
     );
 

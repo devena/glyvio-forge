@@ -137,14 +137,18 @@ bundle; `CustomTool` é descoberta automaticamente e não deve receber registro 
 
 ```ts
 @glyvio_core.SystemTool({
-  id: "company-daily-briefing",
-  permission: Permissions.TOOL_DAILY_BRIEFING,
-  description: "Retorna o briefing diário do usuário",
+  id: 'company-daily-briefing',
+  permission: glyvio_permissions.tool_company_daily_briefing, // declarada no manifest.json
+  description: 'Retorna o briefing diário do usuário',
 })
-export class DailyBriefingTool implements glyvio_core.CoreSystemTool {
-  async handle() {
+export class DailyBriefingTool implements glyvio_core.CoreSystemTool<Record<string, never>> {
+  async handle(): Promise<string> {
     const userId = glyvio_core.getContext().loggedUserId;
-    return TaskService.getInstance().fetchToday(userId);
+    const tasks = await glyvio_core.queryService.find<{ name: string }>(
+      'SELECT name FROM task WHERE user_id = ? AND done = false AND deleted = false',
+      [{ dataType: 'TEXT', value: userId }],
+    );
+    return `Tarefas abertas: ${tasks.map((t) => t.name).join(', ')}`;
   }
 }
 ```
@@ -168,12 +172,12 @@ descritivo → push. O CI no GitHub Actions valida o build antes do deploy.
 
 | Camada      | Tipo                                      | Como é registrado                                                          |
 | ----------- | ----------------------------------------- | -------------------------------------------------------------------------- |
-| App         | Pages / Modals / Carts                    | Explícito em `index.ts` via `routerService.loadRoutes()`                   |
+| App         | Pages / Modals / Sidebars / Carts / Side panels | `routerService.loadRoutes()` **e** `export *` da classe em `index.ts` (o nome da classe = `getRouteNameObject()`) |
 | App         | Interceptors de app                       | Explícito em `index.ts` via `appInterceptorService.registerInterceptors()` |
-| App         | Menu items                                | Explícito em `index.ts` via `FullMenuPage.fullMenuGroupAdd()`              |
+| App         | Menu items / Admin                        | `menuRegistryService.addGroup()`/`addItem()`; telas de configuração em `adminRegistryService.addItem()` |
 | Server      | Before / After / AfterCommit Interceptors | Decorador + `export *` em `plugin/server/src/index.ts`                      |
 | Server      | Controllers / Strategies                  | Decorador + `export *` em `plugin/server/src/index.ts`                      |
-| Environment | SystemTool                                | Decorador + import no entrypoint da camada                                  |
+| Environment | SystemTool / Action                       | Decorador + import no entrypoint da camada                                  |
 | Environment | CustomTool                                | Descoberta automática via decorador; sem registro em `index.ts`             |
 
 ---
@@ -236,9 +240,35 @@ As skills geram código seguindo os padrões do projeto. Invoque no chat com
 | `/create-send-modal`          | Modal de envio de mensagem/email        |
 | `/create-simple-cart`         | Drawer de carrinho/seleção temporária   |
 | `/create-simple-batch-cart`   | Drawer de carrinho em lote (spreadsheet-like) |
+| `/create-import-wizard`       | Importação guiada de planilha em passos (`SimpleWizardModal`) |
 | `/create-entity-links-section`| Seção "Vínculos" polimórfica num sidebar existente |
 | `/create-screen-from-image`   | Reproduz um screenshot como tela Glyvio |
-| `/create-*-interceptor` (app) | Estende view existente do CRM           |
+| `/create-grid-page`           | Galeria/grade de cards                  |
+| `/create-gantt-page`          | Linha do tempo (Gantt) com arrastar     |
+| `/create-batch-page`          | Edição em lote estilo planilha          |
+| `/create-dashboard-page`      | Dashboard dentro do app (KPIs, gráficos) |
+| `/create-map-page`            | Mapa com pins por latitude/longitude    |
+| `/create-edit-page`           | Formulário em tela cheia / configurações |
+| `/create-master-detail-page`  | Lista à esquerda, detalhe à direita     |
+| `/create-workflow-page`       | Grafo de processo/etapas                |
+| `/create-list-modal`          | Seleção em lista dentro de modal        |
+| `/create-table-modal`         | Seleção em tabela dentro de modal       |
+| `/create-table-entity-modal`  | Picker de entidade em tabela            |
+| `/create-batch-filter-modal`  | Filtro que devolve ids para lote        |
+| `/create-wizard-modal`        | Modal em passos genérico                |
+| `/create-tab-sidebar`         | Sidebar com abas                        |
+| `/create-table-sidebar`       | Sidebar com tabela de registros relacionados |
+| `/create-side-panel`          | Painel embutido em cart/modal/master-detail |
+| `/use-builtin-dialogs`        | Toasts, confirmações, progresso, escolha e inputs prontos |
+| `/use-view-extensions`        | Arquivos, uploads, planilhas, galeria, relatórios |
+| `/register-menu-and-admin`    | Menu, tela de administração, itens de Custom Page, rotas offline |
+| `/intercept-core-screen`      | Catálogo das telas prontas do Glyvio e seus interceptors |
+| `/create-offline-support`     | Entidades e telas offline               |
+| `/use-device-location`        | GPS do aparelho                         |
+| `/use-audio-recorder`         | Gravar e tocar áudio                    |
+| `/use-user-preferences`       | Preferências por usuário                |
+| `/create-chat-channel-integration` | Canal de chat/voz (WhatsApp, e-mail, PABX...) |
+| `/create-*-interceptor` (app) | Customiza uma tela existente (de outro plugin ou do Glyvio) |
 
 ### Extensibilidade (App)
 
@@ -257,6 +287,16 @@ As skills geram código seguindo os padrões do projeto. Invoque no chat com
 | `/create-controller`               | Endpoint HTTP                   |
 | `/create-strategy`                 | Lógica de negócio encapsulada   |
 | `/schedule-queued-operation`       | Operação deferred/enfileirada   |
+| `/create-custom-interceptor`       | Interceptor por evento nomeado  |
+| `/create-custom-page`              | Página HTML por URL (dashboard/relatório) |
+| `/use-execution-flags`             | Coordenar regras dentro da requisição |
+| `/use-lock-service`                | Lock distribuído (fail-fast)    |
+| `/use-cache-service`               | Cache manual entre requisições  |
+| `/create-plugin-service`           | Contratos de serviço entre plugins |
+| `/generate-sequence-number`        | Numeração sequencial            |
+| `/create-notification`             | Notificação para usuários       |
+| `/create-timeline-entry`           | Registro na timeline            |
+| `/external-user-api`               | API para app externo (portal)   |
 
 ### Environment (IA)
 
@@ -264,7 +304,10 @@ As skills geram código seguindo os padrões do projeto. Invoque no chat com
 | ---------------------- | ---------------------------------------- |
 | `/create-system-tool`  | Ferramenta invocável pelo agente Jeannie |
 | `/create-custom-agent` | Agente com suas `CustomTool`s             |
-| `/format-llm-markdown-output` | Restringe texto markdown gerado por LLM às tags que o `glyvio_app` renderiza |
+| `/create-environment-action` | `@Action` chamada pelo server/app (APIs externas, rede local) |
+| `/create-sync-extraction-action` | Extração para o Sync agendado   |
+| `/query-external-datasource` | Consulta sob demanda a datasource do Sync |
+| `/format-llm-markdown-output` | Restringe texto markdown gerado por LLM às tags que o app Glyvio renderiza |
 
 ### Configuração
 
@@ -272,6 +315,9 @@ As skills geram código seguindo os padrões do projeto. Invoque no chat com
 | ------------------ | ---------------------------------------------- |
 | `/modify-manifest` | Adicionar permissões ou migrações no manifesto |
 | `/release-project` | Build → bump de versão → commit → push         |
+| `/configure-report-record` | Relatório configurado no app (sem deploy) |
+| `/test-plugin-browser` | Testar o plugin no app publicado via AI bridge |
+| `/fork-company-script` | Verificar código do server sem publicar |
 
 ---
 
@@ -299,6 +345,6 @@ pnpm build        # instalar deps + build de todas as camadas
 pnpm build:fast   # build sem install (deps já instaladas)
 pnpm lint         # ESLint + TypeScript check
 pnpm pretty       # Prettier — formatar todos os arquivos TS
-./build_all.sh    # build de todos os plugins do monorepo pai
-./release_all.sh  # release de todos os plugins
+node <scripts-do-pacote>/i18n_check.mjs .   # ex.: .claude/scripts — chaves/parâmetros de tradução (.arb)
+node <scripts-do-pacote>/check_icons.mjs .  # nomes de ícone que o app não desenha
 ```

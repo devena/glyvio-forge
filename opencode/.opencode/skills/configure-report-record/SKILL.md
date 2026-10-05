@@ -119,8 +119,8 @@ the type — and two of them do **not** map 1:1:
 
 > ⚠️ **`LIST_CHOICE` and `SINGLE_CHOICE` are accepted by the type but never mapped.** The filter
 > modal's `onSave` handles every type in the table above and silently skips these two, so the
-> processor receives **nothing** for them — no error, just a missing parameter. Confirmed in
-> `report_filter_modal.ts`. Use `TEXT` or an entity type instead until this is fixed.
+> processor receives **nothing** for them — no error, just a missing parameter (confirmed in the
+> app's report filter modal). Use `TEXT` or an entity type instead until this is fixed.
 
 > ⚠️ **Range types produce two parameters, not one.** A `DATA_RANGE` named `periodo` arrives as
 > `periodo_min` / `periodo_max`. SQL that binds `:periodo` will never match.
@@ -152,6 +152,11 @@ A report may hold several `dataQueries` — one per section/table of the output.
 Only needed when no existing processor fits (the stock ones cover HTML/template rendering). A
 processor is a plugin service that receives the report id plus the resolved filter values and
 returns **a URL** to the produced output.
+
+Register it in the **app layer** (`plugin/app`): the report button and the send modal look the
+processor up there (`glyvio_core.pluginService.getServiceByPluginId(report.processor)`), so a
+processor registered only on the server is never found. Heavy rendering can still happen on the
+server — call a controller from `processReport` and return the URL it produces.
 
 ```typescript
 export class <Name>ReportService extends glyvio_core.PluginServiceInterfaceReportProcessor {
@@ -194,10 +199,9 @@ Report Record whose `processor` is a custom service returning the page's URL. On
 user explicitly wants the page inside that picker — otherwise a plain button calling
 `openCustomPage` is simpler and has no record to maintain.
 
-> **Open**: the core's own `AiReportService` returns the literal placeholder `{{_BASE_URL_}}`, which
-> the Flutter client expands at runtime. It appears exactly once in the whole codebase and is
-> undocumented, so its exact expansion is unverified. If you need a processor that points at a
-> Glyvio URL, confirm the expected form with the team rather than guessing.
+> **Open**: the expected form of a Glyvio-relative URL returned by a processor is undocumented
+> (the app may expand placeholders at runtime). If you need a processor that points at a Glyvio
+> URL, confirm the expected form with the Glyvio team rather than guessing.
 
 ---
 

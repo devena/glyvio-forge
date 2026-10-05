@@ -16,7 +16,6 @@ relative to the host project root, where this package is kept as `codex/`.
 | Server rules, controllers, interceptors, queues | `codex/agents/glyvio-server-coordinator.toml` |
 | Environment actions, system/custom tools | `codex/agents/glyvio-environment-agent.toml` |
 | HTML reports served by controllers | `codex/agents/glyvio-report-agent.toml` |
-| Glyvio Core source documentation and API examples | `codex/agents/glyvio-doc-agent.toml` |
 
 For a multi-layer task, apply the relevant roles to their respective layers.
 Use an installed custom agent only when delegation is available and authorized by
@@ -32,9 +31,8 @@ inspection; do not invent a `Skill`, `Read`, or `Task` tool.
 
 ## Shared Glyvio constraints
 
-- For plugin implementation, verify APIs in the target layer's `@types` or
-  `dist/bundle.d.ts`; never invent members or edit generated declarations as a fix.
-  The documentation role may inspect Core source when that is the target project.
+- For plugin implementation, verify APIs in the target layer's `@types` (e.g.
+  `@types/glyvio_core.d.ts`); never invent members or edit generated declarations as a fix.
 - Use injected `glyvio_core`, `glyvio_entity`, and `glyvio_structure` globals rather
   than importing framework internals. Follow the selected role's layer-specific
   typing, registration, entity creation, error and transaction rules.

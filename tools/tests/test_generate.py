@@ -40,7 +40,7 @@ class GeneratorTests(unittest.TestCase):
             found = {Path(p).parent.name for p in output
                      if p.startswith(f'{output_root}/skills/') and p.endswith('/SKILL.md')}
             self.assertEqual(found, expected_skills)
-            self.assertEqual(sum(p.startswith(f'{output_root}/agents/') for p in output), 6)
+            self.assertEqual(sum(p.startswith(f'{output_root}/agents/') for p in output), 5)
         self.assertEqual(sum(p.startswith('agy/skills/') for p in output), 3)
         for name, data in output.items():
             if name.endswith('.toml'):

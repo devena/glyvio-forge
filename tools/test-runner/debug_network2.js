@@ -1,3 +1,4 @@
+const TEST_ENV = require('./test_env');
 require('dotenv').config();
 const { chromium } = require('playwright');
 
@@ -12,12 +13,12 @@ const { chromium } = require('playwright');
       if (u.hostname.includes('glyvio') && !u.hostname.includes('app-beta')) hosts.add(u.hostname + ' :: ' + u.pathname.split('/').slice(0,4).join('/'));
     } catch(e) {}
   });
-  await page.goto('https://app.example.com', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.goto(TEST_ENV.appUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.locator('input').first().waitFor({ state: 'visible', timeout: 30000 });
-  await page.locator('input').first().fill('test-user@example.com');
+  await page.locator('input').first().fill(TEST_ENV.username);
   await page.mouse.click(1050, 496);
   await page.waitForTimeout(300);
-  await page.keyboard.type('REMOVED_PASSWORD', { delay: 30 });
+  await page.keyboard.type(TEST_ENV.password, { delay: 30 });
   await page.mouse.click(1050, 569);
   await page.waitForTimeout(20000);
   console.log('URL:', page.url());

@@ -1,6 +1,7 @@
+const TEST_ENV = require('./test_env');
 require('dotenv').config();
 const { chromium } = require('playwright');
-const shot = (n) => '<local-path>' + n;
+const shot = (n) => TEST_ENV.shotDir + '/' + n;
 
 (async () => {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
@@ -12,7 +13,7 @@ const shot = (n) => '<local-path>' + n;
     storageState: '.session_auth.json',
   });
   const page = await context.newPage();
-  await page.goto('https://app.example.com', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.goto(TEST_ENV.appUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   for (let i = 0; i < 60; i++) {
     try { await page.evaluate(() => window.__GLYVIO_AI__.listRoutes()); break; }
     catch (e) { await page.waitForTimeout(1000); }

@@ -11,7 +11,6 @@
   "agents": {
     "glyvio-app-chart.md": "glyvio-app-chart",
     "glyvio-app-coordinator.md": "glyvio-app-coordinator",
-    "glyvio-doc-agent.md": "glyvio-doc-agent",
     "glyvio-environment-agent.md": "glyvio-environment-agent",
     "glyvio-report-agent.md": "glyvio-report-agent",
     "glyvio-server-coordinator.md": "glyvio-server-coordinator"

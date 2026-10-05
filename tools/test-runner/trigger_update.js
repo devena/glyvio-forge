@@ -1,3 +1,4 @@
+const TEST_ENV = require('./test_env');
 const C = require('./financial_common');
 
 (async () => {
@@ -11,7 +12,7 @@ const C = require('./financial_common');
   console.log('Dispatching onTapUpdate for financial plugin...');
   await page.evaluate(async (cb) => {
     await window.__GLYVIO_AI__.dispatchAction(cb, 'onTapUpdate', {
-      id: '00000000-0000-0000-0000-000000000000',
+      id: TEST_ENV.pluginRecordId,
       latestVersion: '0.1.4',
     });
   }, pm.callbackId);

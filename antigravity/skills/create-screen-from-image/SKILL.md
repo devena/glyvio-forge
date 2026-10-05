@@ -5,6 +5,10 @@ description: "Reproduces a UI screenshot (print) as faithfully as possible using
 <!-- Generated from src/skills/create-screen-from-image/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create Screen From Image (print → Glyvio screen)
 
+> **Padrão visual moderno:** monte o conteúdo com `glyvio_core.ui` e `SurfaceDesign`/`StackLayoutDesign`/`GridLayoutDesign`
+> (guia `antigravity/rules/references/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
+> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`antigravity/rules/references/i18n.md`) e prints em 1440×900 e 390×844.
+
 This skill turns a **screenshot provided by the user** into a Glyvio screen that is as visually
 faithful as possible, using **only** components exposed in `@types` (`glyvio_core.*`). It does not
 guess from a feature description — it reads the actual image and reconstructs its structure.
@@ -34,7 +38,7 @@ If any required parameter is missing, **stop and ask** — never guess.
 
 1. **`antigravity/rules/component_catalog.md` (and `antigravity/rules/references/component_catalog_full.md`)** — the visual catalog. This is
    the ground truth for mapping "what it looks like" → "which `glyvio_core` class". Keep it open the whole time.
-2. **`@types` / `dist/bundle.d.ts`** — confirm every class you intend to use is actually exported.
+2. **`@types` (`plugin/<layer>/@types/glyvio_core.d.ts` and the other `@types/*.d.ts`)** — confirm every class you intend to use is actually exported.
    Never instantiate a class that is not in `@types`.
 3. The matching page skill(s) under `antigravity/skills/` (e.g. `antigravity/skills/create-list-page/SKILL.md`) for the final code blueprint.
 

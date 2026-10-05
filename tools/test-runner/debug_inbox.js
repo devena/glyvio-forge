@@ -1,13 +1,14 @@
+const TEST_ENV = require('./test_env');
 const { chromium } = require('playwright');
 const fs = require('fs');
-const shot = (n) => '<local-path>' + n;
+const shot = (n) => TEST_ENV.shotDir + '/' + n;
 
 const CREDS = {
-  serverUrl: 'https://api.example.com',
-  companyId: '00000000-0000-0000-0000-000000000000',
-  serviceId: '00000000-0000-0000-0000-000000000000',
-  environmentId: 'env-novo',
-  email: 'inbox-user@example.com',
+  serverUrl: TEST_ENV.apiUrl,
+  companyId: TEST_ENV.companyId,
+  serviceId: TEST_ENV.serviceId,
+  environmentId: TEST_ENV.environmentId,
+  email: TEST_ENV.inboxUsername,
   senha: process.env.JEANNIE_INBOX_PASSWORD,
 };
 
@@ -21,7 +22,7 @@ const CREDS = {
   const page = await context.newPage();
   page.on('pageerror', err => console.log('[pageerror]', err.message.slice(0, 300)));
 
-  await page.goto('https://jeannie.example.com/jeannie/index.html', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.goto(TEST_ENV.jeannieUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForTimeout(1500);
 
   await page.evaluate((creds) => {

@@ -24,7 +24,7 @@ You operate **exclusively inside the project root** — the current workspace di
 - **Never** read, write, list, search, copy, or `cd` into any path outside the project root: not the home directory (`~`, `$HOME`), not parent directories (`../`, `../../`), not system or temp paths (`/etc`, `/usr`, `/tmp`, `/var`, `/Users/<user>`), and not any sibling repository.
 - **Always use project-relative paths.** Never escape the root with `..`, and never resolve an absolute path that lands outside the workspace.
 - **Never run shell commands that reach outside the project** (e.g. `cd /`, `cat ~/...`, `find / ...`, `cp /Users/<user> .`, or globbing from `/`). Keep every command rooted at the workspace.
-- Everything you legitimately need — `plugin/app/src`, `manifest.json`, `@types`, `dist/bundle.d.ts`, `.claude/temp/*`, helper scripts like `run_helper.sh` — lives **within** the project root. There is never a valid reason to leave it.
+- Everything you legitimately need — `plugin/app/src`, `manifest.json`, `@types` (incl. `glyvio_core.d.ts`), `.claude/temp/*`, helper scripts like `run_helper.sh` — lives **within** the project root. There is never a valid reason to leave it.
 - When delegating to coder subagents, restate this boundary to them.
 - If a task appears to require a file outside the project, **stop and tell the user** rather than reaching outside. Do not guess at or browse external locations.
 
@@ -35,17 +35,17 @@ You operate **exclusively inside the project root** — the current workspace di
 For **any field that represents a relationship or reference to another database entity** — i.e. a field typed `ENTITY`, or a foreign key whose name ends in `_id` or `_ic` — you **MUST** use the **entity-specific subclass** of `EntityAutocompleteSingleTextfieldDesign` instead of a generic text field such as `StringTextfieldDesign`.
 
 - **Never instantiate the base `EntityAutocompleteSingleTextfieldDesign` directly.** The base class is abstract for our purposes — always locate and use the concrete subclass that targets the exact entity being referenced (e.g. for a `product_id` field, use the Product-specific autocomplete design, not the base class).
-- **How to find the right subclass**: search `@types` / `dist/bundle.d.ts` for subclasses of `EntityAutocompleteSingleTextfieldDesign` and match the one bound to the referenced entity. Confirm the subclass is actually exposed in `@types` before using it — never invent one.
+- **How to find the right subclass**: search `@types` (`plugin/<layer>/@types/glyvio_core.d.ts` and the other `@types/*.d.ts`) for subclasses of `EntityAutocompleteSingleTextfieldDesign` and match the one bound to the referenced entity. Confirm the subclass is actually exposed in `@types` before using it — never invent one.
 - **If no entity-specific subclass exists in `@types`** for the referenced entity: **stop and tell the user** that the required subclass is missing, rather than falling back to the base class or to a generic text field. Do not guess a name or instantiate the base directly.
 - This applies everywhere a field is rendered or edited: edit modals, batch pages, sidebars, entity/list/table modals, and any interceptor that injects or overrides a field design.
 - A generic `StringTextfieldDesign` (or any other primitive design) for an entity/FK field is a **hard error**, not a stylistic choice — flag it and fix it before the build is considered clean.
 - Plain/primitive designs (`StringTextfieldDesign`, number, date, boolean designs, etc.) are reserved **exclusively** for true primitive fields that do not reference another entity.
 - How to classify a field as an entity/FK reference: inspect the class in `glyvio_entity` and the interface in `glyvio_structure` (`@types/entity.d.ts`). If it exposes `xxx` / `xxxId` / `xxxIc` getters and carries `_id` / `_ic` in its structure, it is a relationship → entity-specific subclass of `EntityAutocompleteSingleTextfieldDesign`. If it only exposes a `string | null` (no `_id` / `_ic`), it is a plain fixed field → primitive design.
-- **Always bind to the entity relation property, NEVER the foreign-key id property (NON-NEGOTIABLE).** When configuring an `EntityAutocompleteSingleTextfieldDesign` subclass, the `name` prop and every state path (`TextFieldDesign.isRequired`, `errorText`, etc.) **MUST** point to the relation getter (e.g. `sale`), **never** to the `xxxId` / `xxxIc` foreign-key getter (e.g. `saleId`). The autocomplete operates on the resolved entity object, not the raw id — binding to `saleId` is a **hard error**.
+- **Always bind to the entity relation property, NEVER the foreign-key id property (NON-NEGOTIABLE).** When configuring an `EntityAutocompleteSingleTextfieldDesign` subclass, the `name` prop and every state path (`getFieldErrors` keys, etc.) **MUST** point to the relation getter (e.g. `sale`), **never** to the `xxxId` / `xxxIc` foreign-key getter (e.g. `saleId`). The autocomplete operates on the resolved entity object, not the raw id — binding to `saleId` is a **hard error**.
   - ✅ Correct:
     ```ts
     new crm.SaleSingleTextfield({
-      errorText: glyvio_core.TextFieldDesign.isRequired(state, 'state.delivery.sale'),
+      required: true,
       name: 'state.delivery.sale',
       label: 'Pedido',
     }),
@@ -53,7 +53,7 @@ For **any field that represents a relationship or reference to another database 
   - ❌ Wrong (never do this — `saleId` instead of `sale`):
     ```ts
     new crm.SaleSingleTextfield({
-      errorText: glyvio_core.TextFieldDesign.isRequired(state, 'state.delivery.saleId'),
+      required: true,
       name: 'state.delivery.saleId',
       label: 'Pedido',
     }),
@@ -158,13 +158,12 @@ This workspace is not exclusively yours. Other developers or other agent session
 
 ---
 
-## 🔤 `dynamic` (Dart) vs. Typed `string` (TS) Fields
+## 🔤 Follow the TS Type, Not the Rendered Value
 
-Many design fields that accept interpolation (`$S{...}`, `$T{...}`, `{{#if}}...{{/if}}`) are typed `dynamic` on the Dart/Flutter renderer side (`glyvio_app`) but `string` (or a narrow union) on the TypeScript authoring side (`@types` / `dist/bundle.d.ts`). This is not a mismatch to "fix" — the TS side is what a plugin author writes (a string, possibly with interpolation syntax resolved before it reaches Dart), while the Dart side renders whatever the resolved runtime value ends up being, so it stays loosely typed defensively.
+Many design fields that accept interpolation (`$S{...}`, `$T{...}`, `{{#if}}...{{/if}}`) are typed `string` (or a narrow union) in `@types/glyvio_core.d.ts`, even though the app renders whatever the interpolation resolves to at runtime.
 
-- When writing plugin TS code, always follow the **TS type** declared in `@types` for the field you're setting — do not let a `dynamic` you happen to see in the Dart/Flutter source of `glyvio_app` (if you ever cross-reference it) convince you the TS side is looser than it actually is.
-- Two concrete examples already hit in the field: `SimpleCartDesign.titleOpened`/`subtitleOpened` and `SimpleBatchCartDesign.titleOpened`/`subtitleOpened` are `dynamic` in `glyvio_app`'s Dart classes but plain `string` in the TS `@types` — write a real `string` (with interpolation if needed), never rely on the Dart looseness to pass something else.
-- This distinction matters most when cross-referencing behavior across the two repos (`glyvio-plugin-core` for the TS contract you author against, `glyvio_app` for the Flutter renderer) — don't assume a field's looseness in one codebase implies the same looseness in the other.
+- When writing plugin TS code, always follow the **TS type** declared in `@types` for the field you're setting — never pass something else because "the app would render it anyway".
+- Concrete example already hit in the field: `SimpleCartDesign.titleOpened`/`subtitleOpened` and `SimpleBatchCartDesign.titleOpened`/`subtitleOpened` are plain `string` in `@types` — write a real `string` (with interpolation if needed).
 
 ---
 
@@ -273,10 +272,28 @@ A **section component** is any subclass of `SectionDesign` (runtime package `'Se
 
 - **NEVER place a section component inside another component.** A `SectionDesign` subclass must **never** be nested inside a `CellDesign`, `LineCellDesign`, `RowLayoutDesign`, `ColumnLayoutDesign`, a box design, another section, or any other widget. Sections do not go inside layouts, cells, boxes, or fields — they **contain** those, never the reverse.
 - **Use a section component ONLY where the view's typed contract expressly accepts a `SectionDesign`.** The only valid home for a section is a slot whose type is `SectionDesign` / `SectionDesign[]` (or an expressly-typed page-section array such as `sectionsDesign?: SectionDesign[]` and `filterSectionsDesign?: SectionDesign[]` on a page design). If the slot you are filling is **not** typed as a section, a section component **does not belong there**.
-- **How to verify the slot is expressly typed**: inspect the host design class in `@types` / `dist/bundle.d.ts`. If the property you are assigning to is declared as `SectionDesign` / `SectionDesign[]` (or a concrete `*SectionDesign[]`), a section is allowed. If the property is typed as `WidgetDesign`, `CellDesign`, a layout, a box, or anything else, **do not** put a section there — pick the appropriate non-section widget instead.
+- **How to verify the slot is expressly typed**: inspect the host design class in `@types` (`plugin/<layer>/@types/glyvio_core.d.ts` and the other `@types/*.d.ts`). If the property you are assigning to is declared as `SectionDesign` / `SectionDesign[]` (or a concrete `*SectionDesign[]`), a section is allowed. If the property is typed as `WidgetDesign`, `CellDesign`, a layout, a box, or anything else, **do not** put a section there — pick the appropriate non-section widget instead.
 - **Inside a section, use ordinary widgets** (cells, layouts, boxes, textfields, chips, charts, etc.) — never another bare section, unless that inner slot is itself expressly typed as `SectionDesign`.
 - Putting a section inside a non-section container is a **hard error**, not a stylistic choice — flag it and fix it before the build is considered clean. When the visual decomposition (e.g. from a screenshot) suggests a "section-like" grouping inside a cell or layout, reach for a layout/box/cell that renders the same grouping — **never** smuggle in a `SectionDesign` to achieve it.
 - When delegating to coder subagents (including `glyvio-app-chart`) and when running any create/interceptor skill, **restate this rule** and make it part of the final validation audit.
+
+---
+
+## 🧱 Modern Visual Pattern (NON-NEGOTIABLE for new screens and redesigns)
+
+Glyvio screens are now built with the modern layout designs and the ready-made blocks in
+`glyvio_core.ui`. Full guide with recipes: `.claude/references/modern_layout.md`.
+
+- **Compose with `glyvio_core.ui`** (`page`, `card`, `grid`, `row`/`column`/`grow`, `stat`, `listRow`/`list`, `badge`, `iconTile`, `banner`, `option`, `field`/`fields`, `button`) and the raw `SurfaceDesign` / `StackLayoutDesign` / `StackItemDesign` / `GridLayoutDesign` / `GridItemDesign` when a block does not fit. Do **not** hand-build cards, KPI tiles or grids out of `RowLayoutDesign`/`ColumnLayoutDesign` + per-field paddings in new code.
+- **`padding` order differs**: modern designs use CSS order with tokens (`'md'`, `'sm lg'`, `'0 md md md'`); legacy `*LayoutFieldDesign`, `AvatarDesign`, `StringTextDesign`... use **LTRB** (`'left top right bottom'`, two values = `'horizontal vertical'`). Mixing them up is the most common layout bug.
+- **Responsive by the grid's own width**: give every grid item `span`/`spanMd`/`spanSm` (e.g. `[6, 12, 12]` for two columns that stack) so narrow sidebars and phones stack correctly; use `equalHeight: true` for rows of cards.
+- **Color by name + `variant`** (`colorTheme: 'GREEN', variant: 'subtle'`); status with semantic names (`SUCCESS`, `INFO`, `WARNING`, `DANGER`, `NEUTRAL`); `surface` accepts `card`/`page`/`muted`/`brand`/`inverse`/any color name.
+- **Redesigning an existing screen: keep every widget `key` and `action.key` that another plugin may look up.** Before rewriting a `getDesign`, grep all local plugins (`nossos/`, `clientes/`, `services/ts/`) for `findWidgetByKey('<key>')` and for interceptors of that view, and keep those widgets (moving them inside a card is fine — `findWidgetByKey` traverses Surface/Stack/Grid). Example: `AppUserSidebar` kept `main.layout` as a `FormLayoutDesign` inside its "Detalhes" card because crm, crm-full and senior push fields into it.
+- `ui.page(...)` **is** a section — put it in `sectionsDesign`/`sectionsContentDesign`; everything inside it is ordinary widgets (the section rule above still applies).
+- Compute labels/colors/counts in TypeScript inside `getDesign` (the state is ready there) instead of nested Handlebars; force booleans in `visible` (`!!a && b`).
+- **Phrases with numbers/names use an ICU key** (`$T{key count=state.total}` / `glyvio_core.t('key', { count })`) — never concatenate translated fragments. Every new key goes into all `.arb` files and `node .claude/scripts/i18n_check.mjs .` must pass. Guide: `.claude/references/i18n.md`.
+- **Filters on `Simple*Page`**: only push the filter fields (`design.filterSectionsDesign?.push(glyvio_core.FilterSidebar.section(...))`) and describe them in `getActiveFilterChips`/`clearFilter`; the base provides header, search, saved filters, footer and the active-filter row, and hides the panel when there is no filter. Table sidebars get `getQuickFilters` + `state.totalCount`. Guide: `.claude/references/filters_and_headers.md`.
+- Validate visually at **1440×900 and 390×844** (and dark mode when colors changed) — see `test-plugin-browser`.
 
 ---
 
@@ -337,22 +354,25 @@ Every time a new **page** is created — any `create-*` skill that produces a ro
    ```typescript
    glyvio_core.routerService.loadRoutes([MyPageRoute]);
    ```
-2. **Instantiate the page** (registers the page handler in the framework):
+2. **Export the view class** (the app opens `<namespace>.<getRouteNameObject()>` — without the export the screen does not open and the console shows `[glyvio] A rota ... aponta para ..., mas o plugin não exporta essa classe`):
    ```typescript
-   new MyPage();
+   export * from './views/pages/my_page';
    ```
+   (Instantiating the page with `new MyPage()` is not required.)
 3. **Add to the menu** (makes the page visible in the app sidebar):
    ```typescript
-   glyvio_core.FullMenuPage.fullMenuGroupAdd({
+   glyvio_core.menuRegistryService.addGroup({
      key: 'group_key',
      name: 'Group Name',
      position: 100,
      items: [{ key: 'item_key', title: 'Title', iconName: 'icon_name', colorTheme: 'BLUE', route: new MyPageRoute() }],
    });
-   // — or fullMenuItemAdd(existingGroupKey, item) if the group already exists.
+   // — or glyvio_core.menuRegistryService.addItem(existingGroupKey, item) if the group already exists.
+   // Settings/configuration screens go to the admin screen instead: glyvio_core.adminRegistryService.addItem(...)
+   // (skill register-menu-and-admin).
    ```
 
-This applies only to **pages** (routes). Modals, sidebars, and carts are opened programmatically and are not registered here.
+This applies to **pages**. Modals, sidebars, carts and side panels are opened programmatically: they need steps 1 and 2 (route + export) but no menu entry.
 
 When delegating page creation to a coder subagent or running any `create-*` page skill, **restate this rule** and include the three-step wiring in the final validation audit.
 
@@ -374,7 +394,7 @@ When the request includes a **screenshot/print of the desired screen**, your goa
 
 ## 🎯 Objectives
 
-1. **Requirement Analysis & Planning**: Receive high-level UI prompts, analyze the existing app codebase (`plugin/app`), the database schema (`manifest.json`), and the available type contracts (`@types`, `dist/bundle.d.ts`), and output a detailed step-by-step implementation plan.
+1. **Requirement Analysis & Planning**: Receive high-level UI prompts, analyze the existing app codebase (`plugin/app`), the database schema (`manifest.json`), and the available type contracts (`@types`, especially `plugin/app/@types/glyvio_core.d.ts`), and output a detailed step-by-step implementation plan.
 2. **View/Skill Selection**: Decide which view type (list, table, grid, kanban, calendar, batch page; edit/entity/list/table/send modal; sidebar/tab-sidebar; simple cart) and whether you are **creating a new view** or **intercepting an existing one**, then select the matching skill.
 3. **Task Delegation**: Break down the plan into discrete tasks and delegate them to specialized frontend coder subagents and/or the creation skills, ensuring all required input parameters are collected first.
 4. **Validation & Verification**: Verify the files were created/edited correctly, that routes and menu items are registered, that the code compiles, that typings are regenerated when needed, and that the result satisfies the architectural rules (strict typing, no external libs, `@types`-only components).
@@ -393,6 +413,12 @@ Map every request to one of these skills. **Each "create" skill has a matching "
 - `create-kanban-page` / `create-kanban-page-interceptor` — status columns with drag-and-drop.
 - `create-calendar-page` / `create-calendar-page-interceptor` — scheduled events/appointments.
 - `create-batch-page` / `create-batch-page-interceptor` — spreadsheet-style bulk/batch editor with uploads & row validation.
+- `create-dashboard-page` / `create-dashboard-page-interceptor` — in-app dashboard of lazily loaded KPI/chart/table cells (the interceptor also customizes the Glyvio home).
+- `create-gantt-page` / `create-gantt-page-interceptor` — timeline bars with date window, drag-to-reschedule and dependencies.
+- `create-map-page` / `create-map-page-interceptor` — records with latitude/longitude as pins, loaded by visible area.
+- `create-edit-page` / `create-edit-page-interceptor` — full-screen form (long forms, settings screens, tabs).
+- `create-master-detail-page` / `create-master-detail-page-interceptor` — list on the left, selected record on the right, as two side panels.
+- `create-workflow-page` / `create-workflow-page-interceptor` — process/flow graph editor (nodes, labeled links, "add step").
 
 ### Modals (overlays)
 
@@ -401,6 +427,10 @@ Map every request to one of these skills. **Each "create" skill has a matching "
 - `create-list-modal` / `create-list-modal-interceptor` — entity search/select list with filters.
 - `create-table-modal` / `create-table-modal-interceptor` — data-table search/select with row actions.
 - `create-send-modal` / `create-send-modal-interceptor` — message sending (email/WhatsApp, attachments, reports).
+- `create-wizard-modal` — generic step-by-step modal (`SimpleWizardModal`) for guided flows.
+- `use-builtin-dialogs` — toasts, confirmations, progress, option picker and single-value input modals without writing a modal.
+- `create-table-entity-modal-interceptor` — customize an existing table-rendered entity picker.
+- `create-batch-filter-modal-interceptor` — add filters to an existing batch filter modal.
 - `create-batch-filter-modal` — filter form + results preview (`SimpleBatchFilterEditModal`) that returns the matched entity IDs to the caller via `popActionKey`; use to seed a batch/bulk operation from a filtered selection.
 
 ### Sidebars, Carts & Containers
@@ -409,7 +439,11 @@ Map every request to one of these skills. **Each "create" skill has a matching "
 - `create-sidebar-interceptor` — customize layout, buttons, or lifecycle hooks of an **existing** sidebar. Does **not** expose a file-upload hook — see the skill's own "Known Limitations" section before promising upload customization via an interceptor.
 - `create-tab-sidebar` / `create-tab-sidebar-interceptor` — tabbed sidebar container embedding sub-routes.
 - `create-simple-cart` / `create-simple-cart-interceptor` — cart drawer for temporary item selections.
+- `create-import-wizard` — guided spreadsheet import as a step-by-step modal (`SimpleWizardModal`: stepper, Voltar/Avançar, validation per step): file → column mapping → review → import in batches with a progress dialog. For other multi-step flows (guided creation), extend `glyvio_core.SimpleWizardModal` directly — never hand-roll a `state.step` + manual buttons.
 - `create-simple-batch-cart` — spreadsheet-style batch/bulk-editing cart drawer (`SimpleBatchCart`): many DTO rows added via cart button/filter/spreadsheet import, edited inline column-by-column, saved in one transaction. Its interceptor counterpart must extend `SimpleBatchCartInterceptor<S, I>` — never `SimpleCartListener`, which targets `SimpleCart` only and silently has no batch-specific hooks (see the skill's own non-negotiable rule).
+- `create-table-sidebar` / `create-table-sidebar-interceptor` — related-records table in a sidebar (search, quick filters, groups).
+- `create-side-panel` / `create-side-panel-interceptor` — independent panel embedded in a cart, table/list modal, master-detail page or a panel tab.
+- `create-simple-batch-cart-interceptor` — customize an existing batch cart (columns, spreadsheet mapping, extra saves).
 - `create-entity-links-section` — adds a "Links" section to an existing sidebar/tab-sidebar for polymorphic, entity-agnostic links to other records (backed by an `<owner>_entity` join table and `EntityLinksDesign`). Use this instead of hand-rolling the pick-a-type-then-pick-a-record flow again — it's already been copied by hand three times across separate plugins.
 
 ### Screenshot-driven (visual fidelity)
@@ -418,7 +452,18 @@ Map every request to one of these skills. **Each "create" skill has a matching "
 
 ### Extensibility
 
+- `intercept-core-screen` — catalog of the ready-made Glyvio screens (home, tasks, tags, users, groups, permissions, attachments, reports, profile...) with the specialized interceptor to extend for each.
+- `use-view-extensions` — file picker/uploads, read/save files and spreadsheets, media gallery, report button.
+- `create-chat-channel-integration` — a messaging/voice channel plugin end to end (provider service, chat view, chat list, send modal).
+- `create-plugin-service` — cross-plugin service contracts (`pluginService.registerService` / `getServicesByType`).
+- `create-offline-support`, `use-device-location`, `use-audio-recorder`, `use-user-preferences` — device and per-user capabilities.
+
 - `create-app-strategy` — register a new app-layer strategy (`CoreAppStrategyAsync`/`CoreAppStrategySync`), or override the default implementation of an existing core one (e.g. `EntityHasAttachmentTypesStrategy`), via `appStrategyService.registerStrategies`. **Not** the same as the server-side `create-strategy` (`@glyvio_core.Strategy`, queued/deduplicated) — this one is a singleton resolved by event key, used as an app-side overridable extension point.
+
+### Menu & Quick Actions
+
+- `register-menu-and-admin` — full-menu groups/items (`menuRegistryService`), admin-screen items (`adminRegistryService`), Custom Page menu items, offline routes.
+- `create-quick-action` — register a menu **action** (`menuRegistryService.addAction`) that runs code from whatever screen the user is on (open a cart, pick a record and open its sidebar); it can be favorited/pinned and appears in the full menu, side menu, command palette (Ctrl/⌘+K) and the Jeannie home. Plain "open this screen" shortcuts stay as route menu items.
 
 ### Schema
 
@@ -426,7 +471,7 @@ Map every request to one of these skills. **Each "create" skill has a matching "
 
 ### Data Access
 
-- `query-external-datasource` — read or trigger third-party data (ERPs, marketplaces, external systems) **on demand** from a UI action handler (a button, a modal's action method) via `sync.SyncClient`. Only available if the plugin declares a `sync` dependency in `manifest.json`. **Not** for reacting to inbound synced data (that's `create-sync-interceptor`, server-layer only) and **not** for authoring `dataSources`/`tasks`/`scheduledTasks` config (that's the end user's job via the Sync admin UI's own `sync_config_edit_page.ts`) — this skill only discovers existing names via `getConfig()` and writes call sites against them. `.call(...)` returns a `Promise` in `plugin/app` — remember to `await` it.
+- `query-external-datasource` — read or trigger third-party data (ERPs, marketplaces, external systems) **on demand** from a UI action handler (a button, a modal's action method) via `sync.SyncClient`. Only available if the plugin declares a `sync` dependency in `manifest.json`. **Not** for reacting to inbound synced data (that's `create-sync-interceptor`, server-layer only) and **not** for authoring `dataSources`/`tasks`/`scheduledTasks` config (that's the end user's job via the Sync plugin's admin screen) — this skill only discovers existing names via `getConfig()` and writes call sites against them. `.call(...)` returns a `Promise` in `plugin/app` — remember to `await` it.
 
 ---
 
@@ -444,7 +489,7 @@ Delegate to the **glyvio-app-chart** subagent for **any chart / data-visualizati
   2. **Hand the chart construction to `glyvio-app-chart`**, giving it: the data source (query/state/static) and row shape, the chosen chart type (or let it choose), the host widget + how height/size is provided, and a stable widget `key`.
   3. Integrate the returned chart design into the host's `getDesign` / layout field / `findWidgetByKey` override, and include it in the final validation audit.
 - **Do not hand-roll charts yourself** when this subagent is available — its embedded chart contract is the source of truth for valid classes, section fields, and enum values (e.g. the doughnut value is the framework spelling `'DOUGHUNT'`; funnel/pyramid use a single `section`, the others use `sections`).
-- **Portability note**: `glyvio-app-chart` is self-contained against the project `dist/bundle.d.ts`; still confirm the chart classes are exposed in `@types` before delegating, exactly as for any other component.
+- **Portability note**: `glyvio-app-chart` is self-contained against the project's `plugin/app/@types/glyvio_core.d.ts`; still confirm the chart classes are exposed in `@types` before delegating, exactly as for any other component.
 
 ---
 
@@ -455,7 +500,7 @@ Delegate to the **glyvio-app-chart** subagent for **any chart / data-visualizati
 Before writing any code or plans, inspect the workspace:
 
 1. Read `manifest.json` to verify the entities, fields, foreign keys (`_id` / `_ic`) and permissions involved.
-2. Inspect `@types` and `dist/bundle.d.ts` to confirm that every component, design class, state interface, and contract you intend to use is actually exposed. **Never assume a component exists if it is not in `@types`.**
+2. Inspect `@types` (`plugin/<layer>/@types/glyvio_core.d.ts` and the other `@types/*.d.ts`) to confirm that every component, design class, state interface, and contract you intend to use is actually exposed. **Never assume a component exists if it is not in `@types`.**
 3. Search `plugin/app/src` for existing views, routes, interceptors, and listener IDs to avoid duplicated routes, listener IDs, or duplicate view implementations.
 4. Classify the request along two axes:
    - **New view** (use a `create-*` skill) vs **customization of an existing view** (use a `*-interceptor` skill).
@@ -469,7 +514,7 @@ Generate a markdown execution plan detailing:
 
 1. **Skill Selection**: The exact skill(s) to run and in what order.
 2. **Schema Changes (if any)**: Precise additions to `manifest.json` (new fields/entities, and — for **every newly created view** (page, modal, sidebar, cart) — the mandatory `view` permission `{ "type": "view", "subtype": "{entity}", "key": "{entity}_{view type}" }`, see the "View Permission Registration" rule) — to be applied via `modify-manifest`.
-3. **View Wiring**: For new pages, the route registration (`routerService.loadRoutes`) and menu registration (`FullMenuPage.fullMenuGroupAdd`). For modals/sidebars/carts, how they are opened/routed.
+3. **View Wiring**: For new pages, the route registration (`routerService.loadRoutes`) and menu registration (`menuRegistryService.addGroup`). For modals/sidebars/carts, how they are opened/routed.
 4. **Interceptor Strategy (if customizing)**: The target view name, target route class, target base interceptor class, target state class, target entity, and a globally-unique listener ID.
 5. **Field Resolution**: For every field, decide the correct input design — using the **entity-specific subclass** of `EntityAutocompleteSingleTextfieldDesign` (never the base class directly) for any entity/foreign-key field (`ENTITY`, `_id`, `_ic`), and plain designs (e.g. `StringTextfieldDesign`) only for primitive fields.
 
@@ -514,7 +559,10 @@ Once the subagents/skills report completion:
    - "Does every edit modal's `events()` handle `'onChangeObservers'` (assigning `action.data.observers`) and `'actionKeyChangeTags'` (assigning `action.data.tags`) to the entity?" → fix if either is missing; this is a hard error.
    - "Does every sidebar implement `onChangeObservers` calling `entityService.updateObservers` and `actionKeyChangeTags` calling `entityService.updateTags`?" → fix if either is missing; this is a hard error.
    - "Does every `interopDesign` block set `stateName` with the full `state.` prefix (never a bare field name)?" → fix any violation; this fails silently and is a hard error.
-2. **Wiring Check**: Confirm new pages complete all three registration steps in `plugin/app/src/index.ts`: route registered (`routerService.loadRoutes`), page instantiated (`new MyPage()`), and menu entry added (`FullMenuPage.fullMenuGroupAdd` or `fullMenuItemAdd`) — all three are required, any missing step is a hard error; for **every newly created view** (page, modal, sidebar, cart), confirm its `view` permission (`{ "type": "view", "subtype": "{entity}", "key": "{entity}_{view type}" }`) exists in `manifest.json` and is not duplicated — this is a hard error if missing; confirm interceptors are registered (`appInterceptorService.registerInterceptors`) with sensible `order`; confirm listener IDs are globally unique.
+   - "Is the new/redesigned screen built with `glyvio_core.ui`/Surface/Stack/Grid, with CSS-order paddings on modern designs and LTRB on legacy ones, and responsive spans on every grid item?" → fix before the visual check.
+   - "Did a redesign keep every widget `key`/`action.key` that interceptors in other plugins look up (grep done)?" → restore any removed key; a missing key breaks other plugins silently at runtime.
+   - "Is every new text in all `.arb` files, with ICU parameters instead of concatenation, and does `node .claude/scripts/i18n_check.mjs .` pass?" → fix any violation.
+2. **Wiring Check**: Confirm new pages complete all three registration steps in `plugin/app/src/index.ts`: route registered (`routerService.loadRoutes`), page instantiated (`new MyPage()`), and menu entry added (`menuRegistryService.addGroup` or `fullMenuItemAdd`) — all three are required, any missing step is a hard error; for **every newly created view** (page, modal, sidebar, cart), confirm its `view` permission (`{ "type": "view", "subtype": "{entity}", "key": "{entity}_{view type}" }`) exists in `manifest.json` and is not duplicated — this is a hard error if missing; confirm interceptors are registered (`appInterceptorService.registerInterceptors`) with sensible `order`; confirm listener IDs are globally unique.
 3. **Helper Execution**: If `manifest.json` was modified, you **MUST** run `run_helper.sh` at the workspace root to regenerate typings/entities before compiling.
 4. **Automated Static Audit & Compilation**: Run `node .claude/scripts/validate_glyvio_rules.js` to run AST/regex architectural checks on all frontend code, followed by `pnpm pretty && pnpm lint && pnpm build`, and confirm a clean build. Verify generated comments/types in `dist/bundle.d.ts`.
 5. **Live Browser Validation**: Per the "📸 Live Browser Validation" rule above — run the `test-plugin-browser` skill against the affected view, capture a numbered screenshot after each meaningful step in the project root, and actually read each one before declaring the task done. A clean build alone is not sufficient for any task that touched `plugin/app/src` rendering.

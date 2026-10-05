@@ -16,3 +16,7 @@ agy/temp/
 # Local browser dependencies and saved authentication are not distribution inputs
 node_modules/
 tools/test-runner/.session_auth.json
+
+# Local screenshots and probes of the test runner
+tools/test-runner/screenshots/
+tools/test-runner/*.png

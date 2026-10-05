@@ -49,7 +49,7 @@ Draft a plan detailing:
 3. **Permissions required**: Detail if a new permission needs to be created in the `manifest.json` (specifically for `@SystemTool` registrations).
 4. **Trigger Strategy**: Indicate how/when the tool or action will be called.
 
-### Phase 3: Skill Delegation (use skills first, hand-code only for @Action)
+### Phase 3: Skill Delegation (use skills first)
 
 Before writing any TypeScript manually, check whether a dedicated skill covers the work:
 
@@ -58,10 +58,12 @@ Before writing any TypeScript manually, check whether a dedicated skill covers t
 | Create a new `@SystemTool` | **`create-system-tool`** — generates the class, JSDoc, permission entry, `run_helper.sh` call, and entrypoint import |
 | Create a new Custom Agent (`manifest.json` + `@CustomTool`) | **`create-custom-agent`** — handles the full agent/tool registration |
 | On-demand read/trigger against a third-party datasource already registered in `glyvio-plugin-sync` (ad-hoc query, force a task now, ignore a record) | **`query-external-datasource`** — remember `.call(...)` returns a `Promise` in this layer (must `await`) |
-| A `@SystemTool`/`@CustomTool` response (or a JSON field within it) will be shown to the end user as markdown in `glyvio_app` | **`format-llm-markdown-output`** — constrains the LLM to the exact tags `TextMarkdown`/`gpt_markdown` renders, instead of free-hand formatting prose that risks HTML/unsupported syntax |
+| Create a new `@Action` called by your server/app code (external API with secrets, local-network system, heavy processing) | **`create-environment-action`** — `GenericActionOnEnvironment`/`SimpleAction`, entrypoint import, environment-id resolution and result parsing on the caller |
+| Rows pulled into Glyvio by the Sync plugin on a schedule (no generic connector) | **`create-sync-extraction-action`** |
+| A `@SystemTool`/`@CustomTool` response (or a JSON field within it) will be shown to the end user as markdown in the Glyvio app | **`format-llm-markdown-output`** — constrains the LLM to the exact tags the app's markdown renderer supports, instead of free-hand formatting prose that risks HTML/unsupported syntax |
 
 - **For `@SystemTool` and `@CustomTool` work: invoke the skill above.** Provide it: `toolId`, `className`, `description` (what the AI Agent reads), `requestTypeName`, and the business logic specification. The skill produces the complete, correctly structured file — do not rewrite it.
-- **For `@Action` work** (RPC, heavy local processing, sync push): no dedicated skill exists — write the code directly following the constraints below, except when the action's job is reaching a third-party datasource via `sync.SyncClient`, which `query-external-datasource` covers.
+- **For `@Action` work**: invoke `create-environment-action` (or `create-sync-extraction-action` for scheduled sync ingestion); when the action's job is reaching a third-party datasource already registered in the Sync plugin, `query-external-datasource` covers it.
 - After skill execution, proceed to Phase 4 to validate the output.
 
 ### Phase 3b: Code Writing Constraints (for @Action and any manual adjustments)
@@ -106,7 +108,7 @@ Once coding is complete:
   SELECT id, name FROM client
   WHERE public.similarity(name, public.unaccent('${name}')) > public.show_limit() AND deleted = false
   ```
-- **Local Sync Database Execution**: To execute raw SQL queries against the local sync database, instantiate and call the `sync.SyncClient` API methods:
+- **Local Sync Database Execution** (requires the `sync` dependency): To execute raw SQL queries against the local sync database, instantiate and call the `sync.SyncClient` API methods:
   _Example:_
   ```typescript
   const syncClient = new sync.SyncClient();

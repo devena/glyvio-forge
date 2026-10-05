@@ -1,6 +1,7 @@
+const TEST_ENV = require('./test_env');
 require('dotenv').config();
 const { chromium } = require('playwright');
-const shot = (n) => '<local-path>' + n;
+const shot = (n) => TEST_ENV.shotDir + '/' + n;
 
 (async () => {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
@@ -8,12 +9,12 @@ const shot = (n) => '<local-path>' + n;
   const page = await context.newPage();
   page.on('pageerror', e => console.log('[pageerror]', e.message.slice(0, 300)));
 
-  await page.goto('https://app.example.com', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.goto(TEST_ENV.appUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.locator('input').first().waitFor({ state: 'visible', timeout: 30000 });
-  await page.locator('input').first().fill('test-user@example.com');
+  await page.locator('input').first().fill(TEST_ENV.username);
   await page.mouse.click(1050, 496);
   await page.waitForTimeout(300);
-  await page.keyboard.type('REMOVED_PASSWORD', { delay: 30 });
+  await page.keyboard.type(TEST_ENV.password, { delay: 30 });
   await page.mouse.click(1050, 569);
   await page.waitForTimeout(18000);
   for (let i = 0; i < 60; i++) {

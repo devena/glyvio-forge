@@ -4,6 +4,14 @@ description: "Generates a standard entity list page with search, sidebar filteri
 ---
 # Agent Skill: Create Custom List Page View in Glyvio
 
+> **Padrão visual moderno:** monte o conteúdo com `glyvio_core.ui` e `SurfaceDesign`/`StackLayoutDesign`/`GridLayoutDesign`
+> (guia `@@REFERENCES@@/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
+> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`@@REFERENCES@@/i18n.md`) e prints em 1440×900 e 390×844.
+
+> **Filtros:** adicione só os campos em `design.filterSectionsDesign?.push(glyvio_core.FilterSidebar.section(...))`
+> e descreva os filtros ativos em `getActiveFilterChips`/`clearFilter` — cabeçalho, busca, filtros salvos, rodapé e a
+> linha de chips vêm da base (guia `@@REFERENCES@@/filters_and_headers.md`).
+
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional list page view (extending `SimpleListPage`) within a Glyvio plugin project.
 
 ---
@@ -46,7 +54,7 @@ To run this skill, the agent must obtain or ask for the following inputs:
    - **Subtitle field** (e.g., `code`, `description`): The field to display as secondary text.
 5. **Sidebar Filters** (e.g., `status`, `category`): Fields to build filter controls for.
 6. **Main Search Fields** (e.g., `name`, `code`): Fields matched when typing in the top search bar.
-7. **Menu Group** (e.g., `Administration` group key: `main-admin`): Where to place the menu item.
+7. **Menu Group** (a namespaced group of your plugin, e.g. `my_plugin.main`; settings screens go to the admin screen — see `register-menu-and-admin`): Where to place the menu item.
 
 ---
 
@@ -91,7 +99,7 @@ glyvio_core.routerService.loadRoutes([
 Register the view in the main app menu sidebar:
 
 ```typescript
-glyvio_core.FullMenuPage.fullMenuGroupAdd({
+glyvio_core.menuRegistryService.addGroup({
   key: 'group_key',
   name: 'Group Name',
   position: 100, // Customize positioning
@@ -132,6 +140,10 @@ export interface <EntityName>ListPageState
  * Route definition for the <EntityName> List Page.
  */
 export class <EntityName>ListPageRoute extends glyvio_core.SimpleListPageRoute<<EntityName>ListRouteParams> {
+  getRoutePermission(): glyvio_permissions.Permission | undefined {
+    return <PermissionOrUndefined>; // a glyvio_permissions.* declared in manifest.json, or undefined
+  }
+
   getRoutePath() {
     return '<RoutePath>'; // e.g., '/products'
   }
@@ -152,6 +164,10 @@ export class <EntityName>ListPage extends glyvio_core.SimpleListPage<<EntityName
   constructor() {
     super(<EntityName>ListPageRoute);
     this.extensionsManager.registerReport(this);
+  }
+
+  async events(_state: <EntityName>ListPageState, _action: glyvio_core.Action): Promise<glyvio_core.EventReturn> {
+    return undefined; // handle your own action keys here
   }
 
   async initState(state: <EntityName>ListPageState): Promise<void> {
@@ -192,7 +208,7 @@ export class <EntityName>ListPage extends glyvio_core.SimpleListPage<<EntityName
    */
   getDesignForCell(state: <EntityName>ListPageState, item: glyvio_entity.<EntityName>): glyvio_core.LineCellDesign {
      return new glyvio_core.LineCellDesign({
-      colorTheme: item.deleted ? 'RED' : null,
+      colorTheme: item.deleted ? 'RED' : undefined,
       padding: '16',
       child: new glyvio_core.RowLayoutDesign({
         crossAlignment: 'CENTER',
@@ -281,7 +297,7 @@ export class <EntityName>ListPage extends glyvio_core.SimpleListPage<<EntityName
   getEntityToTracking(item: glyvio_entity.<EntityName>): { structureName: string; objectId: string } | undefined {
     return {
       structureName: glyvio_structure.AllEntities.<entityNameCamelCase>.getStructureName(),
-      objectId: item.id,
+      objectId: item.id!,
     };
   }
 }

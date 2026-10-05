@@ -1,7 +1,8 @@
+const TEST_ENV = require('./test_env');
 require('dotenv').config();
 const { chromium } = require('playwright');
 const fs = require('fs');
-const shot = (n) => '<local-path>' + n;
+const shot = (n) => TEST_ENV.shotDir + '/' + n;
 
 function unwrap(v) {
   if (v === null || v === undefined || typeof v !== 'object') return v;
@@ -17,7 +18,7 @@ function unwrap(v) {
   const out = {}; for (const k in v) out[k] = unwrap(v[k]); return out;
 }
 
-const TARGET_ID = '00000000-0000-0000-0000-000000000000';
+const TARGET_ID = TEST_ENV.targetId;
 
 (async () => {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
@@ -29,12 +30,12 @@ const TARGET_ID = '00000000-0000-0000-0000-000000000000';
     if (msg.type() === 'error' || msg.type() === 'warning') jsErrors.push({ type: 'console-' + msg.type(), text: msg.text() });
   });
 
-  await page.goto('https://app.example.com', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.goto(TEST_ENV.appUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.locator('input').first().waitFor({ state: 'visible', timeout: 30000 });
-  await page.locator('input').first().fill('test-user@example.com');
+  await page.locator('input').first().fill(TEST_ENV.username);
   await page.mouse.click(1050, 496);
   await page.waitForTimeout(300);
-  await page.keyboard.type('REMOVED_PASSWORD', { delay: 30 });
+  await page.keyboard.type(TEST_ENV.password, { delay: 30 });
   await page.mouse.click(1050, 569);
   await page.waitForTimeout(18000);
   for (let i = 0; i < 60; i++) {

@@ -1,3 +1,4 @@
+const TEST_ENV = require('./test_env');
 const C = require('./financial_common');
 
 (async () => {
@@ -27,7 +28,7 @@ const C = require('./financial_common');
         console.log('Company still on', fin.currentVersion, '- needs manual update trigger.');
         const design = await page.evaluate((cb) => window.__GLYVIO_AI__.getDesign(cb), pm.callbackId);
         require('fs').writeFileSync(
-          '<local-path>',
+          TEST_ENV.shotDir + '/plugin_manager_design.json',
           JSON.stringify(design, null, 2),
         );
       }

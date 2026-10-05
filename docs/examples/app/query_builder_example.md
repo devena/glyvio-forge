@@ -89,7 +89,7 @@ export async function runQueryExamples(): Promise<void> {
   // findFirst() sets the limit to 1 internally and returns the record or undefined.
   const singleUserQb = glyvio_core.QueryBuilder.fromEntity<glyvio_entity.AppUser>(appUserEntity).addFilterOperator(
     emailField,
-    'system@glyvio.com',
+    'admin@example.com',
   );
 
   const systemUser = await singleUserQb.findFirst();

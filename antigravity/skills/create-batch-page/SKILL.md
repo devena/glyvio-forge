@@ -41,7 +41,7 @@ To run this skill, the agent must obtain or ask for the following inputs:
 3. **Route Path** (e.g., `/products-batch`): The URL path (must start with `/` and be a single word/slug).
 4. **Editable Columns**:
    - For each column: **FieldName** (e.g., `name`, `price`), **DataType** (e.g., `TEXT`, `DECIMAL`, `BOOLEAN`, `ENTITY`), **Label** (e.g., `Product Name`, `Price`).
-5. **Menu Group** (e.g., `Administration` group key: `main-admin`): Where to place the menu item.
+5. **Menu Group** (a namespaced group of your plugin, e.g. `my_plugin.main`; settings screens go to the admin screen — see `register-menu-and-admin`): Where to place the menu item.
 
 ---
 
@@ -83,7 +83,7 @@ glyvio_core.routerService.loadRoutes([
 Register the view in the main app menu sidebar:
 
 ```typescript
-glyvio_core.FullMenuPage.fullMenuGroupAdd({
+glyvio_core.menuRegistryService.addGroup({
   key: 'group_key',
   name: 'Group Name',
   position: 100, // Customize positioning
@@ -197,12 +197,25 @@ export class <EntityName>BatchPage extends glyvio_core.SimpleBatchPage<
   }
 
   /**
+   * Called when the user edits a cell of a row (`key` = the column). Recalculate dependent
+   * columns here (required — abstract in SimpleBatchPage).
+   */
+  async onUpdateItem(
+    key: string,
+    state: <EntityName>BatchPageState,
+    oldItemState: <EntityName>BatchPageDto,
+    newItemState: <EntityName>BatchPageDto,
+  ): Promise<void> {
+    // e.g. if (key == '<fieldName1>') { newItemState.values = { ...newItemState.values }; }
+  }
+
+  /**
    * Converts the Dto representation of a spreadsheet row into a save entity payload queue.
    */
   async getEntitiesFromDto(
     state: <EntityName>BatchPageState,
     item: <EntityName>BatchPageDto,
-  ): Promise<glyvio_entity.EntityServiceQueue> {
+  ): Promise<glyvio_core.EntityServiceQueue> {
     const inputPayload: { [key: string]: unknown } = {};
 
     // Map Dto values back to DB payload fields:

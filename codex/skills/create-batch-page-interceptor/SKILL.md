@@ -27,7 +27,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
    - Create a file `src/interceptors/views/spy_interceptor.ts`.
    - Implement `SpyInterceptor` extending `<TargetBaseInterceptorClass>` to capture the `design` in `getDesign(state: <TargetStateClass>, design: glyvio_core.SimpleBatchPageDesign)`:
      ```typescript
-     export class SpyInterceptor extends <TargetBaseInterceptorClass> {
+     export class SpyInterceptor extends <TargetBaseInterceptorClass> { // the specialized interceptor of the target, or the family base WITH its generics
        override getListenerId(): string {
          return '<plugin>_SpyInterceptor';
        }
@@ -36,7 +36,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
        }
        override getDesign(state: <TargetStateClass>, design: glyvio_core.SimpleBatchPageDesign): void {
          if (typeof window !== 'undefined') {
-           (window as any).__finalDesign = JSON.parse(JSON.stringify(design));
+           (globalThis as unknown as { __finalDesign?: unknown }).__finalDesign = JSON.parse(JSON.stringify(design));
            console.log("SPY_INTERCEPTOR: Design captured successfully!", JSON.stringify(design));
          }
        }
@@ -223,7 +223,7 @@ export class <InterceptorClassName> extends <TargetBaseInterceptorClass> {
   override async getEntitiesFromDto(
     state: <TargetStateClass>,
     item: <TargetDTOClass>,
-    queue: glyvio_entity.EntityServiceQueue,
+    queue: glyvio_core.EntityServiceQueue,
   ): Promise<void> {
     // 💡 Example: Inject related audit tracking entities or modify field values
     // for (const q of queue) {

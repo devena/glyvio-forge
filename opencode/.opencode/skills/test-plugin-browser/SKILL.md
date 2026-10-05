@@ -84,61 +84,37 @@ Para fluxos com navegação em cascata (lista → cart → modal, 2+ níveis), u
 
 ---
 
-## 1.5. Descobrir o BASE_URL da API da empresa (antes de bater em qualquer controller)
+## 1.5. URL do app e URL da API (antes de bater em qualquer controller)
 
-**O host da API NÃO é necessariamente o host do app.** Confirmado ao vivo em `app.example.com`:
-o app serve **apenas estáticos** (`/`, `/version.json`, `/assets/…`), e toda a API vive em
-`api.example.com` (auth em `auth.example.com`). Chamar o host do app devolve o
-HTML de fallback da SPA — e é exatamente essa a causa raiz do gotcha "app-beta devolve HTML para
-controller customizado" registrado na seção 6.
+**O host da API NÃO é necessariamente o host do app.** Em vários ambientes o app serve apenas os
+estáticos (`/`, `/version.json`, `/assets/…`) e a API vive em outro host; chamar uma rota de API no
+host do app devolve o HTML de fallback da SPA (não um erro claro).
 
-**Nunca assuma o host.** Descubra-o observando o próprio app: logo após o login / seleção de empresa,
-ele chama `POST {BASE_URL}/query/{companyId}/<internal-endpoint>`. Removendo o sufixo
-`/query/{companyId}/<internal-endpoint>` dessa URL, o que sobra é o `BASE_URL` daquele ambiente + empresa.
+- A URL do app vem do operador, pelo `.env` (`G_APP_URL`; aceita o nome legado `GLYVIO_APP_URL`).
+  **Nunca** peça a senha no chat e nunca a ecoe — o runner lê as credenciais via `dotenv`.
+- Para verificar um controller do plugin ao vivo, **peça ao operador a URL do servidor (API) e o
+  `companyId`** da empresa de teste. Não tente descobri-los inspecionando o tráfego do app, não
+  capture tokens das requisições e não explore rotas internas da plataforma — use apenas os
+  contratos documentados nas skills (`create-controller`, `create-custom-page`, `fork-company-script`).
+- Dentro do app, um controller é chamado com `glyvio_core.restService.postController`/
+  `getController`/`putController` (skill `create-controller`), que resolvem host, empresa e
+  sessão sozinhos — prefira validar pelo próprio app, via AI bridge.
 
-O script vive no checkout do **glyvio-forge** (não no diretório de skills instalado):
-
-```bash
-cd <glyvio-forge>/tools/test-runner
-npm install                          # só na primeira vez
-node discover_base_url.js            # relatório legível
-node discover_base_url.js --json     # para consumo por script
-node discover_base_url.js --headed   # conta com várias empresas (seleção manual)
-```
-
-Credenciais saem do `.env` (`G_APP_URL`, `G_USERNAME`, `G_PASSWORD`; aceita os nomes legados
-`GLYVIO_*`). **Nunca** peça a senha no chat e nunca a ecoe — o script lê via `dotenv` e redige
-qualquer token antes de imprimir.
-
-Saída real (app-beta, validada ao vivo):
-
-```json
-{
-  "baseUrl": "https://api.example.com",
-  "companyId": "afb515c7-...",
-  "appUrl": "https://app.example.com",
-  "apiHostDiffersFromApp": true
-}
-```
-
-Com o `BASE_URL` em mãos, as URLs de report daquela empresa são:
+Com a URL do servidor e o `companyId` em mãos, as URLs de uma Custom Page daquela empresa são
+(contrato público, ver skill `create-custom-page`):
 
 ```
-{BASE_URL}/custom/private/page/{companyId}/{controllerPath}?authorization=Bearer%20<jwt>
-{BASE_URL}/custom/public/page/{companyId}/{controllerPath}
-{BASE_URL}/custom/external/page/{companyId}/{controllerPath}?auth_token=<jwt>
+{BASE_URL}/custom/private/page/{companyId}/{controllerPath}   # usuário logado (abra pelo app: openCustomPage)
+{BASE_URL}/custom/public/page/{companyId}/{controllerPath}    # sem autenticação
+{BASE_URL}/custom/external/page/{companyId}/{controllerPath}  # ExternalSimpleController, link compartilhável
 ```
 
 - `{controllerPath}` é o `path` do `@glyvio_core.Controller({ path: '...' })`.
-- `private` é o caso padrão (`SimpleController`, usuário logado); `public` dispensa auth; `external`
-  é para `ExternalSimpleController` com link compartilhável — note que **o parâmetro de auth muda**
-  junto com o segmento (`authorization=Bearer%20…` vs `auth_token=…` vs nenhum).
+- Páginas `private` exigem a sessão do usuário: abra-as pelo app (`this.openCustomPage(...)`), que
+  anexa a autenticação sozinho, em vez de montar a URL com um token à mão.
 - ⚠️ **Migração `report` → `page` em andamento.** `report` ficou reservado para o modelo de Report
   Record (`glyvio_entity.Report`); `page` é o segmento das Custom Pages. O `report` legado ainda
   responde enquanto a migração não termina.
-- A mesma regra `{BASE_URL}/{serviço}/{companyId}/{ação}` vale para o resto da API — foi confirmada
-  em 9 endpoints reais (`/company/…`, `</internal-endpoint>`, `</internal-endpoint>`,
-  `</internal-endpoint>`, …), e é a mesma forma usada pela skill `fork-company-script`.
 
 ---
 
@@ -153,7 +129,7 @@ Se estiver operando diretamente no console do navegador ou via tool do Playwrigh
    ```
 
 2. **Abrir o Glyvio App (staging)**:
-   Navegue para: `https://app.example.com/`.
+   Navegue para a URL do app informada pelo operador (`G_APP_URL`).
 
 3. **Injetar o Override e Recarregar o Flutter**:
    Execute no console da página:
@@ -327,7 +303,7 @@ Esse template básico assume 1 tela e um `await` direto em `navigate`/`dispatchA
 - **`getState()`/`getDesign()` embrulham cada valor em `{"$_type": "...", "value": ...}`.** Ler `st.projectTask.checklist` direto no resultado bruto retorna `undefined` mesmo quando o dado real está lá — sempre passe o resultado por um `unwrap()` (seção 5) antes de inspecionar. Isso já causou uma investigação inteira de "bug" que na verdade era o script de teste, não o plugin.
 - **`setFieldValue(callbackId, key, value)` exige o path completo prefixado com `state.`**, idêntico ao `name` usado no design (ex: `state.projectTask.checklist[1].done`, não `projectTask.checklist[1].done`). Sem o prefixo, a chamada rejeita com `key "..." is not present in getDesign() for this screen`.
 - **`setFieldValue()` e um clique real testam caminhos de código DIFERENTES — um passar não garante o outro.** Confirmado: um `BooleanTextfieldDesign` com `cleanDesign: true` aceitava `setFieldValue(cb, 'state.x.checklist[0].done', true)` perfeitamente (escrita programática, passa por cima de qualquer gesture handling do próprio widget), mas um **clique real por coordenada** no mesmo checkbox renderizado não fazia **nada** — sem erro, sem efeito visual, `getState()` inalterado. Pra validar que um campo booleano/checkbox é realmente clicável por um usuário, **simule o clique de verdade** (`page.mouse.click(x, y)` nas coordenadas do widget) — não confie só em `setFieldValue()`. Se o clique real não funcionar, considere trocar o binding nativo por um `ActionButtonDesign` + action explícita (mesmo padrão de um botão de remover/toggle já comprovado).
-- **Nomes de ícone não são validados em compile-time — um nome "que parece certo" pode renderizar o glifo errado, silenciosamente.** `iconName` é `string` livre (`SimpleIconDesign.name`, famílias `sax_*`/`fa_*`/`ma_*`). Um nome plausível mas inexistente/errado (ex: `sax_linear_square` esperando um quadrado vazio) pode coincidir com outro ícone real do mesmo font-set e renderizar algo visualmente diferente do pretendido (ex: um ícone de "camadas/duplicar") sem erro nenhum, nem em build nem em runtime. Pra confirmar um nome de ícone: grep a string exata em `glyvio_app/build/web/main.dart.js` (lista todos os nomes reais do font) e **sempre confira visualmente via screenshot** antes de considerar o ícone certo — nunca assuma que um nome "faz sentido" e vai renderizar o glifo esperado.
+- **Nomes de ícone não são validados em compile-time — um nome "que parece certo" pode renderizar o glifo errado, silenciosamente.** `iconName` é `string` livre (`SimpleIconDesign.name`, famílias `sax_*`/`fa_*`/`ma_*`). Um nome plausível mas inexistente/errado (ex: `sax_linear_square` esperando um quadrado vazio) pode coincidir com outro ícone real do mesmo font-set e renderizar algo visualmente diferente do pretendido (ex: um ícone de "camadas/duplicar") sem erro nenhum, nem em build nem em runtime. Pra confirmar um nome de ícone: tipe a variável como `glyvio_core.GlyvioIconName` (autocomplete do `@types/glyvio_core.d.ts`), rode `node .opencode/scripts/check_icons.mjs .` na raiz do plugin (lista todo literal `fa_*`/`ma_*`/`sax_*` que o app não desenha, com sugestão) e **sempre confira visualmente via screenshot** antes de considerar o ícone certo — um nome existente pode ainda assim ser o glifo errado.
 - **Um `getState()`/`getDesign()` correto não garante um layout correto.** Um `RowLayoutFieldDesign` sem `width` nem `flex`/`isExpanded` explícito pode colapsar para largura zero e renderizar como uma caixa vazia — a ação disparou, o estado mudou certinho, e mesmo assim nada aparece na tela. Sempre confira visualmente (screenshot lido de verdade, não só o retorno da action) antes de declarar uma UI funcionando. Ver também o padrão comprovado (`flex: 1` no campo expansível, `width` fixo nos botões/checkboxes) em `client_insert_modal.ts` do `glyvio-plugin-crm`.
 - **Deploy em andamento**: `main.dart.js`/o bundle versionado do `glyvio-plugin-core` podem responder HTTP 200 com `text/html` (fallback de SPA) durante um deploy ativo — resolve-se sozinho; não é bug do plugin. Confirme via `curl -I` antes de investigar mais.
 - **Service Worker pode servir bundle desatualizado do core logo após um deploy**, mesmo com o CDN já correto. `serviceWorkers: 'block'` no `newContext` evita essa classe de falso-negativo (seguro para um contexto de teste descartável).
@@ -335,10 +311,20 @@ Esse template básico assume 1 tela e um `await` direto em `navigate`/`dispatchA
 - **`navigate()`/`dispatchAction()` podem nunca resolver a própria promise mesmo quando o efeito real já aconteceu** (a navegação mudou de tela, o estado mudou) — ou, no caso de uma validação de negócio (`GlyvioError`) disparada dentro de um `dispatchAction`, o app registra o erro em `getErrors()` mas a chamada do bridge não necessariamente rejeita/resolve nunca. **Nunca dê `await` direto nessas duas chamadas sem timeout** — isso trava o script inteiro indefinidamente sem nenhum log. Dispare com timeout tolerante (não fatal) e confirme o resultado real via `waitForScreen`/`getState`/`getErrors` — é exatamente o que `runner.js` faz internamente (`fireAndTolerate`) e o que os steps `navigate`/`dispatch` do `--scenario` já aplicam.
 - **`getErrors()` é a fonte de verdade pra validação de negócio, não o retorno do `dispatchAction`.** Uma regra de negócio real (ex: "Tabela de preço é obrigatória para a escolha das parcelas" antes de abrir um modal de seleção de estoque) aparece em `getErrors({callbackId})` mesmo quando o `dispatchAction` que a disparou não lançou nada capturável no script. Sempre confira `getErrors()` depois de qualquer `dispatch` que pareça não ter tido efeito.
 - **`selectEntityField(callbackId, fieldName, '', 0)` com busca vazia funciona como "listar tudo, pegar o índice N"** — útil quando o campo tem só uma opção óbvia (ex: um único cliente de teste). Se o campo realmente não tiver nenhuma opção disponível (ex: company de teste sem nenhuma tabela de preço cadastrada), a chamada rejeita com uma mensagem clara e específica (`search "" for "..." returned 0 result(s)... Available: (none)`) — não trava e não falha silenciosamente; leia a mensagem, ela já diz se o problema é dado de teste ausente, não bug de código.
-- **`app.example.com` pode estar roteando chamadas de controller customizado para o fallback do SPA em vez da API.** Confirmado em `glyvio-plugin-financial`: `requestService.post` contra `app.example.com` retornou a página HTML de fallback da SPA (não uma resposta real da API) para **todo** controller customizado testado, não uma rota isolada — o host real da API observado nesse ambiente foi `api.example.com`. Se uma verificação ao vivo contra `app-beta` falhar de um jeito que parece "a rota não existe"/"resposta é HTML", **antes de investigar o código do plugin**, confirme o host real com `curl -I` na URL usada e considere que pode ser um problema de roteamento do ambiente `app-beta`, não do plugin. **CAUSA RAIZ CONFIRMADA (medida ao vivo):** não é bug de roteamento do `app-beta` — é que **a API mora em outro host**. Em `app.example.com` o app serve apenas estáticos (`/`, `/version.json`, `/assets/…`) e toda a API responde em `api.example.com` (auth em `auth.example.com`). Quem chama o host do app recebe o HTML de fallback da SPA, como esperado. **Nunca assuma que o host do app é o host da API**: descubra o `BASE_URL` real com o procedimento da seção 1.5 (`discover_base_url.js`) antes de bater em qualquer controller.
+- **O host do app pode devolver o fallback HTML da SPA para chamadas de controller customizado.** Confirmado num ambiente de staging: `requestService.post` contra o host do app retornou a página HTML de fallback (não uma resposta real da API) para **todo** controller customizado testado. Se uma verificação ao vivo falhar de um jeito que parece "a rota não existe"/"resposta é HTML", **antes de investigar o código do plugin**, confirme com o operador qual é o host real da API (seção 1.5) — ou valide pelo app com `restService.postController`.
 - **Strings `$T{...}` renderizam como `?chave?` literal sob `setPluginDevOverride`, mesmo em plugins já publicados.** Confirmado num plugin em produção (`crm`, título da app bar e campos de card num kanban) e não só num plugin novo/não publicado - o override local troca o `bundle.js`, mas não parece carregar/registrar o catálogo de traduções (`.arb`) do jeito que um publish de verdade faz. Texto que vem direto do banco (ex: nome de uma coluna de kanban configurada pelo usuário) renderiza normal; só chave de template `$T{}` fica quebrada. **Não conclua que as traduções do seu plugin estão erradas só por ver `?chave?` num teste ao vivo via dev-override** — isso é esperado nesse modo de teste. Pra validar o texto traduzido de verdade, é preciso um publish real (homologação), não dev-override.
+- **O teste pode cair na empresa errada sem avisar.** Com uma conta com várias empresas, o app pode abrir direto na última empresa usada (sem passar por `/company-select`), e a seleção do `runner.js` (`--company`) procura `.company-card`, que não existe no Flutter web: acaba clicando no `flt-semantics-placeholder` ("Enable accessibility") e expira. Sintoma: `listRoutes()` não mostra o namespace do seu plugin (nem das dependências dele) e aparecem namespaces de plugins que a empresa não usa. Antes de testar, **confira com o operador que a lista de namespaces bate com os plugins ativos da empresa de teste**. Para escolher a empresa na tela `/company-select`: clique no placeholder de acessibilidade (`document.querySelector('flt-semantics-placeholder').click()`), espere ~2 s e clique em `page.getByText('<nome da empresa>')` (peça o nome exato da empresa ao operador).
+- **Sidebar só abre por cima de uma página, e não abre com modal aberto.** `navigate({nameSpace, nameObject: '<X>Sidebar'})` direto da home, ou com um modal aberto, retorna `null` sem erro e nada muda na tela (`Escape` também não fecha modal). Navegue antes para uma page (ex.: `crm.PersonTablePage`) e só então abra a sidebar; teste modais depois das sidebars.
+- **`restService.postController` do app chama o servidor PUBLICADO, não o fork.** O `setPluginDevOverride` troca só o bundle do app, e o `fork-company-script` só vale para requisições que enviam o header `custom-script-id` — o app não envia. Uma tela nova que chama um controller que ainda só existe no código local mostra `?Method execute_controller not handled on javascript.?` em `getErrors()`/toast: não é bug da tela, é o servidor publicado sem esse controller. Valide a lógica do servidor pelo fork (curl) e a tela pelo override, separadamente, até publicar uma versão com os dois.
+- **Permissão `view` nova esconde a tela até ser concedida.** Uma permissão recém-declarada no manifest não está em nenhum grupo; um interceptor que filtra por `permissionService.hasPermission(...)` não mostra nada nem para o administrador. Para validar antes de conceder, aceite também `permissionService.isAdmin()`.
 
 ---
+
+- **`dispatchAction`/`setFieldValue` recusam keys que não aparecem no design: passe `unsafeMode = true` (4º argumento) só em QA.** O bridge valida a key contra as `Action`s do `getDesign()`; keys que chegam por `actionKeyOnSelect` (ex.: `SegmentedControlDesign` de abas/passos) ou campos de estado sem widget ligado (ex.: forçar `state.user.admin = false` para ver a variante não-admin sem mexer no banco) rejeitam com `key "..." is not present in getDesign() ... Pass unsafeMode: true to bypass`. Use `dispatchAction(cb, 'setTab', { key: 'DATA' }, true)` / `setFieldValue(cb, 'state.user.admin', false, true)` — a mudança é só na tela, não persiste.
+- **Para ver as traduções novas sob dev-override, intercepte o `.arb`.** Em vez de aceitar `?chave?` (gotcha acima), injete as chaves locais: `page.route(/\.arb(\?|$)/, async (route) => { const r = await route.fetch(); let body = await r.text(); if (body.includes('<uma chave que só existe no .arb do seu plugin/core>')) body = JSON.stringify({ ...JSON.parse(body), ...localArb }); await route.fulfill({ response: r, body }); })` **antes** do `page.goto`, com `localArb = JSON.parse(fs.readFileSync('assets/i18n/pt_BR.arb'))`. Namespace do override = namespace do plugin com `_` (ex.: `html_report`, não `htmlReport`).
+- **Modo escuro no teste**: depois do login, faça merge nas preferências salvas e recarregue — `await page.evaluate(() => { const k = 'flutter.C:GLOBAL-k:USER_PREFERENCE'; let v = {}; try { v = JSON.parse(localStorage.getItem(k)); if (typeof v === 'string') v = JSON.parse(v); } catch (e) {} v = v || {}; v.brightness = 'dark'; localStorage.setItem(k, JSON.stringify(JSON.stringify(v))); }); await page.reload();` (o valor é JSON serializado duas vezes). Obrigatório quando a mudança mexe em cor, `surface`, markdown/HTML ou texto sem `colorTheme`.
+- **Telas no padrão moderno (`SurfaceDesign`/`GridLayoutDesign`/`glyvio_core.ui`) mudam de layout pela largura do próprio grid**, não da janela: tire print em 1440×900 **e** 390×844 (`page.setViewportSize`) com a mesma tela aberta; numa sidebar estreita os cards já empilham no desktop.
+- **Clique em tabela agrupada**: a primeira linha clicável depois de um cabeçalho de grupo recolhe o grupo se você clicar no cabeçalho — leia o print da lista antes e clique na linha de dado (coordenada Y do registro), não no chip do grupo.
 
 ## 7. Como testar um fluxo com navegação em cascata (menu → lista → cart → modal)
 

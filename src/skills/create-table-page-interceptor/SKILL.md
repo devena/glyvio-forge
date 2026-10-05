@@ -4,6 +4,14 @@ description: "Generates a custom class extending an abstract `SimpleTablePageInt
 ---
 # Agent Skill: Create Table Page Interceptor in Glyvio
 
+> **Padrão visual moderno:** ao reorganizar o design de uma tela existente, siga `@@REFERENCES@@/modern_layout.md` e
+> **preserve as `key`s** que outros interceptors procuram com `findWidgetByKey` (widgets com key podem ir para dentro de
+> um card; renomear a key quebra outros plugins em runtime).
+
+> **Filtros:** adicione só os campos em `design.filterSectionsDesign?.push(glyvio_core.FilterSidebar.section(...))`
+> e descreva os filtros ativos em `getActiveFilterChips`/`clearFilter` — cabeçalho, busca, filtros salvos, rodapé e a
+> linha de chips vêm da base (guia `@@REFERENCES@@/filters_and_headers.md`).
+
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register an interceptor/listener to customize the behavior of an existing `SimpleTablePage` view in another project.
 
 ---
@@ -26,7 +34,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
    - Create a file `src/interceptors/views/spy_interceptor.ts`.
    - Implement `SpyInterceptor` extending `<TargetBaseInterceptorClass>` to capture the `design` in `getDesign(state: <TargetStateClass>, design: glyvio_core.SimpleTablePageDesign)`:
      ```typescript
-     export class SpyInterceptor extends <TargetBaseInterceptorClass> {
+     export class SpyInterceptor extends <TargetBaseInterceptorClass> { // the specialized interceptor of the target, or the family base WITH its generics
        override getListenerId(): string {
          return '<plugin>_SpyInterceptor';
        }
@@ -35,7 +43,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
        }
        override getDesign(state: <TargetStateClass>, design: glyvio_core.SimpleTablePageDesign): void {
          if (typeof window !== 'undefined') {
-           (window as any).__finalDesign = JSON.parse(JSON.stringify(design));
+           (globalThis as unknown as { __finalDesign?: unknown }).__finalDesign = JSON.parse(JSON.stringify(design));
            console.log("SPY_INTERCEPTOR: Design captured successfully!", JSON.stringify(design));
          }
        }
