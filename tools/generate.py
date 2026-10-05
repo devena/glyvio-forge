@@ -152,8 +152,8 @@ def build(root: Path) -> dict[str, bytes]:
                     # Only instruction Markdown is templated; assets and executable helpers
                     # must retain their original bytes (including binary files).
                     content = render(path.read_text(), config) if path.suffix == '.md' else path.read_bytes()
-            emit(f'{output_root}/skills/{name}/{path.relative_to(directory).as_posix()}',
-                          content, path)
+                    emit(f'{output_root}/skills/{name}/{path.relative_to(directory).as_posix()}',
+                         content, path)
         for filename, name in sorted(config['agents'].items()):
             source = agent_sources[name]
             meta, body = split_frontmatter(source.read_text())

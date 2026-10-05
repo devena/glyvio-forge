@@ -48,8 +48,13 @@ pnpm build
 pnpm lint
 ```
 
-Após editar `manifest.json`, rode `./run_helper.sh` na raiz para regenerar
-`entity.d.ts`, `glyvio_structure.d.ts` e `service.ts`.
+**Primeira vez numa máquina ou num projeto:** siga a skill `glyvio-onboarding` — baixa o
+`glyvio-dev-helper`, cria o `.env` (`G_APP_URL`, `G_AUTH_URL`, `G_COMPANY_ID`, `G_USERNAME`,
+`G_PASSWORD`), instala o `run_helper.sh`/`run_helper.ps1` e gera os `@types`.
+
+Após editar `manifest.json`, rode `./run_helper.sh` (Windows: `.\run_helper.ps1`) na raiz para
+regenerar os `@types` (`glyvio_core.d.ts`, `entity.d.ts`, `permissions.d.ts` e um `.d.ts` por
+dependência, em cada camada).
 
 > **`@types`/`dist/bundle.d.ts` são sempre gerados e ficam fora do git**
 > (`.gitignore` os exclui em todos os plugins). Isso significa que, se em algum
@@ -312,6 +317,7 @@ As skills geram código seguindo os padrões do projeto. Invoque no chat com
 
 | Skill              | Quando usar                                    |
 | ------------------ | ---------------------------------------------- |
+| `/glyvio-onboarding` | Primeiro acesso: helper, `.env`, `run_helper` e geração dos `@types` |
 | `/modify-manifest` | Adicionar permissões ou migrações no manifesto |
 | `/release-project` | Build → bump de versão → commit → push         |
 | `/configure-report-record` | Relatório configurado no app (sem deploy) |
