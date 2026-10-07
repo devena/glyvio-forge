@@ -21,7 +21,7 @@ slot when it does not. The app lays the graph out automatically.
 This page is only the editor/visualizer. Where the flow is stored (an entity with steps, a JSON
 column) and what executes it are your plugin's decisions.
 
-> Contract: `.claude/references/views_and_interceptors.md`.
+> Contract: `~/.claude/references/views_and_interceptors.md`.
 
 ---
 

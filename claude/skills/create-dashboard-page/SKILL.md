@@ -18,8 +18,8 @@ fast ones.
 | Report configured by the user in the app (no deploy) | `configure-report-record` |
 | Chart widgets themselves (cartesian, pie, gauge...) | delegate to the `glyvio-app-chart` agent |
 
-> Contract: `.claude/references/views_and_interceptors.md`. Filters: `.claude/references/filters_and_headers.md`.
-> Visual pattern: `.claude/references/modern_layout.md` (KPI cards with `glyvio_core.ui` / `SurfaceDesign`).
+> Contract: `~/.claude/references/views_and_interceptors.md`. Filters: `~/.claude/references/filters_and_headers.md`.
+> Visual pattern: `~/.claude/references/modern_layout.md` (KPI cards with `glyvio_core.ui` / `SurfaceDesign`).
 
 ---
 
@@ -50,7 +50,7 @@ fast ones.
 8. `Decimal`/`DateTime` for business values; format with `$N{}`/`$D{}` in designs.
 9. Large aggregations belong on the server: call a controller (`restService.postController`,
    skill `create-controller`) from `fetchItem` instead of loading thousands of rows into the app.
-10. **Dates in the company's time zone**: compute "today" and date windows with `glyvio_core.DateTime` calendar methods (`toCalendarDay`, `startOfDay`/`endOfDay`, `startOfWeek`, `startOfMonth`/`endOfMonth`, `isSameDay`) — never `new Date()`, `clearTime()` (midnight UTC) or `getDay()`/`getMonth()` (machine zone). Date-only fields are stored as 00:00 UTC: read them with `format(p, false)`/`toCalendarDay(false)`. Guide: `.claude/references/dates_and_timezones.md`. Server aggregations by day/month follow the SQL rule in that guide.
+10. **Dates in the company's time zone**: compute "today" and date windows with `glyvio_core.DateTime` calendar methods (`toCalendarDay`, `startOfDay`/`endOfDay`, `startOfWeek`, `startOfMonth`/`endOfMonth`, `isSameDay`) — never `new Date()`, `clearTime()` (midnight UTC) or `getDay()`/`getMonth()` (machine zone). Date-only fields are stored as 00:00 UTC: read them with `format(p, false)`/`toCalendarDay(false)`. Guide: `~/.claude/references/dates_and_timezones.md`. Server aggregations by day/month follow the SQL rule in that guide.
 
 ---
 

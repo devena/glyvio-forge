@@ -15,7 +15,7 @@ Hooks of `glyvio_core.SimpleEditPageInterceptor<S>` (each runs after the page's 
 | `populateJeannieContext(state, context)` | assistant context |
 
 Plus the common hooks (`onInitState`, `onRefreshState`, `onEvent`, `getEntitiesListenning`, …) —
-`.claude/references/views_and_interceptors.md` §3.
+`~/.claude/references/views_and_interceptors.md` §3.
 
 **Saving extra fields**: an edit page has no `onSave` hook. To persist a field you add:
 - if it is a column of the same entity bound to `state.<entity>.<field>`, the page's own save

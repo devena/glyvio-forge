@@ -15,7 +15,7 @@ Hooks of `glyvio_core.SimpleWorkflowPageInterceptor<S, N>`:
 | `onAddNode(state, fromKey, linkKey)` | side effect after the page created a step |
 | `populateJeannieContext(state, context)` | assistant context |
 
-Plus the common hooks (`.claude/references/views_and_interceptors.md` §3). `onNodeTap` is not interceptable.
+Plus the common hooks (`~/.claude/references/views_and_interceptors.md` §3). `onNodeTap` is not interceptable.
 
 ---
 

@@ -240,7 +240,7 @@ If the page needs no parameters at all, keep `WebRequest<void>` and ignore `requ
 
 ### Step 3.6 — Dates in the company's time zone
 
-**Dates in the company's time zone**: SQL does not know the company zone. Pass `glyvio_core.sessionService.getCurrentSession().company.zoneinfo` as a parameter and use `col AT TIME ZONE ?` before `date_trunc`/`to_char`/`::date` (date-only columns: `AT TIME ZONE 'UTC'`); compute "today" and period bounds in TS with `glyvio_core.DateTime` (`fromCalendarDay`, `startOfDay`, `startOfMonth`), never `CURRENT_DATE`/`now()::date`/`new Date()`. Guide: `.claude/references/dates_and_timezones.md`.
+**Dates in the company's time zone**: SQL does not know the company zone. Pass `glyvio_core.sessionService.getCurrentSession().company.zoneinfo` as a parameter and use `col AT TIME ZONE ?` before `date_trunc`/`to_char`/`::date` (date-only columns: `AT TIME ZONE 'UTC'`); compute "today" and period bounds in TS with `glyvio_core.DateTime` (`fromCalendarDay`, `startOfDay`, `startOfMonth`), never `CURRENT_DATE`/`now()::date`/`new Date()`. Guide: `~/.claude/references/dates_and_timezones.md`.
 
 ---
 

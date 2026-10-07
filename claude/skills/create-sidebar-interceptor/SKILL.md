@@ -5,7 +5,7 @@ description: "Generates a custom class extending an abstract `SimpleSidebarInter
 <!-- Generated from src/skills/create-sidebar-interceptor/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create SimpleSidebar Interceptor in Glyvio
 
-> **Padrão visual moderno:** ao reorganizar o design de uma tela existente, siga `.claude/references/modern_layout.md` e
+> **Padrão visual moderno:** ao reorganizar o design de uma tela existente, siga `~/.claude/references/modern_layout.md` e
 > **preserve as `key`s** que outros interceptors procuram com `findWidgetByKey` (widgets com key podem ir para dentro de
 > um card; renomear a key quebra outros plugins em runtime).
 
@@ -79,8 +79,8 @@ Consequences:
    - Run `pnpm build` via the available shell tool to compile the codebase with the temporary `SpyInterceptor`.
 4. Retrieve the design JSON using the browser inspection script:
    - Ask the user to make sure Chrome is running with remote debugging enabled (`--remote-debugging-port=9222`) and that the target sidebar is open/active.
-   - Run the script `.claude/scripts/chrome_inspector.js` via the available shell tool to connect to Chrome, automatically wait for `window.__finalDesign` to be populated, and save the retrieved JSON to `.claude/temp/<SidebarName>_design.json`.
-     _Command:_ `node .claude/scripts/chrome_inspector.js <SidebarName>` (e.g., `node .claude/scripts/chrome_inspector.js TaskTypeSidebar`).
+   - Run the script `~/.claude/scripts/chrome_inspector.js` via the available shell tool to connect to Chrome, automatically wait for `window.__finalDesign` to be populated, and save the retrieved JSON to `.claude/temp/<SidebarName>_design.json`.
+     _Command:_ `node ~/.claude/scripts/chrome_inspector.js <SidebarName>` (e.g., `node ~/.claude/scripts/chrome_inspector.js TaskTypeSidebar`).
      _(Note: This script automatically starts an `httpster` server on port 9998 with CORS enabled serving `plugin/app/dist` beforehand, injects the localStorage rules for `app_rule_plugins` and `USER_PREFERENCE`, reloads the page to apply them, and automatically reconnects to continue polling.)_
 5. Once the design JSON is collected and saved to `.claude/temp/<SidebarName>_design.json`, remove the temporary `SpyInterceptor` and its registration from the codebase, and run `pnpm build` again to clean up the compiled distribution.
 6. If Chrome debugging is not available or fails, fallback to asking the user to send the **current design JSON** of the sidebar (obtained from `sidebar.getDesignRaw(state)` or the console) in the next message, or to save it manually to `.claude/temp/<SidebarName>_design.json`.

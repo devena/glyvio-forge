@@ -20,7 +20,7 @@ The interceptor hooks run after the page's own implementation of each step:
 | `populateJeannieContext(state, context)` | extend the assistant context |
 | `HomePageInterceptor` only: `fetchJeannieSuggestions(state, suggestions)`, `fetchAlerts(state, alerts)` | push items to the home's "Jeannie suggestions" and "alerts" cards |
 
-Plus the hooks every view interceptor inherits (`.claude/references/views_and_interceptors.md` §3).
+Plus the hooks every view interceptor inherits (`~/.claude/references/views_and_interceptors.md` §3).
 
 Home sections and cell keys (for positioning): `ask`, `stats`, `jeannie-alerts`, `my-tasks` (MAIN)
 and `shortcuts`, `count-alerts` (SIDE). Confirm at runtime before relying on them.

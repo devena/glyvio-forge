@@ -92,8 +92,10 @@ Recursos não Markdown dentro das skills são copiados byte a byte.
 
 ## Distribuição
 
-- **Claude:** distribua o conteúdo de `claude/` em `.claude/` no projeto de destino;
-  os caminhos das instruções seguem essa convenção já usada pelo pacote.
+- **Claude:** instale no nível do usuário, com links de `~/.claude/` para este checkout —
+  `skills`, `agents`, `references`, `scripts` e `component_catalog.md` apontando para os
+  itens de `claude/`. As instruções citam `~/.claude/...`; só os arquivos temporários
+  (`@@TEMP@@`) ficam em `.claude/temp/` dentro do projeto.
 - **Codex:** siga o [guia do pacote](codex/README.md).
 - **Antigravity:** o conteúdo usa caminhos relativos a `antigravity/` no projeto;
   preserve a estrutura ao distribuí-lo pelo mecanismo usado pela equipe.

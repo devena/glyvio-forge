@@ -10,7 +10,7 @@ They all follow one pattern: **you open it, return `'STATE_FREEZED'` (for modals
 `'STATE_UPDATE'`, and the result comes back later as a new action, with the key you chose, in
 your own `events()`**.
 
-> Contract: `.claude/references/views_and_interceptors.md`.
+> Contract: `~/.claude/references/views_and_interceptors.md`.
 
 ---
 

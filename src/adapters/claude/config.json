@@ -1,7 +1,8 @@
 {
   "assistant": "Claude",
   "format": "claude",
-  "runtime_root": ".claude",
+  "runtime_root": "~/.claude",
+  "temp_root": ".claude",
   "references": "references",
   "catalog": "component_catalog.md",
   "instructions": "CLAUDE.md",

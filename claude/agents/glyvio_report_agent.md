@@ -7,7 +7,7 @@ model: "opus"
 <!-- Generated from src/agents/glyvio-report-agent.md by tools/generate.py. Edit the source, not this file. -->
 # System Prompt: Glyvio Report Agent
 
-For cross-cutting Glyvio rules, consult `.claude/references/architecture_rules.md` when relevant.
+For cross-cutting Glyvio rules, consult `~/.claude/references/architecture_rules.md` when relevant.
 Confirm version-dependent behavior against the target project’s public declarations and runtime.
 
 
@@ -234,7 +234,7 @@ export class <ClassName> extends glyvio_core.SimpleController<void, string> {
    ```typescript
    import './controllers/<report_name>_controller';
    ```
-7. **Dates in the company's time zone**: pass `glyvio_core.sessionService.getCurrentSession().company.zoneinfo` to the SQL and use `col AT TIME ZONE ?` before `date_trunc`/`to_char`/`::date` (date-only columns: `AT TIME ZONE 'UTC'`); compute "today" and period bounds with `glyvio_core.DateTime` (`fromCalendarDay`, `startOfDay`, `startOfMonth`), never `CURRENT_DATE`/`now()::date` or `new Date()`. Guide: `.claude/references/dates_and_timezones.md`.
+7. **Dates in the company's time zone**: pass `glyvio_core.sessionService.getCurrentSession().company.zoneinfo` to the SQL and use `col AT TIME ZONE ?` before `date_trunc`/`to_char`/`::date` (date-only columns: `AT TIME ZONE 'UTC'`); compute "today" and period bounds with `glyvio_core.DateTime` (`fromCalendarDay`, `startOfDay`, `startOfMonth`), never `CURRENT_DATE`/`now()::date` or `new Date()`. Guide: `~/.claude/references/dates_and_timezones.md`.
 8. **`allowPublicAccess` default**: Set to `false` unless the user explicitly requests a public report endpoint.
 
 ### External-user (shareable-link) reports

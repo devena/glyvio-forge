@@ -20,7 +20,7 @@ full-page table use `create-table-page`, for a picker use `create-table-modal`.
 | `getQuickFilters(state)` | no | `{ key, label }[]` chips; selected key goes to `state.quickFilter` |
 | `refreshGroupsState(state)` / `getDesignForGroup(state, group)` | no | group headers (use `qb.findGrouped(...)` for counts) |
 
-> Contract: `.claude/references/views_and_interceptors.md`. Filters: `.claude/references/filters_and_headers.md` §3.
+> Contract: `~/.claude/references/views_and_interceptors.md`. Filters: `~/.claude/references/filters_and_headers.md` §3.
 
 ---
 

@@ -15,7 +15,7 @@ getDesign(state, design: glyvio_core.SimpleMasterDetailPageDesign): void
 `SimpleMasterDetailPageDesign` fields you may change: `appBarDesign`, `headerDesign`,
 `bottomSectionsDesign`, `masterPanelDesign`, `masterPanelWidth`, `detailPanelDesign`,
 `detailPanelWidth`, `emptyDetailPlaceholder`. Plus the hooks every view interceptor inherits
-(`.claude/references/views_and_interceptors.md` §3).
+(`~/.claude/references/views_and_interceptors.md` §3).
 
 **Decide what to intercept:**
 

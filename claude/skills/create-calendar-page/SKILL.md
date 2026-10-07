@@ -6,12 +6,12 @@ description: "Generates a standard entity calendar page showing scheduled events
 # Agent Skill: Create Custom Calendar Page View in Glyvio
 
 > **Padrão visual moderno:** monte o conteúdo com `glyvio_core.ui` e `SurfaceDesign`/`StackLayoutDesign`/`GridLayoutDesign`
-> (guia `.claude/references/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
-> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`.claude/references/i18n.md`) e prints em 1440×900 e 390×844.
+> (guia `~/.claude/references/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
+> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`~/.claude/references/i18n.md`) e prints em 1440×900 e 390×844.
 
 > **Filtros:** adicione só os campos em `design.filterSectionsDesign?.push(glyvio_core.FilterSidebar.section(...))`
 > e descreva os filtros ativos em `getActiveFilterChips`/`clearFilter` — cabeçalho, busca, filtros salvos, rodapé e a
-> linha de chips vêm da base (guia `.claude/references/filters_and_headers.md`).
+> linha de chips vêm da base (guia `~/.claude/references/filters_and_headers.md`).
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional calendar page view (extending `SimpleCalendarPage`) within a Glyvio plugin project.
 
@@ -71,7 +71,7 @@ The executing agent MUST strictly adhere to these rules:
 3. **Data Types & Models**: All referenced model fields must exist under the namespace `glyvio_entity.<EntityName>`.
 4. **No any or force cast**: Do not use `any` or force cast to `any` to resolve type errors. Find another way to solve the problem.
 5. **`events()` — EventReturn rule**: Every new `action.key` handler added to `events()` **must** return `'STATE_UPDATE'` when it mutates state properties directly. Use `'STATE_FREEZED'` only for navigation actions (`pushPage`, `pushModal`, `popModal`). Never return `undefined` from a newly added key — that is a silent no-op.
-6. **Dates in the company's time zone**: compute "today" and date windows with `glyvio_core.DateTime` calendar methods (`toCalendarDay`, `startOfDay`/`endOfDay`, `startOfWeek`, `startOfMonth`/`endOfMonth`, `isSameDay`) — never `new Date()`, `clearTime()` (midnight UTC) or `getDay()`/`getMonth()` (machine zone). Date-only fields are stored as 00:00 UTC: read them with `format(p, false)`/`toCalendarDay(false)`. Guide: `.claude/references/dates_and_timezones.md`.
+6. **Dates in the company's time zone**: compute "today" and date windows with `glyvio_core.DateTime` calendar methods (`toCalendarDay`, `startOfDay`/`endOfDay`, `startOfWeek`, `startOfMonth`/`endOfMonth`, `isSameDay`) — never `new Date()`, `clearTime()` (midnight UTC) or `getDay()`/`getMonth()` (machine zone). Date-only fields are stored as 00:00 UTC: read them with `format(p, false)`/`toCalendarDay(false)`. Guide: `~/.claude/references/dates_and_timezones.md`.
 
 ---
 

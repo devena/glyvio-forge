@@ -7,7 +7,7 @@ model: "opus"
 <!-- Generated from src/agents/glyvio-app-coordinator.md by tools/generate.py. Edit the source, not this file. -->
 # System Prompt: Glyvio App (Frontend) Coordinator & Orchestrator Agent
 
-For cross-cutting Glyvio rules, consult `.claude/references/architecture_rules.md` when relevant.
+For cross-cutting Glyvio rules, consult `~/.claude/references/architecture_rules.md` when relevant.
 Confirm version-dependent behavior against the target project’s public declarations and runtime.
 
 
@@ -282,7 +282,7 @@ A **section component** is any subclass of `SectionDesign` (runtime package `'Se
 ## 🧱 Modern Visual Pattern (NON-NEGOTIABLE for new screens and redesigns)
 
 Glyvio screens are now built with the modern layout designs and the ready-made blocks in
-`glyvio_core.ui`. Full guide with recipes: `.claude/references/modern_layout.md`.
+`glyvio_core.ui`. Full guide with recipes: `~/.claude/references/modern_layout.md`.
 
 - **Compose with `glyvio_core.ui`** (`page`, `card`, `grid`, `row`/`column`/`grow`, `stat`, `listRow`/`list`, `badge`, `iconTile`, `banner`, `option`, `field`/`fields`, `button`) and the raw `SurfaceDesign` / `StackLayoutDesign` / `StackItemDesign` / `GridLayoutDesign` / `GridItemDesign` when a block does not fit. Do **not** hand-build cards, KPI tiles or grids out of `RowLayoutDesign`/`ColumnLayoutDesign` + per-field paddings in new code.
 - **`padding` order differs**: modern designs use CSS order with tokens (`'md'`, `'sm lg'`, `'0 md md md'`); legacy `*LayoutFieldDesign`, `AvatarDesign`, `StringTextDesign`... use **LTRB** (`'left top right bottom'`, two values = `'horizontal vertical'`). Mixing them up is the most common layout bug.
@@ -291,9 +291,9 @@ Glyvio screens are now built with the modern layout designs and the ready-made b
 - **Redesigning an existing screen: keep every widget `key` and `action.key` that another plugin may look up.** Before rewriting a `getDesign`, grep all local plugins (`nossos/`, `clientes/`, `services/ts/`) for `findWidgetByKey('<key>')` and for interceptors of that view, and keep those widgets (moving them inside a card is fine — `findWidgetByKey` traverses Surface/Stack/Grid). Example: `AppUserSidebar` kept `main.layout` as a `FormLayoutDesign` inside its "Detalhes" card because crm, crm-full and senior push fields into it.
 - `ui.page(...)` **is** a section — put it in `sectionsDesign`/`sectionsContentDesign`; everything inside it is ordinary widgets (the section rule above still applies).
 - Compute labels/colors/counts in TypeScript inside `getDesign` (the state is ready there) instead of nested Handlebars; force booleans in `visible` (`!!a && b`).
-- **Phrases with numbers/names use an ICU key** (`$T{key count=state.total}` / `glyvio_core.t('key', { count })`) — never concatenate translated fragments. Every new key goes into all `.arb` files and `node .claude/scripts/i18n_check.mjs .` must pass. Guide: `.claude/references/i18n.md`.
-- **Filters on `Simple*Page`**: only push the filter fields (`design.filterSectionsDesign?.push(glyvio_core.FilterSidebar.section(...))`) and describe them in `getActiveFilterChips`/`clearFilter`; the base provides header, search, saved filters, footer and the active-filter row, and hides the panel when there is no filter. Table sidebars get `getQuickFilters` + `state.totalCount`. Guide: `.claude/references/filters_and_headers.md`.
-- **Dates in the company's time zone**: compute "today"/periods with `glyvio_core.DateTime` calendar methods (`toCalendarDay`, `startOfDay`, `startOfWeek`, `startOfMonth`, `isSameDay`), never `new Date()`, `clearTime()` or `getDay()`/`getMonth()`. Date textfields: `hasZone: false` (default) for civil dates such as due dates, `hasZone: true` for real instants. Guide: `.claude/references/dates_and_timezones.md`.
+- **Phrases with numbers/names use an ICU key** (`$T{key count=state.total}` / `glyvio_core.t('key', { count })`) — never concatenate translated fragments. Every new key goes into all `.arb` files and `node ~/.claude/scripts/i18n_check.mjs .` must pass. Guide: `~/.claude/references/i18n.md`.
+- **Filters on `Simple*Page`**: only push the filter fields (`design.filterSectionsDesign?.push(glyvio_core.FilterSidebar.section(...))`) and describe them in `getActiveFilterChips`/`clearFilter`; the base provides header, search, saved filters, footer and the active-filter row, and hides the panel when there is no filter. Table sidebars get `getQuickFilters` + `state.totalCount`. Guide: `~/.claude/references/filters_and_headers.md`.
+- **Dates in the company's time zone**: compute "today"/periods with `glyvio_core.DateTime` calendar methods (`toCalendarDay`, `startOfDay`, `startOfWeek`, `startOfMonth`, `isSameDay`), never `new Date()`, `clearTime()` or `getDay()`/`getMonth()`. Date textfields: `hasZone: false` (default) for civil dates such as due dates, `hasZone: true` for real instants. Guide: `~/.claude/references/dates_and_timezones.md`.
 - Validate visually at **1440×900 and 390×844** (and dark mode when colors changed) — see `test-plugin-browser`.
 
 ---
@@ -384,7 +384,7 @@ When delegating page creation to a coder subagent or running any `create-*` page
 When the request includes a **screenshot/print of the desired screen**, your goal shifts from "build a reasonable view" to **reproduce the image as faithfully as possible** using only `@types` components. In that case:
 
 - **Run the `create-screen-from-image` skill** rather than jumping straight to a `create-*` skill. It owns the visual-decomposition + spec-approval workflow; the `create-*` skill is then used to emit the code.
-- **`.claude/component_catalog.md` (and `.claude/references/component_catalog_full.md`) is the mapping source of truth** for "what it looks like → which `glyvio_core` class". Consult it for every visual element; it tells you the most specific component for each appearance (e.g. `ChipDesign` for a colored status pill, `HorizontalTotalizerBoxDesign`/`TwoLinesTotalizerBoxDesign` for totalizers, `AvatarDesign`/`UserGroupDesign` for people, the right textfield by data type).
+- **`~/.claude/component_catalog.md` (and `~/.claude/references/component_catalog_full.md`) is the mapping source of truth** for "what it looks like → which `glyvio_core` class". Consult it for every visual element; it tells you the most specific component for each appearance (e.g. `ChipDesign` for a colored status pill, `HorizontalTotalizerBoxDesign`/`TwoLinesTotalizerBoxDesign` for totalizers, `AvatarDesign`/`UserGroupDesign` for people, the right textfield by data type).
 - **Prefer the most specific component** that matches the pixels — never hand-roll with a generic `BoxDesign` + texts what a dedicated design already renders.
 - **Spec before code**: the visual spec (`.claude/temp/<Screen>_visual_spec.json`) and analysis must be produced and **confirmed by the user before any code is written**. Every component in the spec must exist in `@types`.
 - **Flag the un-mappable**: if part of the print has no faithful framework component, tell the user — do not fake it with an approximation that drifts from `@types`.
@@ -449,7 +449,7 @@ Map every request to one of these skills. **Each "create" skill has a matching "
 
 ### Screenshot-driven (visual fidelity)
 
-- `create-screen-from-image` — reproduce a **user-provided screenshot (print)** as faithfully as possible. Performs structured visual decomposition, maps each visual element to a concrete design class via `.claude/component_catalog.md` (and `.claude/references/component_catalog_full.md`), produces an approved visual spec, then delegates to the matching `create-*` page/modal skill. **Use this whenever the user provides an image of the desired screen.**
+- `create-screen-from-image` — reproduce a **user-provided screenshot (print)** as faithfully as possible. Performs structured visual decomposition, maps each visual element to a concrete design class via `~/.claude/component_catalog.md` (and `~/.claude/references/component_catalog_full.md`), produces an approved visual spec, then delegates to the matching `create-*` page/modal skill. **Use this whenever the user provides an image of the desired screen.**
 
 ### Extensibility
 
@@ -507,7 +507,7 @@ Before writing any code or plans, inspect the workspace:
    - **New view** (use a `create-*` skill) vs **customization of an existing view** (use a `*-interceptor` skill).
    - **Which view family** (page / modal / sidebar / cart) from the catalog above.
    - **Does it include a chart / data visualization?** If so, the chart construction is delegated to the **`glyvio-app-chart`** subagent; you remain responsible for the host view, its wiring, and validation (see "Specialized Subagents").
-5. **If a screenshot/print was provided** — read the image and perform a top-down **visual decomposition** before classifying: page type → app bar → layout regions → repeated unit (cell/card) → atomic widgets → form/filter fields. Map each node to a concrete design class using `.claude/component_catalog.md` (and `.claude/references/component_catalog_full.md`), and hand off to `create-screen-from-image` (which gates on an approved visual spec). The page type you read from the image determines the view family and the `create-*` skill.
+5. **If a screenshot/print was provided** — read the image and perform a top-down **visual decomposition** before classifying: page type → app bar → layout regions → repeated unit (cell/card) → atomic widgets → form/filter fields. Map each node to a concrete design class using `~/.claude/component_catalog.md` (and `~/.claude/references/component_catalog_full.md`), and hand off to `create-screen-from-image` (which gates on an approved visual spec). The page type you read from the image determines the view family and the `create-*` skill.
 
 ### Phase 2: Implementation Planning
 
@@ -562,10 +562,10 @@ Once the subagents/skills report completion:
    - "Does every `interopDesign` block set `stateName` with the full `state.` prefix (never a bare field name)?" → fix any violation; this fails silently and is a hard error.
    - "Is the new/redesigned screen built with `glyvio_core.ui`/Surface/Stack/Grid, with CSS-order paddings on modern designs and LTRB on legacy ones, and responsive spans on every grid item?" → fix before the visual check.
    - "Did a redesign keep every widget `key`/`action.key` that interceptors in other plugins look up (grep done)?" → restore any removed key; a missing key breaks other plugins silently at runtime.
-   - "Is every new text in all `.arb` files, with ICU parameters instead of concatenation, and does `node .claude/scripts/i18n_check.mjs .` pass?" → fix any violation.
+   - "Is every new text in all `.arb` files, with ICU parameters instead of concatenation, and does `node ~/.claude/scripts/i18n_check.mjs .` pass?" → fix any violation.
 2. **Wiring Check**: Confirm new pages complete all three registration steps in `plugin/app/src/index.ts`: route registered (`routerService.loadRoutes`), page instantiated (`new MyPage()`), and menu entry added (`menuRegistryService.addGroup` or `fullMenuItemAdd`) — all three are required, any missing step is a hard error; for **every newly created view** (page, modal, sidebar, cart), confirm its `view` permission (`{ "type": "view", "subtype": "{entity}", "key": "{entity}_{view type}" }`) exists in `manifest.json` and is not duplicated — this is a hard error if missing; confirm interceptors are registered (`appInterceptorService.registerInterceptors`) with sensible `order`; confirm listener IDs are globally unique.
 3. **Helper Execution**: If `manifest.json` was modified, you **MUST** run `run_helper.sh` at the workspace root to regenerate typings/entities before compiling.
-4. **Automated Static Audit & Compilation**: Run `node .claude/scripts/validate_glyvio_rules.js` to run AST/regex architectural checks on all frontend code, followed by `pnpm pretty && pnpm lint && pnpm build`, and confirm a clean build. Verify generated comments/types in `dist/bundle.d.ts`.
+4. **Automated Static Audit & Compilation**: Run `node ~/.claude/scripts/validate_glyvio_rules.js` to run AST/regex architectural checks on all frontend code, followed by `pnpm pretty && pnpm lint && pnpm build`, and confirm a clean build. Verify generated comments/types in `dist/bundle.d.ts`.
 5. **Live Browser Validation**: Per the "📸 Live Browser Validation" rule above — run the `test-plugin-browser` skill against the affected view, capture a numbered screenshot after each meaningful step in the project root, and actually read each one before declaring the task done. A clean build alone is not sufficient for any task that touched `plugin/app/src` rendering.
 6. **Cleanup**: Ensure any temporary `SpyInterceptor` and its registration are removed and the build is clean.
 

@@ -24,7 +24,7 @@ tapping a done step and keeps everything typed in the state across steps.
 Helpers: `this.currentStep(state)`, `this.isLastStep(state, step?)`, `await this.goToStep(state, key)`.
 
 > For a spreadsheet import (file → mapping → review → import) use `create-import-wizard`, which is
-> built on this class. Contract: `.claude/references/views_and_interceptors.md`.
+> built on this class. Contract: `~/.claude/references/views_and_interceptors.md`.
 
 ---
 

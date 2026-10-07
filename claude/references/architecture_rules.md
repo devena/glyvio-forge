@@ -42,7 +42,7 @@ Este documento reúne as diretrizes não-negociáveis e os gotchas de runtime co
 - Quando não for possível determinar com segurança qual é o grupo da nova entidade, **pare e peça essa definição** antes de escrever o save.
 
 ### 1.6. Padrão Visual Moderno (telas novas e redesenhos)
-- **Monte telas novas com `glyvio_core.ui` + `SurfaceDesign`/`StackLayoutDesign`/`GridLayoutDesign`** (guia: `.claude/references/modern_layout.md`). Não empilhe `RowLayoutDesign`/`ColumnLayoutDesign` com padding por campo para fazer cards, listas ou grades.
+- **Monte telas novas com `glyvio_core.ui` + `SurfaceDesign`/`StackLayoutDesign`/`GridLayoutDesign`** (guia: `~/.claude/references/modern_layout.md`). Não empilhe `RowLayoutDesign`/`ColumnLayoutDesign` com padding por campo para fazer cards, listas ou grades.
 - **Ordem do `padding` difere**: designs modernos usam ordem CSS (`'top right bottom left'`, tokens `xs|sm|md|lg...`); designs antigos (`*LayoutFieldDesign`, `AvatarDesign`, `StringTextDesign`...) usam **LTRB** (`'left top right bottom'`, dois valores = `'horizontal vertical'`).
 - **Cor por nome + `variant`** (`colorTheme: 'GREEN', variant: 'subtle'`) em vez dos sufixos `_ONLY_BORDER`/`_PRIMARY` em código novo; status com nomes semânticos (`SUCCESS`, `INFO`, `WARNING`, `DANGER`, `NEUTRAL`).
 - **Ao redesenhar, preserve as `key`s e `action.key`s existentes** que interceptors (de qualquer plugin) procuram com `findWidgetByKey` — grep em `nossos/`, `clientes/` e `services/ts/` antes de mudar a árvore. `findWidgetByKey` atravessa Surface/Stack/Grid, então mover o widget para dentro de um card é seguro; trocar a key não é.
@@ -50,18 +50,18 @@ Este documento reúne as diretrizes não-negociáveis e os gotchas de runtime co
 - `visible: a && b` pode resultar em `undefined` (= visível): force booleano (`!!a && b`).
 
 ### 1.7. Traduções com Parâmetros (ICU)
-- Frases com número, nome ou gênero usam **uma chave ICU** (`{count, plural, ...}`, `{name}`, `{g, select, ...}`) passada como `$T{chave count=state.total}` no design ou `glyvio_core.t('chave', { count })` no TS. **Não concatene** pedaços traduzidos. Guia: `.claude/references/i18n.md`.
+- Frases com número, nome ou gênero usam **uma chave ICU** (`{count, plural, ...}`, `{name}`, `{g, select, ...}`) passada como `$T{chave count=state.total}` no design ou `glyvio_core.t('chave', { count })` no TS. **Não concatene** pedaços traduzidos. Guia: `~/.claude/references/i18n.md`.
 - Toda chave nova em **todos** os `.arb` do projeto; nunca `$S{}`/`{{}}` dentro do `.arb`.
-- Rode `node .claude/scripts/i18n_check.mjs .` depois de mexer em `.arb` ou `$T{}`.
+- Rode `node ~/.claude/scripts/i18n_check.mjs .` depois de mexer em `.arb` ou `$T{}`.
 
 ### 1.8. Filtros e Ações Rápidas
-- Em `Simple*Page`, **só adicione os campos de filtro** em `design.filterSectionsDesign?.push(FilterSidebar.section(...))`; cabeçalho, busca, filtros salvos e rodapé já vêm da base, e o painel some sozinho se não houver filtro (`FilterSidebar.finalize`). Descreva os filtros ativos em `getActiveFilterChips`/`clearFilter`. Guia: `.claude/references/filters_and_headers.md`.
+- Em `Simple*Page`, **só adicione os campos de filtro** em `design.filterSectionsDesign?.push(FilterSidebar.section(...))`; cabeçalho, busca, filtros salvos e rodapé já vêm da base, e o painel some sozinho se não houver filtro (`FilterSidebar.finalize`). Descreva os filtros ativos em `getActiveFilterChips`/`clearFilter`. Guia: `~/.claude/references/filters_and_headers.md`.
 - Atalhos que **executam** algo (criar pedido, buscar e abrir registro) são quick actions (`menuRegistryService.addAction`, skill `create-quick-action`), não itens de rota. O `popActionKey` de um modal aberto por ela vem de `MenuRegistryService.popActionKey(key)`.
 
 ### 1.9. Rota, Classe da Tela e Export
 - `getRouteNameObject()` deve devolver **exatamente o nome da classe da tela**, e a classe deve ser exportada pelo `index.ts` do plugin (`export * from './caminho/da/tela'`). O app abre `<namespace>.<NomeDaClasse>`; sem o export a tela não abre e o console mostra `[glyvio] A rota ... aponta para ..., mas o plugin não exporta essa classe` — o build continua verde.
 - Registre a rota uma vez com `glyvio_core.routerService.loadRoutes([...])` e o menu com `glyvio_core.menuRegistryService.addGroup/addItem` (o `FullMenuPage.fullMenuGroupAdd` está **deprecated**). Itens de administração vão em `glyvio_core.adminRegistryService` (skill `register-menu-and-admin`).
-- Ciclo de vida das views, navegação, diálogos e interceptors: `.claude/references/views_and_interceptors.md`.
+- Ciclo de vida das views, navegação, diálogos e interceptors: `~/.claude/references/views_and_interceptors.md`.
 
 ---
 
@@ -130,6 +130,6 @@ Um `@AfterInterceptor` em uma entidade **filha** (itens, linhas, vínculos — `
 2. **Condicionais Handlebars em Chips:**
    - Evite `{{#if}}...{{else}}{{#if}}...{{/if}}{{/if}}` dentro do `label` ou `value` de `ChipDesign`. Isso pode renderizar `"ERROR ON PROCESS PARSE"`. Calcule o label e a cor no TypeScript (`refreshState`) e interpole o valor resolvido (`$S{state.computedLabel}`).
 3. **Nomes de Ícones:**
-   - Nomes de ícones (`SimpleIconDesign.name`, `iconName`) aceitam qualquer string; um nome desconhecido vira um triângulo, sem erro. Tipe como `glyvio_core.GlyvioIconName` para ter autocomplete, rode `node .claude/scripts/check_icons.mjs .` na raiz do plugin e confirme visualmente via captura de tela (`test-plugin-browser`).
+   - Nomes de ícones (`SimpleIconDesign.name`, `iconName`) aceitam qualquer string; um nome desconhecido vira um triângulo, sem erro. Tipe como `glyvio_core.GlyvioIconName` para ter autocomplete, rode `node ~/.claude/scripts/check_icons.mjs .` na raiz do plugin e confirme visualmente via captura de tela (`test-plugin-browser`).
 4. **Colisão de Rotas em `navigate()`:**
    - Se uma Page e um Modal compartilharem o mesmo path (ex.: `/sale-table`), use `navigate({ nameSpace, nameObject })` para desambiguar e garantir que a view pretendida seja aberta.

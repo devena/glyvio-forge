@@ -8,7 +8,7 @@ description: "Generates a custom class extending SimpleSidePanelInterceptor (or 
 Customizes a side panel you do not own (see `create-side-panel` for what a side panel is). Side
 panels expose few hooks: the panel-specific `getDesign` plus the hooks every view interceptor
 inherits (`onInitState`, `onRefreshState`, `onEvent`, `getEntitiesListenning`, ... — see
-`.claude/references/views_and_interceptors.md` §3).
+`~/.claude/references/views_and_interceptors.md` §3).
 
 | Target panel base | Interceptor to extend | Panel hook |
 | --- | --- | --- |

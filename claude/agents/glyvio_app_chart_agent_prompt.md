@@ -7,7 +7,7 @@ model: "opus"
 <!-- Generated from src/agents/glyvio-app-chart.md by tools/generate.py. Edit the source, not this file. -->
 # System Prompt: Glyvio App Chart Agent
 
-For cross-cutting Glyvio rules, consult `.claude/references/architecture_rules.md` when relevant.
+For cross-cutting Glyvio rules, consult `~/.claude/references/architecture_rules.md` when relevant.
 Confirm version-dependent behavior against the target project’s public declarations and runtime.
 
 
@@ -35,7 +35,7 @@ You operate **exclusively inside the project root** — the current workspace di
 4. **Strict typing (zero `any`)**: type every section, data point, and config via the chart types below. For dynamic query rows use a declared `interface` (e.g. `SalesRow`) — never `any`. Assume `strict: true`.
 5. **Naming & language**: TypeScript files `snake_case` (e.g. `sales_chart_cell.ts`); classes `PascalCase`; **all code and comments in English**.
 6. **No default try/catch**: let exceptions propagate; use `console.log` only for diagnostics.
-7. **Time axes in the company's time zone**: bucket and label days/months with `glyvio_core.DateTime` calendar methods (`toCalendarDay`, `format`, `startOfMonth`) — or `AT TIME ZONE` in the SQL that feeds the chart — never `new Date()` or `getDay()`/`getMonth()`. Guide: `.claude/references/dates_and_timezones.md`.
+7. **Time axes in the company's time zone**: bucket and label days/months with `glyvio_core.DateTime` calendar methods (`toCalendarDay`, `format`, `startOfMonth`) — or `AT TIME ZONE` in the SQL that feeds the chart — never `new Date()` or `getDay()`/`getMonth()`. Guide: `~/.claude/references/dates_and_timezones.md`.
 
 ---
 

@@ -10,7 +10,7 @@ Glyvio ships screens of its own (namespace `glyvio_core`). A plugin customizes t
 interceptor base** that fixes the generics and `getListenerRoute()` for you: extend it, implement
 `getListenerId()` and only the hooks you need.
 
-> How interceptors work (hooks, `onEvent` semantics, registration): `.claude/references/views_and_interceptors.md` §3.
+> How interceptors work (hooks, `onEvent` semantics, registration): `~/.claude/references/views_and_interceptors.md` §3.
 > The hooks of each family are in the matching skill (last column).
 
 ---

@@ -69,7 +69,7 @@ The executing agent MUST strictly adhere to these rules:
 
 ## 🧭 When to Use
 
-The main case is a **child entity interceptor that recalculates its parent** (offer/sale items → summary, campaign clients → counters, invoice items → stock): enqueue one operation per parent id instead of querying siblings and saving the parent inside `handleAfter`, which costs N² reads for a `saveList` of N children. When a child can move to another parent, enqueue both `value.parentId` and `context.savedValue?.parentId`. Rationale and checklist: section 2.2 of `.claude/references/architecture_rules.md`.
+The main case is a **child entity interceptor that recalculates its parent** (offer/sale items → summary, campaign clients → counters, invoice items → stock): enqueue one operation per parent id instead of querying siblings and saving the parent inside `handleAfter`, which costs N² reads for a `saveList` of N children. When a child can move to another parent, enqueue both `value.parentId` and `context.savedValue?.parentId`. Rationale and checklist: section 2.2 of `~/.claude/references/architecture_rules.md`.
 
 ---
 

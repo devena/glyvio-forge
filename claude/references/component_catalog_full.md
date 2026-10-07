@@ -895,7 +895,7 @@ cada componente deveria ter uma imagem. Sugestão de fluxo para gerá-las:
 
 1. Renderizar cada design isolado num storybook/página de exemplo do app.
 2. Capturar screenshot por componente em
-   `.claude/references/component_images/<classe>.png`.
+   `~/.claude/references/component_images/<classe>.png`.
 3. Substituir os marcadores textuais deste catálogo por
    `![ClassName](component_images/ClassName.png)`.
 

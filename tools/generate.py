@@ -66,7 +66,7 @@ def render(text: str, config: dict) -> str:
         'REFERENCES': f'{base}/{config["references"]}',
         'CATALOG': f'{base}/{config["catalog"]}' if config['catalog'] else '',
         'SKILLS': f'{base}/skills', 'SCRIPTS': f'{base}/scripts',
-        'TEMP': f'{base}/temp', 'PROJECT_INSTRUCTIONS': config['instructions'],
+        'TEMP': f'{config.get("temp_root", base)}/temp', 'PROJECT_INSTRUCTIONS': config['instructions'],
         'ARCHITECTURE': (f'{base}/rules/architecture_rules.md' if config['format'] in {'antigravity', 'agy'}
                          else f'{base}/{config["references"]}/architecture_rules.md'),
     }

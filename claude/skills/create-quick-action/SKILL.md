@@ -69,7 +69,7 @@ glyvio_core.menuRegistryService.addAction('sales', {
 ## Passo 3 — Traduções
 
 Adicione `title`/`subtitle` em **todos** os `.arb` do plugin (pt_BR e en_US) e rode o
-`node .claude/scripts/i18n_check.mjs .` (ver `.claude/references/i18n.md`).
+`node ~/.claude/scripts/i18n_check.mjs .` (ver `~/.claude/references/i18n.md`).
 
 ## Passo 4 — Validar
 

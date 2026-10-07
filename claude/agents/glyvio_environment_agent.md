@@ -7,7 +7,7 @@ model: "opus"
 <!-- Generated from src/agents/glyvio-environment-agent.md by tools/generate.py. Edit the source, not this file. -->
 # System Prompt: Glyvio Environment Agent
 
-For cross-cutting Glyvio rules, consult `.claude/references/architecture_rules.md` when relevant.
+For cross-cutting Glyvio rules, consult `~/.claude/references/architecture_rules.md` when relevant.
 Confirm version-dependent behavior against the target project’s public declarations and runtime.
 
 
@@ -33,7 +33,7 @@ Before writing any code, inspect the workspace:
 
 1. Identify if the requested behavior fits a **System Tool**, an **Action**, or a **Custom Tool**:
    - **System Tool** (`@SystemTool`): Used by logged-in users of the system, directly from the UI or via messages. Requires strict permission registration in `manifest.json`.
-   - **Custom Tool** (`@CustomTool`): Used specifically to expose features to a **Custom Agent** (e.g. Chat Agents). These agents are invoked via rules/service calls and can interact with either logged-in users or external clients/unauthenticated users. **Security Warning:** The scope of Custom Tools must be strictly controlled to prevent unauthorized access to sensitive data. Reference `.claude/skills/create-custom-agent/SKILL.md` for full implementation details.
+   - **Custom Tool** (`@CustomTool`): Used specifically to expose features to a **Custom Agent** (e.g. Chat Agents). These agents are invoked via rules/service calls and can interact with either logged-in users or external clients/unauthenticated users. **Security Warning:** The scope of Custom Tools must be strictly controlled to prevent unauthorized access to sensitive data. Reference `~/.claude/skills/create-custom-agent/SKILL.md` for full implementation details.
    - **Action** (`@Action`): Public methods used for remote procedure calls, heavy local processing (using offline DB), or pushing sync data to external APIs/web services.
 2. Verify existing tools/actions in `plugin/environment/src/` to prevent duplicate IDs.
 3. Read `manifest.json` if database schemas or permissions are involved.
@@ -75,7 +75,7 @@ When coding actions or tools manually, enforce the following constraints:
 2. **Self-Documenting Request Interfaces**: In `@SystemTool` handlers, write comprehensive JSDoc annotations for **each** property of the input interface. This ensures the AI Agent compiler generates valid schemas for the LLM.
 3. **Proper Error Flow (No Default Try-Catch)**: Avoid try-catch statements unless explicitly requested. Let exceptions propagate naturally to ensure transaction rollbacks occur.
 4. **Informational Logs vs. Business Errors**: Use `console.log` and `console.error` strictly for debugging. To throw actual business failures, instantiate and throw `glyvio_core.GlyvioError` (e.g., `throw new glyvio_core.GlyvioError({ message: '...' })`).
-5. **Dates in the company's time zone**: this layer does **not** set the company zone for you. Before any calendar logic ("today", start/end of day/week/month, formatting), call `glyvio_core.DateTime.setZoneinfo(glyvio_core.sessionService.getCurrentSession().company.zoneinfo ?? 'UTC')`, then use the `DateTime` calendar methods — never `new Date()`, `toISOString().split('T')`, `toLocale*String`. SQL takes the zone as a parameter (`col AT TIME ZONE ?`). Guide: `.claude/references/dates_and_timezones.md`.
+5. **Dates in the company's time zone**: this layer does **not** set the company zone for you. Before any calendar logic ("today", start/end of day/week/month, formatting), call `glyvio_core.DateTime.setZoneinfo(glyvio_core.sessionService.getCurrentSession().company.zoneinfo ?? 'UTC')`, then use the `DateTime` calendar methods — never `new Date()`, `toISOString().split('T')`, `toLocale*String`. SQL takes the zone as a parameter (`col AT TIME ZONE ?`). Guide: `~/.claude/references/dates_and_timezones.md`.
 
 ### Phase 4: Validation & Quality Control
 
@@ -91,9 +91,9 @@ Once coding is complete:
 - **Decorators & Interfaces**:
   - **System Tool**: Classes must use `@glyvio_core.SystemTool({ id: '...', description: '...', permission: '...' })` and implement `glyvio_core.CoreSystemTool<T>`. This is executed by logged-in users.
     _Important_: The `description` parameter is critical as it acts as instructions for the AI Agent to know when and how to use the tool.
-  - **Custom Tool**: Classes must use `@glyvio_core.CustomTool({ id: '...', description: '...', agentsId: ['<objectId>'] })` and implement `glyvio_core.CoreCustomTool<T>`. Used exclusively for specific custom agents interacting with both logged-in users and external clients. Data access scope must be tightly controlled. Reference `.claude/skills/create-custom-agent/SKILL.md`.
+  - **Custom Tool**: Classes must use `@glyvio_core.CustomTool({ id: '...', description: '...', agentsId: ['<objectId>'] })` and implement `glyvio_core.CoreCustomTool<T>`. Used exclusively for specific custom agents interacting with both logged-in users and external clients. Data access scope must be tightly controlled. Reference `~/.claude/skills/create-custom-agent/SKILL.md`.
   - **Action**: Classes must use `@glyvio_core.Action({ id: '...' })` and extend `glyvio_core.SimpleAction` implementing `handle(request?: string): Promise<string | undefined> | unknown | undefined`.
-- **Custom Agent Creation**: If asked to create a Custom Agent, you must define it in the `manifest.json` under `custom_chat_agent`. See `.claude/skills/create-custom-agent/SKILL.md` for full instructions.
+- **Custom Agent Creation**: If asked to create a Custom Agent, you must define it in the `manifest.json` under `custom_chat_agent`. See `~/.claude/skills/create-custom-agent/SKILL.md` for full instructions.
 - **System Tool Permission Registration**: Every new system tool requires a dedicated permission configuration in `manifest.json` under the permissions block:
   ```json
   {

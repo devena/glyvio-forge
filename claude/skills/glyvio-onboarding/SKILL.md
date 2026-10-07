@@ -95,7 +95,7 @@ tools/glyvio-dev-helper*
 ```
 
 Then create `.env` at the plugin root from the template shipped with this skill
-(`.claude/skills/glyvio-onboarding/assets/env.example`), and **ask the user to fill** the values:
+(`~/.claude/skills/glyvio-onboarding/assets/env.example`), and **ask the user to fill** the values:
 
 ```dotenv
 G_APP_URL=https://alpha.glyvio.com
@@ -124,8 +124,8 @@ for k in G_AUTH_URL G_COMPANY_ID G_USERNAME G_PASSWORD; do grep -q "^$k=..*" .en
 
 Copy both scripts shipped with this skill to the plugin root:
 
-- `.claude/skills/glyvio-onboarding/assets/run_helper.sh` → `run_helper.sh` (then `chmod +x run_helper.sh`)
-- `.claude/skills/glyvio-onboarding/assets/run_helper.ps1` → `run_helper.ps1`
+- `~/.claude/skills/glyvio-onboarding/assets/run_helper.sh` → `run_helper.sh` (then `chmod +x run_helper.sh`)
+- `~/.claude/skills/glyvio-onboarding/assets/run_helper.ps1` → `run_helper.ps1`
 
 They read `.env` (without executing it), pass the values to the helper as `GLYVIO_*` environment
 variables and run it — this works with every helper build, including older ones that do not read

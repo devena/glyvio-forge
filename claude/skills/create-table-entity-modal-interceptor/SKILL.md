@@ -18,7 +18,7 @@ entity picker of `create-table-entity-modal`; for the list-rendered picker use
 | `getDesignForSelectChild(state, item, design: WidgetDesign): WidgetDesign` | **return** the widget shown for the selection |
 | `populateQueryBuilder(state, queryBuilder)` | restrict which records can be picked |
 
-Plus the common hooks (`.claude/references/views_and_interceptors.md` §3).
+Plus the common hooks (`~/.claude/references/views_and_interceptors.md` §3).
 
 ---
 

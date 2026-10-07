@@ -6,12 +6,12 @@ description: "Generates a standard entity list page with search, sidebar filteri
 # Agent Skill: Create Custom List Page View in Glyvio
 
 > **Padrão visual moderno:** monte o conteúdo com `glyvio_core.ui` e `SurfaceDesign`/`StackLayoutDesign`/`GridLayoutDesign`
-> (guia `.claude/references/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
-> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`.claude/references/i18n.md`) e prints em 1440×900 e 390×844.
+> (guia `~/.claude/references/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
+> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`~/.claude/references/i18n.md`) e prints em 1440×900 e 390×844.
 
 > **Filtros:** adicione só os campos em `design.filterSectionsDesign?.push(glyvio_core.FilterSidebar.section(...))`
 > e descreva os filtros ativos em `getActiveFilterChips`/`clearFilter` — cabeçalho, busca, filtros salvos, rodapé e a
-> linha de chips vêm da base (guia `.claude/references/filters_and_headers.md`).
+> linha de chips vêm da base (guia `~/.claude/references/filters_and_headers.md`).
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate a fully functional list page view (extending `SimpleListPage`) within a Glyvio plugin project.
 

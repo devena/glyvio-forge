@@ -17,7 +17,7 @@ The base already registers the attachment extension: override `onFileUploaded` t
 user uploads (see `use-view-extensions`). Pages ignore `allowDropFile`; put a `FileDropAreaDesign`
 in a section or a button that calls `this.extensionsManager.attachment!.callFilePicker(...)`.
 
-> Contract: `.claude/references/views_and_interceptors.md`. Visual pattern: `.claude/references/modern_layout.md`.
+> Contract: `~/.claude/references/views_and_interceptors.md`. Visual pattern: `~/.claude/references/modern_layout.md`.
 
 ---
 
@@ -211,7 +211,7 @@ export class <EntityName>EditPage extends glyvio_core.SimpleEditPage<<EntityName
 
 Check in the target `.d.ts` that `observers`/`tags` exist on the entity before keeping those
 handlers, and whether your `SimpleEditPageDesign` version has `filterSectionsDesign`/`headerDesign`
-(newer versions add a filter sidebar to edit pages — `.claude/references/filters_and_headers.md`).
+(newer versions add a filter sidebar to edit pages — `~/.claude/references/filters_and_headers.md`).
 
 ---
 

@@ -10,7 +10,7 @@ zooms, the framework builds a `QueryBuilder` and calls, in order: `populateQuery
 query + sidebar filters), `populateMainFilter` (search text, when typed) and `populateAreaFilter`
 (the visible rectangle). Each returned record becomes a pin through `getDesignForCell`.
 
-> Contract: `.claude/references/views_and_interceptors.md`. Filters: `.claude/references/filters_and_headers.md`.
+> Contract: `~/.claude/references/views_and_interceptors.md`. Filters: `~/.claude/references/filters_and_headers.md`.
 
 ---
 

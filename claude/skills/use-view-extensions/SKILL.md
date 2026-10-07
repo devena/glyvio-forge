@@ -20,7 +20,7 @@ Already registered by the base class: attachment on `SimpleEditPage`, `SimpleCar
 `attachmentOnFilesUploaded` there); file on `SimpleBatchCart`/`SimpleBatchPage`. Calling a
 `register*` twice replaces the previous one (and logs a warning).
 
-> Contract: `.claude/references/views_and_interceptors.md`.
+> Contract: `~/.claude/references/views_and_interceptors.md`.
 
 ---
 

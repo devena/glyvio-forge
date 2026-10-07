@@ -15,7 +15,7 @@ Hooks of `glyvio_core.SimpleMapPageInterceptor<S, E>` (each runs after the page'
 | `populateMainFilter(state, filter: QueryBuilderFilter, text)` | extend the search filter (e.g. push to `filter.ors`) |
 | `populateJeannieContext(state, context)` | extend the assistant context |
 
-Plus the common view-interceptor hooks (`.claude/references/views_and_interceptors.md` §3). The pin tap
+Plus the common view-interceptor hooks (`~/.claude/references/views_and_interceptors.md` §3). The pin tap
 (`onCellTap`) is not interceptable.
 
 ---

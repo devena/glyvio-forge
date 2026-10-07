@@ -14,7 +14,7 @@ Use it when a part of a screen has its own data and behavior: the "summary" pane
 filters/preview next to a table modal, MASTER/DETAIL of a master-detail page, or a tab with a
 timeline/attachments beside a cart.
 
-> Contract: `.claude/references/views_and_interceptors.md`. For a full master-detail screen use
+> Contract: `~/.claude/references/views_and_interceptors.md`. For a full master-detail screen use
 > `create-master-detail-page`.
 
 ---

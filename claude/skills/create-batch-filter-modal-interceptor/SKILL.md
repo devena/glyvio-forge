@@ -16,7 +16,7 @@ fill a filter form and returns the ids of the matching records. Its interceptor
 | `onEntityUpdate(state, structureName, objectId)` | react to listened record changes |
 | `populateJeannieContext(state, context)` | assistant context |
 
-Plus the common hooks (`.claude/references/views_and_interceptors.md` §3). Prefer the target's own
+Plus the common hooks (`~/.claude/references/views_and_interceptors.md` §3). Prefer the target's own
 interceptor base when it exists (e.g. `glyvio_core.TaskFilterModalInterceptor`).
 
 ---

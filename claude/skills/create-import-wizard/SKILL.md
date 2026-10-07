@@ -6,8 +6,8 @@ description: "Generates a guided spreadsheet import (CSV/XLS/XLSX) for an entity
 # Agent Skill: Create a Guided Import Wizard in Glyvio
 
 > **Padrão visual moderno:** monte o conteúdo com `glyvio_core.ui` e `SurfaceDesign`/`StackLayoutDesign`/`GridLayoutDesign`
-> (guia `.claude/references/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
-> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`.claude/references/i18n.md`) e prints em 1440×900 e 390×844.
+> (guia `~/.claude/references/modern_layout.md`): cuidado com a ordem do `padding` (CSS nos modernos, LTRB nos antigos), spans
+> responsivos no grid, cor por nome + `variant`, textos com chave ICU (`~/.claude/references/i18n.md`) e prints em 1440×900 e 390×844.
 
 This skill generates a modal that imports a spreadsheet into an entity, guided in steps, on top of
 `glyvio_core.SimpleWizardModal` (the core's step-by-step modal: stepper on top, Cancelar/Voltar ·

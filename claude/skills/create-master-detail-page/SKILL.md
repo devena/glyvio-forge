@@ -13,8 +13,8 @@ Use it for "list on the left, details on the right" screens (inbox, catalog brow
 category). For a list that opens a separate sidebar/modal per record, prefer `create-list-page` or
 `create-table-page` + `create-sidebar`.
 
-> Shared contract (routes, export, lifecycle, navigation): `.claude/references/views_and_interceptors.md`.
-> Layout pattern: `.claude/references/modern_layout.md`.
+> Shared contract (routes, export, lifecycle, navigation): `~/.claude/references/views_and_interceptors.md`.
+> Layout pattern: `~/.claude/references/modern_layout.md`.
 
 ---
 
@@ -51,7 +51,7 @@ Ask for whatever is missing:
    design does not change on selection, and DETAIL is not recreated when only its data changes.
 7. **Each panel has its own route, permission and export.** All three routes go to
    `routerService.loadRoutes`, and all three classes must be exported from the plugin `index.ts`.
-8. Use `$T{...}` keys for every visible text and add them to every `.arb` (`.claude/references/i18n.md`).
+8. Use `$T{...}` keys for every visible text and add them to every `.arb` (`~/.claude/references/i18n.md`).
 9. New entities saved from DETAIL need `userGroupId` (architecture rule 1.5).
 
 ---
@@ -337,5 +337,5 @@ Adjust to the target `.d.ts`: confirm `SimpleSidePanelRouteParams`, `SimpleSideP
 - [ ] MASTER sends `_SEND_ACTION_TO_SIDE_PANEL` with `panelIdentifier: 'DETAIL'`; DETAIL handles the inner key in `events()`.
 - [ ] DETAIL renders its own empty state; the page's design never depends on the selection.
 - [ ] No `callRefreshState()` misuse: it is only used to reload data after a selection/search.
-- [ ] All texts are `$T{}` keys present in every `.arb`; `node .claude/scripts/i18n_check.mjs .` passes.
+- [ ] All texts are `$T{}` keys present in every `.arb`; `node ~/.claude/scripts/i18n_check.mjs .` passes.
 - [ ] `pnpm build` is clean; visual check done with `test-plugin-browser`.

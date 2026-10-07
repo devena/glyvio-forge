@@ -15,7 +15,7 @@ Hooks of `glyvio_core.SimpleTableSidebarInterceptor<S, E, GS>`:
 | `populateQueryBuilder(state, queryBuilder)` | extra restrictions, joins your cells need |
 | `populateJeannieContext(state, context)` | assistant context |
 
-Plus the common hooks (`.claude/references/views_and_interceptors.md` §3). Quick filters are not
+Plus the common hooks (`~/.claude/references/views_and_interceptors.md` §3). Quick filters are not
 interceptable; add your own filter as an app-bar toggle handled in `onEvent`.
 
 When the target ships its own interceptor base (e.g. `glyvio_core.TaskTableSidebarInterceptor`, which

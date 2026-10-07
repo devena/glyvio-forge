@@ -42,7 +42,7 @@ is deprecated too — use `adminRegistryService`.
    `SECTION_DATA`, `SECTION_AUTOMATION`, `SECTION_SYSTEM`, `SECTION_GENERAL`, `SECTION_DEVELOPER`; create
    your own section (`addSection`) only for a coherent group of several items (e.g. an integration).
 5. Icon names: type the literal as `glyvio_core.GlyvioIconName` for autocomplete and run
-   `node .claude/scripts/check_icons.mjs .` — unknown names render as a triangle.
+   `node ~/.claude/scripts/check_icons.mjs .` — unknown names render as a triangle.
 6. Texts are `$T{}` keys in every `.arb`.
 7. Offline: only for screens whose data/actions work without a connection,
    `glyvio_core.routerService.addOfflineAvailableRoutes([<Route>])`.

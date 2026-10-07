@@ -46,7 +46,7 @@ operation there; server or app code calls it by id.
 7. `sequenceService.nextval` is not implemented in this layer (returns 0) — get numbers from the server.
 8. Keep inputs/outputs small and serializable; for large payloads store the data (attachment/entity)
    and pass ids.
-9. **Dates in the company's time zone**: the environment layer does not set the company zone. Before any calendar logic call `glyvio_core.DateTime.setZoneinfo(glyvio_core.sessionService.getCurrentSession().company.zoneinfo ?? 'UTC')`, then use `DateTime` calendar methods (`toCalendarDay`, `format`, `startOfDay`…) — never `new Date()`, `toISOString().split('T')` or `toLocale*String`. Guide: `.claude/references/dates_and_timezones.md`.
+9. **Dates in the company's time zone**: the environment layer does not set the company zone. Before any calendar logic call `glyvio_core.DateTime.setZoneinfo(glyvio_core.sessionService.getCurrentSession().company.zoneinfo ?? 'UTC')`, then use `DateTime` calendar methods (`toCalendarDay`, `format`, `startOfDay`…) — never `new Date()`, `toISOString().split('T')` or `toLocale*String`. Guide: `~/.claude/references/dates_and_timezones.md`.
 
 ---
 
