@@ -84,7 +84,7 @@ Generate a markdown execution plan detailing:
      - Throwing inside `handleAfterCommit` does **not** roll back the entity save.
      - `value` is fully read-only — field mutation is forbidden.
      - Detects first-time inserts with `context.savedValue === undefined`.
-   - Use `QueueList` (`getCurrentQueue()`) with deterministic IDs for deferred, deduplicated operations.
+   - Use `QueueList` (`getCurrentQueue()`) with deterministic IDs for deferred, deduplicated operations. **Mandatory** when an interceptor on a child entity recalculates or saves a parent/shared record (totals, counters, summaries, reservations, stock) — inline work there costs N² reads per `saveList`; see section 2.2 of `.opencode/references/architecture_rules.md`.
 3. **Execution Pipeline Sequence**: Verify that the flow respects the full execution sequence:
    `SyncInterceptor` > `BeforeInterceptor` > `AfterInterceptor` > **`[COMMIT]`** > `AfterCommitInterceptor`.
 
@@ -137,6 +137,7 @@ Once the coder subagents report completion:
     - Every newly-created entity has an explicit, authorized `userGroupId` before it enters a save call or queue. Child/join records inherit the owning entity's group; independent records use the resolved actor group. Existing entities retain their group unless changing it is the explicit requirement.
    - No try-catch blocks are wrapping business rules by default.
    - `@AfterCommitInterceptor` handlers do **not** mutate `value` (it is `Readonly`) and do **not** rely on rollback semantics (the transaction is already committed when `handleAfterCommit` runs).
+   - No `@AfterInterceptor` on a child entity queries its siblings or saves the parent inside `handleAfter`; that work is enqueued once per parent id (both the current and the previous parent when the child can move), aggregates in SQL (`findGrouped`), and uses `addLeftJoinEntity`.
 2. **Helper Execution**: If `manifest.json` has been modified during the planning or execution phases, you **MUST** run the helper script `run_helper.sh` located at the workspace root to regenerate typings and entities.
 3. **Compilation**: Run the build verification command (`pnpm run build:fast` or `pnpm tsc --noEmit`) to verify that the TypeScript compiler passes.
 4. **Verification**: Double-check that every new server file (interceptor, controller, strategy) is registered in `plugin/server/src/index.ts` via `export * from './...'`. There is no `behavior_listeners/` entrypoint — all registrations go in `src/index.ts`.
@@ -161,7 +162,7 @@ Ensure all delegated code adheres to the Glyvio Core specifications:
 - **Dates in the company's time zone**: "today", periods and day/month grouping always use the company zone (`company.zoneinfo`) — `glyvio_core.DateTime` calendar methods (`toCalendarDay`, `startOfDay`, `startOfMonth`, `format`…), never `new Date()`, `clearTime()` or `getDay()`/`getMonth()`. Date-only fields are 00:00 UTC (`hasZone = false`). Raw SQL gets the zone as a parameter and uses `AT TIME ZONE` before truncating. Guide: `.opencode/references/dates_and_timezones.md`.
 - **Save Operations**: Always use `glyvio_core.entityService.saveEntityWithoutPermission(entity)` inside interceptors for writing supplementary records or related entities.
 - **`userGroupId` Is Mandatory on New Records**: Before any save API or `EntityServiceQueue` receives a new entity, set its `userGroupId`. Derivative records (joins, audit/supporting records, attachment links) inherit it from their owner; a standalone internal record uses a deliberately resolved actor/system group. Never take this scope unvalidated from a request or use `core_admin` as a default for a human request.
-- **Queue Operations**: Use `getCurrentQueue()` for scheduling deferred tasks within the current transaction scope. Prevent duplication by checking `.getById(id)` with deterministic IDs.
+- **Queue Operations**: Use `getCurrentQueue()` for scheduling deferred tasks within the current transaction scope. Deduplicate with a deterministic id (`${eventName}-${recordId}`, built by a static helper), an `executionFlagService` guard and `addOrReplace` — see `schedule-queued-operation`.
 - **Cache Operations**: Use `glyvio_core.cacheService` for manual, plugin-controlled caching. This is a **fully manual cache** — no automatic population or reload occurs. The contract is:
   - `cacheService.put(key, identifier, value)` — serializes and stores a value. The only way to populate an entry.
   - `cacheService.get<T>(key, identifier)` — returns the deserialized value with the exact type/shape stored via `put`, or `undefined` if the entry was never put or was evicted.

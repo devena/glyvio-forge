@@ -103,6 +103,26 @@ Confirmados em execução real (2026-09-25):
 
 ---
 
+## 2.2. Interceptor de Filho que Recalcula o Pai: Sempre pela Fila (`plugin/server`)
+
+Um `@AfterInterceptor` em uma entidade **filha** (itens, linhas, vínculos — `OfferItem`, `SaleItem`, `CampaignClient`, `SlInvoiceItem`…) que recalcula ou grava algo no **pai** (totais, contadores, resumo, reservas, estoque) deve **sempre** enfileirar o trabalho com uma Strategy (`Strategy.pushToQueue({ parentId })`, id determinístico `${eventName}-${parentId}`), e nunca consultar os irmãos nem salvar o pai dentro do `handleAfter`.
+
+**Por quê:** o `AfterInterceptor` roda dentro da transação, uma vez **por registro salvo**. Um `saveList` com N filhos dispara o interceptor N vezes; se cada execução lê os N irmãos e salva o pai, o custo vira **N² linhas lidas + N gravações no pai** — e cada gravação no pai dispara os interceptors do pai. Com 5.000 filhos, um único "salvar" lê ~25 milhões de linhas e o servidor parece travado. Enfileirado com id por pai, o trabalho roda **uma vez por pai**, no fim da transação, depois de todos os filhos salvos.
+
+**Checklist:**
+
+1. Enfileire o pai atual **e o anterior** quando o filho pode trocar de pai — observe o campo do pai em `isModified` e use `new Set([value.parentId, context.savedValue?.parentId])`, ignorando vazios.
+2. Só enfileire quando um campo que afeta o resultado mudou ou o registro é novo (`!context.savedValue`).
+3. Na Strategy, agregue no banco (`findGrouped` com `COUNT`/`SUM`) em vez de `findAll()` + soma em memória.
+4. Use `addLeftJoinEntity`; `addFullJoinEntity` quase nunca é o que se quer e deixa a consulta mais pesada.
+5. Sem `console.log` incondicional no `handleAfter` — ele roda para cada linha salva.
+6. Do lado do app, salve só os filhos novos/alterados; reenviar a lista inteira dispara o interceptor para todos.
+
+**Referência:** `glyvio-plugin-mobgran-core` — `interceptors/after/offer_item_push_generate_summary_for_offer.ts` + `strategies/generate_summary_for_offer.ts`.
+**Contraexemplo (N²):** recalcular `count_clients`/métricas de `Campaign` com `findAll()` de todos os `CampaignClient` e `saveInput` na campanha dentro do `handleAfter` de cada `CampaignClient`.
+
+---
+
 ## 3. Peculiaridades de Componentes de UI
 
 1. **`ChoiceMultipleTextfieldDesign` (Bug Flutter confirmado):**

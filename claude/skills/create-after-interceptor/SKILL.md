@@ -1,11 +1,11 @@
 ---
 name: create-after-interceptor
-description: "Generates a custom class extending SimpleAfterInterceptor to run post-save side effects (e.g., saving notifications, recording audit logs, notifying external services) after a database entity is successfully committed."
+description: "Generates a custom class extending SimpleAfterInterceptor to run post-save side effects (e.g., saving notifications, recording audit logs, notifying external services) after a database entity is saved, inside the same transaction."
 ---
 <!-- Generated from src/skills/create-after-interceptor/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create After Interceptor in Glyvio
 
-This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register a server-side post-save interceptor (`SimpleAfterInterceptor`) to run asynchronous side-effects after database entity save operations.
+This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register a server-side post-save interceptor (`SimpleAfterInterceptor`) to run side-effects after database entity save operations, inside the same transaction.
 
 ---
 
@@ -14,7 +14,7 @@ This document defines a structured AI agent skill. Other AI coding agents or dev
 ```json
 {
   "name": "create_after_interceptor",
-  "description": "Generates a custom class extending SimpleAfterInterceptor to run post-save side effects (e.g., saving notifications, recording audit logs, notifying external services) after a database entity is successfully committed.",
+  "description": "Generates a custom class extending SimpleAfterInterceptor to run post-save side effects (e.g., saving notifications, recording audit logs, notifying external services) after a database entity is saved, inside the same transaction.",
   "Audience": "AI agents or developers with write access to a Glyvio plugin codebase.",
   "parameters": {
     "type": "object",
@@ -66,11 +66,14 @@ The executing agent MUST strictly adhere to these rules:
 3. **No Default Try-Catch (Error Propagation & Rollbacks)**: Do not wrap the code in a `try-catch` block unless the user explicitly requests error suppression or custom error handling. By default, let all errors bubble up (throw upwards) so the server can handle the failure and perform any necessary database transaction rollbacks.
 4. **System Save Operations**: When inserting supplementary records (like notification entries or logs), use `glyvio_core.entityService.saveEntityWithoutPermission(entity)` so the write executes successfully regardless of the current user's entity permission scope.
    - Set an explicit `userGroupId` on each newly inserted record before saving. It normally inherits the intercepted/owning entity's group; only use a separately resolved group when that record is genuinely independent.
-5. **DB methods are synchronous on the server**: `Entity.findById()`, `QueryBuilder.findFirst()`, `findAll()`, and `entityService.saveInput()` are all **synchronous** in the server runtime. Never add `await` or wrap them in a `Strategy` just to perform these operations — call them directly.
-6. **`Strategy` is only needed for deduplication or deferral**: Use `pushToQueue` + `executionFlagService` only when you need to debounce multiple rapid saves of the same entity (e.g., recalculating a total when many child rows are saved at once). For a simple side-effect that runs once per save, execute the logic directly in `handleAfter`.
+5. **DB methods are synchronous on the server**: `Entity.findById()`, `QueryBuilder.findFirst()`, `findAll()`, and `entityService.saveInput()` are all **synchronous** in the server runtime. Never add `await` — call them directly. (Being synchronous is not a reason to run aggregate recalculations inline; see rule 6.)
+6. **Direct vs. queued — ask how many times this runs per transaction**: the interceptor runs once **per saved record**, and a `saveList` of N rows runs it N times.
+   - The effect concerns **the saved record itself** and happens once per save (timeline entry, notification, audit log): run it directly in `handleAfter`.
+   - The effect touches **another record shared by many rows** (a parent's totals, counters or summary, reservations, stock): **always enqueue it** through a Strategy (`pushToQueue`, see `schedule-queued-operation`) with a deterministic id per target record, so it runs once per target at the end of the transaction. Never query the siblings or save the parent inside `handleAfter` — that is N² reads and N parent saves. Details and checklist: section 2.2 of `.claude/references/architecture_rules.md`.
+   - When in doubt, enqueue: the overhead is negligible and it rules out the N² case.
 7. **Use `@BeforeInterceptor` when modifying the entity's own fields**: If the goal is to set fields on the **same entity being saved** (e.g., copy coordinates from a related address into the entity), use a `@BeforeInterceptor` instead — `BeforeInterceptorValue<T>` is mutable, so the changes are included in the original single save. `AfterInterceptorValue<T>` is read-only; using it to update the entity requires an extra `saveInput` call and a second DB write, which is wasteful for same-entity mutations.
 8. **Type Safety**: Implement exact typing on arguments using `glyvio_core.AfterInterceptorValue` and `glyvio_core.AfterInterceptorContext`.
-9. **Execution Pipeline Order**: AfterInterceptors execute last, **after** both SyncInterceptors and BeforeInterceptors have executed, and the transaction has been committed. The full execution sequence is `SyncInterceptor` > `BeforeInterceptor` > `AfterInterceptor`.
+9. **Execution Pipeline Order**: AfterInterceptors execute after SyncInterceptors and BeforeInterceptors, **inside the same transaction, before the commit** — throwing rolls the save back. The full sequence is `SyncInterceptor` > `BeforeInterceptor` > `AfterInterceptor` > queued operations (`getCurrentQueue()`) > **[COMMIT]** > `AfterCommitInterceptor`. For effects that must only happen after a durable commit (e-mail, webhooks, external APIs), use `create-after-commit-interceptor`.
 
 ---
 

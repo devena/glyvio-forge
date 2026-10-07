@@ -58,10 +58,18 @@ The executing agent MUST strictly adhere to these rules:
 
 1. **No External Imports for Queue Helpers**: Resolve the queue list instance using the global `glyvio_core.getCurrentQueue()` helper. Do NOT import `getCurrentQueue` or `QueueList`.
 2. **Deterministic ID Rule**: Always use a unique, deterministic ID based on the entity identifier to avoid duplicate operations in the queue.
-3. **Deduplication Validation**: Use `.getById(id)` to check if a task is already scheduled.
-   - To ignore subsequent duplicate attempts: only call `.add()` if `.getById(id)` returns `undefined`.
-   - To keep the latest state: call `.addOrReplace()`.
+3. **Deduplication Validation**: Build the id with a static helper (`${eventName}-${recordId}`) so the push and the strategy use the same string. The pattern used across the plugins is an `executionFlagService` guard plus `addOrReplace` (see the blueprint):
+   - `executionFlagService.contains(id)` skips the push when this target is already queued in the request — the cheapest check for interceptors that fire once per child row.
+   - `addOrReplace()` keeps a single queued operation per id.
+   - Flags are cleared automatically at the end of the request. The strategy may `remove` its flag when it finishes, so that a later change in the same request can enqueue it again.
+   - `.getById(id)` is still available when you need to read or merge the queued arguments.
 4. **Type Safety**: Cast or declare arguments strictly according to the payload interface definition.
+
+---
+
+## 🧭 When to Use
+
+The main case is a **child entity interceptor that recalculates its parent** (offer/sale items → summary, campaign clients → counters, invoice items → stock): enqueue one operation per parent id instead of querying siblings and saving the parent inside `handleAfter`, which costs N² reads for a `saveList` of N children. When a child can move to another parent, enqueue both `value.parentId` and `context.savedValue?.parentId`. Rationale and checklist: section 2.2 of `.opencode/references/architecture_rules.md`.
 
 ---
 
@@ -96,6 +104,38 @@ if (!queue.getById(opId)) {
 ---
 
 ## 📄 Code Blueprint (Template)
+
+Strategy-backed push used by the plugins (e.g. `GenerateSummaryForOfferStrategy` in `glyvio-plugin-mobgran-core`):
+
+```typescript
+export abstract class RecalculateParentStrategy extends glyvio_core.SimpleStrategy<{ parentId: string }, void> {
+  static eventName = 'queue:recalculate_parent';
+
+  static queueId(parentId: string): string {
+    return `${RecalculateParentStrategy.eventName}-${parentId}`;
+  }
+
+  static pushToQueue(args: { parentId: string }) {
+    const id = RecalculateParentStrategy.queueId(args.parentId);
+    if (glyvio_core.executionFlagService.contains(id)) return;
+    glyvio_core.executionFlagService.add(id);
+    glyvio_core.getCurrentQueue().addOrReplace({
+      type: 'strategy',
+      id,
+      eventName: RecalculateParentStrategy.eventName,
+      arguments: args,
+    });
+  }
+}
+
+// In the child's AfterInterceptor:
+const parentIds = new Set([value.parentId, context.savedValue?.parentId]);
+for (const parentId of parentIds) {
+  if (parentId) RecalculateParentStrategy.pushToQueue({ parentId });
+}
+```
+
+Generic queue usage:
 
 ```typescript
 // Retrieve transaction-scoped queue
