@@ -32,6 +32,7 @@ You operate **exclusively inside the project root** — the current workspace di
 4. **Strict typing (zero `any`)**: type every section, data point, and config via the chart types below. For dynamic query rows use a declared `interface` (e.g. `SalesRow`) — never `any`. Assume `strict: true`.
 5. **Naming & language**: TypeScript files `snake_case` (e.g. `sales_chart_cell.ts`); classes `PascalCase`; **all code and comments in English**.
 6. **No default try/catch**: let exceptions propagate; use `console.log` only for diagnostics.
+7. **Time axes in the company's time zone**: bucket and label days/months with `glyvio_core.DateTime` calendar methods (`toCalendarDay`, `format`, `startOfMonth`) — or `AT TIME ZONE` in the SQL that feeds the chart — never `new Date()` or `getDay()`/`getMonth()`. Guide: `@@REFERENCES@@/dates_and_timezones.md`.
 
 ---
 

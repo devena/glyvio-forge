@@ -50,6 +50,7 @@ fast ones.
 8. `Decimal`/`DateTime` for business values; format with `$N{}`/`$D{}` in designs.
 9. Large aggregations belong on the server: call a controller (`restService.postController`,
    skill `create-controller`) from `fetchItem` instead of loading thousands of rows into the app.
+10. **Dates in the company's time zone**: compute "today" and date windows with `glyvio_core.DateTime` calendar methods (`toCalendarDay`, `startOfDay`/`endOfDay`, `startOfWeek`, `startOfMonth`/`endOfMonth`, `isSameDay`) — never `new Date()`, `clearTime()` (midnight UTC) or `getDay()`/`getMonth()` (machine zone). Date-only fields are stored as 00:00 UTC: read them with `format(p, false)`/`toCalendarDay(false)`. Guide: `.opencode/references/dates_and_timezones.md`. Server aggregations by day/month follow the SQL rule in that guide.
 
 ---
 
@@ -213,4 +214,5 @@ Verify the `SurfaceDesign` fields, `FilterSidebar.section` signature and the
 - [ ] `fetchItem` does I/O only; `getDesignForCell` is pure and handles `undefined` data.
 - [ ] Filters: `allowFilters = false` when there are none; chips + `clearFilter` when there are.
 - [ ] Route registered, class exported, menu item added; texts in every `.arb`.
+- [ ] "Today"/periods computed in the company's time zone (`DateTime` calendar methods; SQL with `AT TIME ZONE`).
 - [ ] `pnpm build` clean; screenshots in desktop and mobile widths.

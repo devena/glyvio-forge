@@ -233,7 +233,8 @@ export class <ClassName> extends glyvio_core.SimpleController<void, string> {
    ```typescript
    import './controllers/<report_name>_controller';
    ```
-7. **`allowPublicAccess` default**: Set to `false` unless the user explicitly requests a public report endpoint.
+7. **Dates in the company's time zone**: pass `glyvio_core.sessionService.getCurrentSession().company.zoneinfo` to the SQL and use `col AT TIME ZONE ?` before `date_trunc`/`to_char`/`::date` (date-only columns: `AT TIME ZONE 'UTC'`); compute "today" and period bounds with `glyvio_core.DateTime` (`fromCalendarDay`, `startOfDay`, `startOfMonth`), never `CURRENT_DATE`/`now()::date` or `new Date()`. Guide: `.opencode/references/dates_and_timezones.md`.
+8. **`allowPublicAccess` default**: Set to `false` unless the user explicitly requests a public report endpoint.
 
 ### External-user (shareable-link) reports
 
@@ -287,6 +288,7 @@ Before delivering any code, verify:
 - [ ] Is the controller registered in the entrypoint (`src/index.ts`)?
 - [ ] Are KPI cards animated with `fadeUp` and staggered delays?
 - [ ] Does the chart color palette match the defined colors?
+- [ ] Are dates grouped/filtered in the company's time zone (zone passed to SQL, `AT TIME ZONE`; period bounds from `glyvio_core.DateTime`)?
 - [ ] Did I avoid try/catch, `any`, and direct imports of Glyvio globals?
 - [ ] Is the HTML preview file placed at the workspace root for easy access?
 - [ ] Once the user approves, is the HTML preview file deleted?

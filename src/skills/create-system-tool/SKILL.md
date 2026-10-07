@@ -67,6 +67,7 @@ The executing agent MUST strictly adhere to these rules:
    - If that presented text (or a JSON field within it, e.g. an alert's `description`) will be rendered to the end user as markdown inside the Glyvio app, apply `@@SKILLS@@/format-llm-markdown-output/SKILL.md` — do not let the LLM invent HTML or unsupported markdown syntax.
 5. **No default try/catch**: Let exceptions propagate so transactions roll back. Throw business failures with `throw new glyvio_core.GlyvioError({ message: '...' })`. Use `console.log`/`console.error` only for debugging.
 6. **Permission is mandatory**: Every system tool requires a dedicated `tool` permission in `manifest.json` (see Step 2). Reference it as `glyvio_permissions.tool_<toolId>` after regenerating types.
+7. **Dates in the company's time zone**: the environment layer does not set the company zone. Before any calendar logic call `glyvio_core.DateTime.setZoneinfo(glyvio_core.sessionService.getCurrentSession().company.zoneinfo ?? 'UTC')`, then use `DateTime` calendar methods (`toCalendarDay`, `format`, `startOfDay`…) — never `new Date()`, `toISOString().split('T')` or `toLocale*String`. Guide: `@@REFERENCES@@/dates_and_timezones.md`.
 
 ---
 
@@ -197,4 +198,5 @@ When this tool creates an entity, set its `userGroupId` before persistence. Use 
 - [ ] File imported in the entrypoint so the decorator registers at init.
 - [ ] `handle` returns an LLM-friendly string ending with `Instructions for the LLM: ...`.
 - [ ] Every new entity saved by the tool has an explicit, authorized `userGroupId` (or inherits it from its owner).
+- [ ] `DateTime.setZoneinfo(...)` called before any date logic; no `new Date()` for calendar days.
 - [ ] Build passes (`pnpm run build:fast` / `pnpm tsc --noEmit`).

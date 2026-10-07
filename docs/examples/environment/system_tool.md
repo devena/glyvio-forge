@@ -182,8 +182,9 @@ export class DailyBriefingTool implements glyvio_core.CoreSystemTool<DailyBriefi
       return 'Error: Unable to generate briefing. No user ID provided and no user is currently logged in.';
     }
 
-    // Safely extract target date
-    const dateStr = request?.targetDate ? request.targetDate.split('T')[0] : new Date().toISOString().split('T')[0];
+    // "Today" and every time below are in the company's time zone — the environment layer does not set it.
+    glyvio_core.DateTime.setZoneinfo(glyvio_core.sessionService.getCurrentSession().company.zoneinfo ?? 'UTC');
+    const dateStr = request?.targetDate ? request.targetDate.split('T')[0] : glyvio_core.DateTime.now().toCalendarDay();
 
     // Fetch information concurrently to maximize performance
     const [tasks, attentionChats, stalledSales] = await Promise.all([
@@ -218,8 +219,8 @@ export class DailyBriefingTool implements glyvio_core.CoreSystemTool<DailyBriefi
     } else {
       report += `There are ${tasks.length} items scheduled on ${userContextStr} calendar.\n`;
       tasks.forEach((task, index) => {
-        const start = new Date(task.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const end = new Date(task.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const start = glyvio_core.DateTime.of(task.startTime)?.format('HH:mm') ?? '--:--';
+        const end = glyvio_core.DateTime.of(task.endTime)?.format('HH:mm') ?? '--:--';
         const meetingType = task.isOnline ? '[Online]' : '[In-Person/Task]';
         report += `${index + 1}. ${start} - ${end} | ${task.title} ${meetingType}\n`;
       });

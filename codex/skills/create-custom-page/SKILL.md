@@ -238,6 +238,10 @@ handle(request: glyvio_core.WebRequest<void>): string {
 
 If the page needs no parameters at all, keep `WebRequest<void>` and ignore `requestParams`.
 
+### Step 3.6 — Dates in the company's time zone
+
+**Dates in the company's time zone**: SQL does not know the company zone. Pass `glyvio_core.sessionService.getCurrentSession().company.zoneinfo` as a parameter and use `col AT TIME ZONE ?` before `date_trunc`/`to_char`/`::date` (date-only columns: `AT TIME ZONE 'UTC'`); compute "today" and period bounds in TS with `glyvio_core.DateTime` (`fromCalendarDay`, `startOfDay`, `startOfMonth`), never `CURRENT_DATE`/`now()::date`/`new Date()`. Guide: `codex/references/dates_and_timezones.md`.
+
 ---
 
 ### Step 4 — Build and validate
@@ -323,6 +327,7 @@ what the page looks like.
 - [ ] `export *` added to `plugin/server/src/index.ts`.
 - [ ] Every caller-influenced SQL value is bound via `params`, never interpolated.
 - [ ] Data is scoped inside `handle()` — no reliance on URL secrecy.
+- [ ] Dates grouped/filtered/shown in the company's time zone (zone passed to SQL, `AT TIME ZONE`).
 - [ ] `handle()` returns a complete HTML document as a `string`.
 - [ ] `pnpm lint && pnpm build` clean.
 - [ ] The URL handed to the user uses the **discovered** `BASE_URL`, not the app's host.

@@ -46,6 +46,7 @@ operation there; server or app code calls it by id.
 7. `sequenceService.nextval` is not implemented in this layer (returns 0) — get numbers from the server.
 8. Keep inputs/outputs small and serializable; for large payloads store the data (attachment/entity)
    and pass ids.
+9. **Dates in the company's time zone**: the environment layer does not set the company zone. Before any calendar logic call `glyvio_core.DateTime.setZoneinfo(glyvio_core.sessionService.getCurrentSession().company.zoneinfo ?? 'UTC')`, then use `DateTime` calendar methods (`toCalendarDay`, `format`, `startOfDay`…) — never `new Date()`, `toISOString().split('T')` or `toLocale*String`. Guide: `codex/references/dates_and_timezones.md`.
 
 ---
 
@@ -128,4 +129,5 @@ the `QueryBuilder` is async (`await ...findFirst()`).
 - [ ] `@glyvio_core.Action({ id })` + `GenericActionOnEnvironment` (or `SimpleAction`); file imported by the environment `index.ts`.
 - [ ] Credentials from `secretService`; timeouts on external calls; business errors as `GlyvioError`.
 - [ ] Callers resolve the environment id explicitly and parse a string `result`.
+- [ ] `DateTime.setZoneinfo(...)` called before any date logic; no `new Date()` for calendar days.
 - [ ] Environment, server and app builds clean; action exercised end to end in a test company.

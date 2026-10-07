@@ -44,7 +44,7 @@ export class HealthCheckController extends glyvio_core.SimpleController<void, { 
   handle(_request: glyvio_core.WebRequest<void>): { status: string; timestamp: string } {
     return {
       status: 'healthy',
-      timestamp: new Date().toISOString(),
+      timestamp: glyvio_core.DateTime.now().toJSON(),
     };
   }
 }
@@ -122,13 +122,14 @@ export class RegisterVisitController extends glyvio_core.SimpleController<Regist
     visit.notes = body.notes ?? null;
     visit.userId = session.user.id;
     visit.userGroupId = session.user.id;
-    visit.visitedAt = new Date().toISOString();
+    const visitedAt = glyvio_core.DateTime.now();
+    visit.visitedAt = visitedAt;
 
     glyvio_core.entityService.saveEntity(visit);
 
     return {
       visitId,
-      registeredAt: visit.visitedAt,
+      registeredAt: visitedAt.toJSON(),
     };
   }
 }

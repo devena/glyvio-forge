@@ -292,6 +292,7 @@ Glyvio screens are now built with the modern layout designs and the ready-made b
 - Compute labels/colors/counts in TypeScript inside `getDesign` (the state is ready there) instead of nested Handlebars; force booleans in `visible` (`!!a && b`).
 - **Phrases with numbers/names use an ICU key** (`$T{key count=state.total}` / `glyvio_core.t('key', { count })`) — never concatenate translated fragments. Every new key goes into all `.arb` files and `node .opencode/scripts/i18n_check.mjs .` must pass. Guide: `.opencode/references/i18n.md`.
 - **Filters on `Simple*Page`**: only push the filter fields (`design.filterSectionsDesign?.push(glyvio_core.FilterSidebar.section(...))`) and describe them in `getActiveFilterChips`/`clearFilter`; the base provides header, search, saved filters, footer and the active-filter row, and hides the panel when there is no filter. Table sidebars get `getQuickFilters` + `state.totalCount`. Guide: `.opencode/references/filters_and_headers.md`.
+- **Dates in the company's time zone**: compute "today"/periods with `glyvio_core.DateTime` calendar methods (`toCalendarDay`, `startOfDay`, `startOfWeek`, `startOfMonth`, `isSameDay`), never `new Date()`, `clearTime()` or `getDay()`/`getMonth()`. Date textfields: `hasZone: false` (default) for civil dates such as due dates, `hasZone: true` for real instants. Guide: `.opencode/references/dates_and_timezones.md`.
 - Validate visually at **1440×900 and 390×844** (and dark mode when colors changed) — see `test-plugin-browser`.
 
 ---

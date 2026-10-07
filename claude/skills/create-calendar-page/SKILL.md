@@ -71,6 +71,7 @@ The executing agent MUST strictly adhere to these rules:
 3. **Data Types & Models**: All referenced model fields must exist under the namespace `glyvio_entity.<EntityName>`.
 4. **No any or force cast**: Do not use `any` or force cast to `any` to resolve type errors. Find another way to solve the problem.
 5. **`events()` — EventReturn rule**: Every new `action.key` handler added to `events()` **must** return `'STATE_UPDATE'` when it mutates state properties directly. Use `'STATE_FREEZED'` only for navigation actions (`pushPage`, `pushModal`, `popModal`). Never return `undefined` from a newly added key — that is a silent no-op.
+6. **Dates in the company's time zone**: compute "today" and date windows with `glyvio_core.DateTime` calendar methods (`toCalendarDay`, `startOfDay`/`endOfDay`, `startOfWeek`, `startOfMonth`/`endOfMonth`, `isSameDay`) — never `new Date()`, `clearTime()` (midnight UTC) or `getDay()`/`getMonth()` (machine zone). Date-only fields are stored as 00:00 UTC: read them with `format(p, false)`/`toCalendarDay(false)`. Guide: `.claude/references/dates_and_timezones.md`.
 
 ---
 

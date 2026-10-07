@@ -151,6 +151,8 @@ controller — never bypass the controller lifecycle.
 
 17. **Only use documented contracts.** Build calls with `restService.postController`/`getController`/`putController` (app) and the URL contract in `create-custom-page` (pages). Do not hand-build or probe other platform routes; if something you need is not in `@types/glyvio_core.d.ts`, ask the Glyvio team.
 
+18. **Dates in the company's time zone**: SQL does not know the company zone. Pass `glyvio_core.sessionService.getCurrentSession().company.zoneinfo` as a parameter and use `col AT TIME ZONE ?` before `date_trunc`/`to_char`/`::date` (date-only columns: `AT TIME ZONE 'UTC'`); compute "today" and period bounds in TS with `glyvio_core.DateTime` (`fromCalendarDay`, `startOfDay`, `startOfMonth`), never `CURRENT_DATE`/`now()::date`/`new Date()`. Guide: `.claude/references/dates_and_timezones.md`.
+
 ---
 
 ## 📋 Execution Steps

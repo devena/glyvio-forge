@@ -226,6 +226,29 @@ comportamento estranho do `QueryBuilder` como bug do plugin.
 
 ---
 
+## Datas e Fuso Horário da Empresa
+
+Dias, semanas e meses são sempre os do **fuso da empresa** (`company.zoneinfo`), nunca o da
+máquina nem UTC. Guia completo: referência `dates_and_timezones.md` (pasta `references/` do
+assistente).
+
+- Use os métodos de calendário de `glyvio_core.DateTime` — `toCalendarDay()`, `format()`,
+  `startOfDay()`/`endOfDay()`, `startOfWeek()`/`startOfMonth()`/`endOfMonth()`, `isSameDay()`,
+  `getIsoDayOfWeek()`, `fromCalendarDay()`. Não use `new Date()`, `toISOString().split('T')`,
+  `toLocale*String`, `clearTime()` (meia-noite UTC) nem `getDay()`/`getMonth()`/`getHours()` (fuso
+  da máquina) para calcular datas.
+- **Data civil** (vencimento, competência) é gravada como 00:00 UTC: leia com `format(p, false)` /
+  `toCalendarDay(false)` e, em formulários, `hasZone: false` (padrão). **Instantes** usam o fuso da
+  empresa e `hasZone: true`.
+- app e server já vêm configurados com o fuso da empresa; no **environment** chame
+  `glyvio_core.DateTime.setZoneinfo(glyvio_core.sessionService.getCurrentSession().company.zoneinfo ?? 'UTC')`
+  no início da execução.
+- **SQL** não conhece o fuso: passe-o como parâmetro e use `col AT TIME ZONE ?` antes de
+  `date_trunc`/`to_char`/`::date` (data civil: `AT TIME ZONE 'UTC'`); calcule "hoje" e os limites
+  de período em TS, não com `CURRENT_DATE`/`now()::date`.
+
+---
+
 ## Skills de IA Disponíveis
 
 As skills geram código seguindo os padrões do projeto. Invoque no chat com

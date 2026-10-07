@@ -74,6 +74,7 @@ When coding actions or tools manually, enforce the following constraints:
 2. **Self-Documenting Request Interfaces**: In `@SystemTool` handlers, write comprehensive JSDoc annotations for **each** property of the input interface. This ensures the AI Agent compiler generates valid schemas for the LLM.
 3. **Proper Error Flow (No Default Try-Catch)**: Avoid try-catch statements unless explicitly requested. Let exceptions propagate naturally to ensure transaction rollbacks occur.
 4. **Informational Logs vs. Business Errors**: Use `console.log` and `console.error` strictly for debugging. To throw actual business failures, instantiate and throw `glyvio_core.GlyvioError` (e.g., `throw new glyvio_core.GlyvioError({ message: '...' })`).
+5. **Dates in the company's time zone**: this layer does **not** set the company zone for you. Before any calendar logic ("today", start/end of day/week/month, formatting), call `glyvio_core.DateTime.setZoneinfo(glyvio_core.sessionService.getCurrentSession().company.zoneinfo ?? 'UTC')`, then use the `DateTime` calendar methods — never `new Date()`, `toISOString().split('T')`, `toLocale*String`. SQL takes the zone as a parameter (`col AT TIME ZONE ?`). Guide: `.opencode/references/dates_and_timezones.md`.
 
 ### Phase 4: Validation & Quality Control
 
