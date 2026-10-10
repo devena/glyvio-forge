@@ -1,6 +1,6 @@
 ---
 name: create-environment-action
-description: "Generates an Environment-layer @Action (SimpleAction, or typed GenericActionOnEnvironment) that runs code in the customer's environment — calling external HTTP APIs with secrets, reaching local-network systems, heavy processing — and the server/app code that invokes it with environmentService.callEnvironmentActionRaw, including how to pick the environment id and parse the result."
+description: "Generates an Environment-layer @Action (SimpleAction, or typed GenericActionOnEnvironment) that runs code in the customer's environment — calling external HTTP APIs with secrets, reaching local-network systems, heavy processing — and the server/app code that invokes it with environmentService.callEnvironmentActionRaw, including how to pick the environment id (environment rules: registerSubtype + resolveEnvironmentId) and parse the result."
 ---
 <!-- Generated from src/skills/create-environment-action/SKILL.md by tools/generate.py. Edit the source, not this file. -->
 # Agent Skill: Create an Environment Action
@@ -36,10 +36,25 @@ operation there; server or app code calls it by id.
 3. Throw `glyvio_core.GlyvioError({ message })` for business errors; other errors are wrapped.
 4. Secrets: `await glyvio_core.secretService.getPopulatedSecretById<T>(secretId)` (the secret id
    comes from your plugin's configuration record) — never hardcode tokens or URLs with credentials.
-5. **The environment id is never implicit.** Callers resolve it: query `glyvio_entity.Environment`
-   (not deleted, excluding the built-in `core_app`/`core_server`), or read it from your plugin's
-   configuration record. If several exist and the choice matters, make it a configuration field —
-   do not guess.
+5. **The environment id is never implicit.** Callers resolve it with the environment rules
+   (`environment_rule`, screen _Admin › Sistema › Regras de ambiente_):
+   - **Register a subtype** once, at the plugin's app init:
+     `glyvio_core.environmentService.registerSubtype({ subtype, label, referenceEntity?, pluginId: PLUGIN_ID })`.
+     The `subtype` is unique across plugins, so prefix it with your plugin
+     (`'<plugin>_<action>'`). `referenceEntity` lets the admin choose per record, e.g. per
+     `chatAgent`; without it the rule is the subtype default. With `pluginId`, the screen checks that
+     the plugin is installed in the chosen environment. Registering again from the same plugin (bundle
+     reloaded) replaces the registration; another plugin's subtype with the same name throws.
+   - **Resolve**: `glyvio_core.environmentService.resolveEnvironmentId(candidates, { pluginId: PLUGIN_ID })`.
+     - Candidates `{ subtype, referenceId? }` go most specific first; the first one with a rule wins.
+     - With no rule, it falls back to the environment where `pluginId` is installed.
+     - `null` means nothing resolved: throw a `GlyvioError`, never pass `''`.
+     - Server: synchronous, cached per request. App: async, cached until the app reloads.
+   - **Shortcut**: `callEnvironmentActionRaw({ candidates, pluginId }, '<id>', data)` resolves the id
+     the same way and throws when nothing resolves.
+   - **Availability**: these exist in the `plugin/server` and `plugin/app` `@types`, not in
+     `plugin/environment`. The target company's core must be recent enough to have them; when it is
+     not, the method is missing at runtime (see section 0 of `.opencode/references/architecture_rules.md`).
 6. Call from the server: `glyvio_core.environmentService.callEnvironmentActionRaw(envId, '<id>', data)`
    → `{ status, result }` (synchronous); from the app: same call with `await`. `result` may arrive as
    the JSON **string** your action returned: `typeof result === 'string' ? JSON.parse(result) : result`.
@@ -94,19 +109,35 @@ export class <Name>Action extends glyvio_core.GenericActionOnEnvironment<<Name>R
 Import it in `plugin/environment/src/index.ts`: `import './actions/<action>';`.
 `Secret<T>` keeps the decrypted payload in its `secret` field (`secret?.secret?.token`).
 
+### App init (register the subtype once)
+
+```typescript
+import { PLUGIN_ID } from '@plugin/commons';
+
+glyvio_core.environmentService.registerSubtype({
+  subtype: '<action_id>',
+  label: '$T{<plugin>_environmentRule_<action>}',
+  // optional: let the admin choose per record (the rule's reference_id is that record's id)
+  // referenceEntity: glyvio_structure.AllEntities.chatAgent,
+  pluginId: PLUGIN_ID,
+});
+```
+
 ### Server caller
 
 ```typescript
-function resolveEnvironmentId(): string {
-  const env = glyvio_core.QueryBuilder.fromEntity<glyvio_entity.Environment>(glyvio_structure.AllEntities.environment)
-    .addFilterOperator(glyvio_structure.AllEntities.environment.deleted, false)
-    .addFilterOperator(glyvio_structure.AllEntities.environment.id, 'core_app', { operator: 'NOT_EQUAL' })
-    .addFilterOperator(glyvio_structure.AllEntities.environment.id, 'core_server', { operator: 'NOT_EQUAL' })
-    .findFirst();
-  if (!env?.id) {
-    throw new glyvio_core.GlyvioError({ message: 'No environment configured for this company' });
+import { PLUGIN_ID } from '@plugin/commons';
+
+/** Most specific candidate first; with no rule, the environment where this plugin is installed. */
+function resolveEnvironmentId(referenceId?: string): string {
+  const environmentId = glyvio_core.environmentService.resolveEnvironmentId(
+    [{ subtype: '<action_id>', referenceId }, { subtype: '<action_id>' }],
+    { pluginId: PLUGIN_ID },
+  );
+  if (!environmentId) {
+    throw new glyvio_core.GlyvioError({ message: 'No environment configured for <action_id>' });
   }
-  return env.id;
+  return environmentId;
 }
 
 function call<Name>(secretId: string, <param>: string): { ok: boolean; <resultField>?: string } {
@@ -119,8 +150,8 @@ function call<Name>(secretId: string, <param>: string): { ok: boolean; <resultFi
 }
 ```
 
-In the app the same call is `await glyvio_core.environmentService.callEnvironmentActionRaw(...)` and
-the `QueryBuilder` is async (`await ...findFirst()`).
+In the app the same calls take `await`: `await glyvio_core.environmentService.resolveEnvironmentId(...)`
+and `await glyvio_core.environmentService.callEnvironmentActionRaw(...)`.
 
 ---
 
@@ -128,6 +159,6 @@ the `QueryBuilder` is async (`await ...findFirst()`).
 
 - [ ] `@glyvio_core.Action({ id })` + `GenericActionOnEnvironment` (or `SimpleAction`); file imported by the environment `index.ts`.
 - [ ] Credentials from `secretService`; timeouts on external calls; business errors as `GlyvioError`.
-- [ ] Callers resolve the environment id explicitly and parse a string `result`.
+- [ ] Subtype registered at app init; callers resolve the id with `resolveEnvironmentId` (no `''`, `GlyvioError` on `null`) and parse a string `result`.
 - [ ] `DateTime.setZoneinfo(...)` called before any date logic; no `new Date()` for calendar days.
 - [ ] Environment, server and app builds clean; action exercised end to end in a test company.

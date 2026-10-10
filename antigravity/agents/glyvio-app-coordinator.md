@@ -500,7 +500,7 @@ Delegate to the **glyvio-app-chart** subagent for **any chart / data-visualizati
 Before writing any code or plans, inspect the workspace:
 
 1. Read `manifest.json` to verify the entities, fields, foreign keys (`_id` / `_ic`) and permissions involved.
-2. Inspect `@types` (`plugin/<layer>/@types/glyvio_core.d.ts` and the other `@types/*.d.ts`) to confirm that every component, design class, state interface, and contract you intend to use is actually exposed. **Never assume a component exists if it is not in `@types`.**
+2. Inspect `@types` (`plugin/<layer>/@types/glyvio_core.d.ts` and the other `@types/*.d.ts`) to confirm that every component, design class, state interface, and contract you intend to use is actually exposed. **Never assume a component exists if it is not in `@types`.** The reverse also holds: before concluding the platform lacks something, search `entity.d.ts` too — core entities are data APIs, and saving them often achieves what a missing service would. **Never propose a change to the Glyvio core** before this search, and then only to the user, with what you searched and why it does not fit (section 0 of `antigravity/rules/architecture_rules.md`).
 3. Search `plugin/app/src` for existing views, routes, interceptors, and listener IDs to avoid duplicated routes, listener IDs, or duplicate view implementations.
 4. Classify the request along two axes:
    - **New view** (use a `create-*` skill) vs **customization of an existing view** (use a `*-interceptor` skill).
@@ -527,9 +527,8 @@ Delegate tasks to specialized frontend coder subagents and/or run the chosen ski
 Before executing **any** skill — and **especially before any interceptor skill** — verify that every required input parameter defined in the skill's metadata has been explicitly provided by the user. If any parameter is missing, **stop and ask the user**; do not guess.
 
 This also applies **outside skill metadata**, to any hand-written call site: **`glyvio_core.environmentService.callEnvironmentActionRaw(environmentId, actionName, data)`** (and any other API taking an `environmentId`) needs a real `Environment` entity id — there is **no** implicit "current environment" anywhere in `plugin/app`; `getContext()` does not carry one, and no interceptor/action context does either. Confirmed empirically: shipping `callEnvironmentActionRaw('', ...)` with a blank/guessed id makes the real call impossible. Never write a literal placeholder (`''`, `'env-123'`, `'env-name'`) into committed code. Instead:
-1. Query `glyvio_entity.Environment.getQueryBuilder()` (or `findById`/`findByIntegrationCode` if you already have a code) to see what actually exists for this company.
-2. If there is exactly **one** environment, that is almost certainly the right target — but still confirm with the user once rather than assuming.
-3. If there is more than one (or the query is inconclusive), **stop and ask the user** which `Environment` to target — do not guess based on name similarity or ordering.
+1. Resolve it with the environment rules: `await glyvio_core.environmentService.resolveEnvironmentId([{ subtype, referenceId? }, ...], { pluginId: PLUGIN_ID })` (most specific candidate first; falls back to the environment where the plugin is installed; `null` → throw a `GlyvioError`), with the subtype registered at app init via `environmentService.registerSubtype(...)` — pattern in `create-environment-action`.
+2. If the target company's core is older than the environment rules (the method is missing at runtime), query `glyvio_entity.Environment.getQueryBuilder()` and, with more than one environment, **stop and ask the user** which one to target — do not guess based on name similarity or ordering.
 
 For **interceptor skills**, this includes the Step-0 design-collection prerequisites:
 

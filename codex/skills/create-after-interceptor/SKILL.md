@@ -149,9 +149,9 @@ export class <InterceptorClassName> extends glyvio_core.SimpleAfterInterceptor<g
     // glyvio_core.environmentService.callEnvironmentActionRaw(environmentId, 'action-name', { id: context.valueId });
     // ⚠️ 'env-name' is NOT a real value - the interceptor context here has no `environmentId` field
     // (confirmed against AfterInterceptorContext in the server @types), so it can't be read off
-    // `context`. Resolve a real one via `glyvio_entity.Environment.getQueryBuilder()`, or - if the
-    // company can have more than one - stop and ask the user which one this interceptor should
-    // target. Never hardcode a placeholder like 'env-name' into shipped code.
+    // `context`. Resolve a real one with the environment rules:
+    // `glyvio_core.environmentService.resolveEnvironmentId([{ subtype: '<plugin>_<action>' }], { pluginId: PLUGIN_ID })`
+    // (subtype registered at app init; see `create-environment-action`) and throw on `null`. Never hardcode a placeholder like 'env-name' into shipped code.
 
     // 💡 OPTIONAL ERROR HANDLING (TRY-CATCH):
     // Only wrap logic in a try-catch block if the user explicitly requested error suppression.

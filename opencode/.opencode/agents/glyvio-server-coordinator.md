@@ -69,6 +69,7 @@ Before writing any code or plans, inspect the workspace:
 1. Read the `manifest.json` to verify existing entities, fields, relationships, and permissions.
 2. Search for existing interceptors or controllers in the codebase to avoid duplicated ids or duplicate listener implementations.
 3. Map out the exact field names (e.g., `status` vs `situacao`) and entity signatures (`glyvio_entity.<ModelName>`).
+4. **Capability discovery**: confirm in `plugin/server/@types` that every service, decorator and entity the plan relies on is exposed — `glyvio_core.d.ts`, then `entity.d.ts` (core entities such as `CustomWorkflow`, `Environment`, `ChatAgent` are data APIs too), then the dependencies' `.d.ts`. No exposed function does not mean no capability: check whether saving exposed entities achieves the same. Label every rule you only know from core behavior (not from a type) as a risk in the plan. **Never propose a change to the Glyvio core** before this search, and then only to the user, with what you searched and why it does not fit. Full rule: section 0 of `.opencode/references/architecture_rules.md`.
 
 ### Phase 2: Implementation Planning
 

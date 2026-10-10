@@ -158,9 +158,9 @@ export class <InterceptorClassName> extends glyvio_core.SimpleAfterCommitInterce
     //   { id: context.valueId, action },
     // );
     // ⚠️ 'env-name' is NOT a real value - AfterCommitInterceptorContext has no `environmentId`
-    // field, so it can't be read off `context`. Resolve a real one via
-    // `glyvio_entity.Environment.getQueryBuilder()`, or - if the company can have more than one -
-    // stop and ask the user which one this interceptor should target. Never hardcode a placeholder
+    // field, so it can't be read off `context`. Resolve a real one with the environment rules:
+    // `glyvio_core.environmentService.resolveEnvironmentId([{ subtype: '<plugin>_<action>' }], { pluginId: PLUGIN_ID })`
+    // (subtype registered at app init; see `create-environment-action`) and throw on `null`. Never hardcode a placeholder
     // like 'env-name' into shipped code.
 
     // 💡 SAVE A SUPPLEMENTARY RECORD (e.g., notification or audit log) EXAMPLE:

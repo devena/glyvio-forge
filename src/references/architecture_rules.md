@@ -7,6 +7,30 @@ Este documento reúne as diretrizes não-negociáveis e os gotchas de runtime co
 
 ---
 
+## 0. Descobrir o que a Plataforma Oferece (antes de planejar)
+
+O contrato de um plugin com a plataforma são os `@types` gerados pelo `run_helper.sh` em `plugin/<camada>/@types/`. O código do `glyvio-plugin-core` explica o comportamento, mas não é contrato: o que não está nos `@types` pode mudar sem aviso.
+
+1. **Procure nesta ordem:**
+   - `glyvio_core.d.ts`: services, decoradores, classes base e interfaces;
+   - `entity.d.ts`: `glyvio_entity`/`glyvio_structure`. As entidades **do core** estão aqui também e são API de dados, como as do plugin;
+   - `<dependência>.d.ts`: uma por plugin declarado em `dependencies`.
+
+   Busque pelo conceito, não só pelo nome da função que você imagina (ex.: `grep -n -i "workflow" plugin/server/@types/*.d.ts`).
+2. **Não achar uma função não quer dizer que a capacidade não existe.** Sem um service, veja se o mesmo efeito sai de gravar entidades expostas.
+   - Exemplo confirmado: publicar um workflow é gravar uma `glyvio_entity.WorkflowVersion` (`definition`, `version`) e apontar `CustomWorkflow.publishedVersion` para ela.
+3. **Separe contrato de convenção.**
+   - Contrato é o que está tipado.
+   - Convenção é uma regra que só aparece no comportamento do core (ex.: "o save precisa incluir o campo X para o core reagir"). Declare-a como risco num comentário no código e no plano do projeto, e confirme ao vivo.
+4. **Mudar o core é o último recurso.**
+   - Só proponha depois da busca acima, ao usuário, dizendo o que procurou, onde, e por que não serve.
+   - Nunca como primeira opção, e nunca por conta própria.
+5. **Tipos à frente do runtime.** Um service ou classe que acabou de aparecer nos `@types` regenerados pode ainda não existir no core que o ambiente do cliente roda.
+   - Avise que o recurso exige um core atualizado antes de publicar.
+   - Um `class X extends glyvio_core.NovaClasse` ausente quebra o carregamento do plugin inteiro, não só a tela.
+
+---
+
 ## 1. Regras Não-Negociáveis do Frontend (`plugin/app`)
 
 ### 1.1. Instanciação de Entidades
