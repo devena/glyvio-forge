@@ -42,12 +42,13 @@ operation there; server or app code calls it by id.
      `glyvio_core.environmentService.registerSubtype({ subtype, label, referenceEntity?, pluginId: PLUGIN_ID })`.
      The `subtype` is unique across plugins, so prefix it with your plugin
      (`'<plugin>_<action>'`). `referenceEntity` lets the admin choose per record, e.g. per
-     `chatAgent`; without it the rule is the subtype default. With `pluginId`, the screen checks that
-     the plugin is installed in the chosen environment. Registering again from the same plugin (bundle
-     reloaded) replaces the registration; another plugin's subtype with the same name throws.
+     `chatAgent`; without it the rule is the subtype default. `pluginId` marks the owner: registering
+     again from the same plugin (bundle reloaded) replaces the registration; another plugin's subtype
+     with the same name throws.
    - **Resolve**: `glyvio_core.environmentService.resolveEnvironmentId(candidates, { pluginId: PLUGIN_ID })`.
      - Candidates `{ subtype, referenceId? }` go most specific first; the first one with a rule wins.
-     - With no rule, it falls back to the environment where `pluginId` is installed.
+     - With no candidate rule, the plugin's rule (admin picks the plugin, no type), then the global
+       rule (no type, no plugin). Only rules count: where the plugin is installed is **not** a fallback.
      - `null` means nothing resolved: throw a `GlyvioError`, never pass `''`.
      - Server: synchronous, cached per request. App: async, cached until the app reloads.
    - **Shortcut**: `callEnvironmentActionRaw({ candidates, pluginId }, '<id>', data)` resolves the id
@@ -128,7 +129,7 @@ glyvio_core.environmentService.registerSubtype({
 ```typescript
 import { PLUGIN_ID } from '@plugin/commons';
 
-/** Most specific candidate first; with no rule, the environment where this plugin is installed. */
+/** Most specific candidate first; then this plugin's rule, then the global rule. */
 function resolveEnvironmentId(referenceId?: string): string {
   const environmentId = glyvio_core.environmentService.resolveEnvironmentId(
     [{ subtype: '<action_id>', referenceId }, { subtype: '<action_id>' }],
