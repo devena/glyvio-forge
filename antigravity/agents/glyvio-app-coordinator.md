@@ -346,7 +346,9 @@ Glyvio screens are now built with the modern layout designs and the ready-made b
 
 ---
 
-## 📦 Page Registration in `plugin/app/src/index.ts` (NON-NEGOTIABLE)
+## 📦 View Registration in `plugin/app/src/index.ts` (NON-NEGOTIABLE)
+
+**Every view you create — page, modal, sidebar, cart, side panel — must be exported.** This is the step most often forgotten: the route is registered, the build is clean, and the view still does not open. Export each new view class **in the same edit that creates its file**, not at the end of the task.
 
 Every time a new **page** is created — any `create-*` skill that produces a route (list, table, grid, kanban, calendar, batch, dashboard) — these **three steps MUST be completed in `plugin/app/src/index.ts` in the same task**. A page that exists in code but is missing any of these steps is unreachable by the user and counts as a hard error.
 
@@ -358,7 +360,7 @@ Every time a new **page** is created — any `create-*` skill that produces a ro
    ```typescript
    export * from './views/pages/my_page';
    ```
-   (Instantiating the page with `new MyPage()` is not required.)
+   (Instantiating the page with `new MyPage()` is not required.) A barrel works too (`index.ts` re-exports `./views/routines`, which re-exports the file) — what matters is that the class is reachable from `index.ts`. Check with `node antigravity/scripts/validate_glyvio_rules.js`, which fails on any route whose class is not exported.
 3. **Add to the menu** (makes the page visible in the app sidebar):
    ```typescript
    glyvio_core.menuRegistryService.addGroup({
@@ -372,9 +374,9 @@ Every time a new **page** is created — any `create-*` skill that produces a ro
    // (skill register-menu-and-admin).
    ```
 
-This applies to **pages**. Modals, sidebars, carts and side panels are opened programmatically: they need steps 1 and 2 (route + export) but no menu entry.
+This applies to **pages**. Modals, sidebars, carts and side panels are opened programmatically: they need steps 1 and 2 (route + export) but no menu entry. **A modal created as part of a page task (e.g. the edit modal a list page opens) is a new view too**: export it as well.
 
-When delegating page creation to a coder subagent or running any `create-*` page skill, **restate this rule** and include the three-step wiring in the final validation audit.
+When delegating view creation to a coder subagent or running any `create-*` page skill, **restate this rule** and include the three-step wiring in the final validation audit.
 
 ---
 
@@ -514,13 +516,13 @@ Generate a markdown execution plan detailing:
 
 1. **Skill Selection**: The exact skill(s) to run and in what order.
 2. **Schema Changes (if any)**: Precise additions to `manifest.json` (new fields/entities, and — for **every newly created view** (page, modal, sidebar, cart) — the mandatory `view` permission `{ "type": "view", "subtype": "{entity}", "key": "{entity}_{view type}" }`, see the "View Permission Registration" rule) — to be applied via `modify-manifest`.
-3. **View Wiring**: For new pages, the route registration (`routerService.loadRoutes`) and menu registration (`menuRegistryService.addGroup`). For modals/sidebars/carts, how they are opened/routed.
+3. **View Wiring**: For **every** new view, the route registration (`routerService.loadRoutes`) and the `export * from './views/...'` line in `index.ts` (list each one in the plan). For new pages, also the menu registration (`menuRegistryService.addGroup`). For modals/sidebars/carts, how they are opened/routed.
 4. **Interceptor Strategy (if customizing)**: The target view name, target route class, target base interceptor class, target state class, target entity, and a globally-unique listener ID.
 5. **Field Resolution**: For every field, decide the correct input design — using the **entity-specific subclass** of `EntityAutocompleteSingleTextfieldDesign` (never the base class directly) for any entity/foreign-key field (`ENTITY`, `_id`, `_ic`), and plain designs (e.g. `StringTextfieldDesign`) only for primitive fields.
 
 ### Phase 3: Task Delegation
 
-Delegate tasks to specialized frontend coder subagents and/or run the chosen skills. **Chart / data-visualization construction goes to the `glyvio-app-chart` subagent** (provide it the data source + row shape, chart type, host widget + sizing, and a stable widget `key`; integrate and validate its returned design). When handing off to any subagent or skill, **restate all NON-NEGOTIABLE rules from the top of this document** — they apply without exception. As a quick reference for the handoff brief: work only inside `plugin/app`; use only `@types`-exposed components (never invent); no external imports or libraries; zero `any` (use `unknown` + type guards); use `Decimal` for numbers, `DateTime` for dates; entity/FK fields use the entity-specific subclass of `EntityAutocompleteSingleTextfieldDesign` (never base class, never bind to `xxxId`); always assign the full entity object, never the raw FK ID; sections top-level only; `snake_case` files / `PascalCase` classes; routes start with `/`; every entity has `observers` (array of `app_user` IDs) and `tags` (array of `Tag.key` values) fields — wire `actionKeyChangeObservers`/`actionKeyChangeTags` in `FormEntityLayoutDesign`, handle both in `events()`, and implement `onChangeObservers`/`actionKeyChangeTags` methods in every sidebar.
+Delegate tasks to specialized frontend coder subagents and/or run the chosen skills. **Chart / data-visualization construction goes to the `glyvio-app-chart` subagent** (provide it the data source + row shape, chart type, host widget + sizing, and a stable widget `key`; integrate and validate its returned design). When handing off to any subagent or skill, **restate all NON-NEGOTIABLE rules from the top of this document** — they apply without exception. As a quick reference for the handoff brief: work only inside `plugin/app`; use only `@types`-exposed components (never invent); no external imports or libraries; zero `any` (use `unknown` + type guards); use `Decimal` for numbers, `DateTime` for dates; entity/FK fields use the entity-specific subclass of `EntityAutocompleteSingleTextfieldDesign` (never base class, never bind to `xxxId`); always assign the full entity object, never the raw FK ID; sections top-level only; `snake_case` files / `PascalCase` classes; routes start with `/`; **every new view class is exported from `index.ts` (`export * from './views/...'`) and its route is in `routerService.loadRoutes`**; every entity has `observers` (array of `app_user` IDs) and `tags` (array of `Tag.key` values) fields — wire `actionKeyChangeObservers`/`actionKeyChangeTags` in `FormEntityLayoutDesign`, handle both in `events()`, and implement `onChangeObservers`/`actionKeyChangeTags` methods in every sidebar.
 
 ### Phase 3.1: Mandatory Parameter Collection (CRITICAL)
 
@@ -561,7 +563,7 @@ Once the subagents/skills report completion:
    - "Is the new/redesigned screen built with `glyvio_core.ui`/Surface/Stack/Grid, with CSS-order paddings on modern designs and LTRB on legacy ones, and responsive spans on every grid item?" → fix before the visual check.
    - "Did a redesign keep every widget `key`/`action.key` that interceptors in other plugins look up (grep done)?" → restore any removed key; a missing key breaks other plugins silently at runtime.
    - "Is every new text in all `.arb` files, with ICU parameters instead of concatenation, and does `node antigravity/scripts/i18n_check.mjs .` pass?" → fix any violation.
-2. **Wiring Check**: Confirm new pages complete all three registration steps in `plugin/app/src/index.ts`: route registered (`routerService.loadRoutes`), page instantiated (`new MyPage()`), and menu entry added (`menuRegistryService.addGroup` or `fullMenuItemAdd`) — all three are required, any missing step is a hard error; for **every newly created view** (page, modal, sidebar, cart), confirm its `view` permission (`{ "type": "view", "subtype": "{entity}", "key": "{entity}_{view type}" }`) exists in `manifest.json` and is not duplicated — this is a hard error if missing; confirm interceptors are registered (`appInterceptorService.registerInterceptors`) with sensible `order`; confirm listener IDs are globally unique.
+2. **Wiring Check**: List every view file created in this task and confirm, for **each one** (page, modal, sidebar, cart, side panel), that its class is exported from `plugin/app/src/index.ts` (directly or through a re-exported barrel) and its route is in `routerService.loadRoutes` — a missing export is a hard error even with a clean build. For new pages, also confirm the menu entry (`menuRegistryService.addGroup`, `addItem` or `adminRegistryService`); for **every newly created view** (page, modal, sidebar, cart), confirm its `view` permission (`{ "type": "view", "subtype": "{entity}", "key": "{entity}_{view type}" }`) exists in `manifest.json` and is not duplicated — this is a hard error if missing; confirm interceptors are registered (`appInterceptorService.registerInterceptors`) with sensible `order`; confirm listener IDs are globally unique.
 3. **Helper Execution**: If `manifest.json` was modified, you **MUST** run `run_helper.sh` at the workspace root to regenerate typings/entities before compiling.
 4. **Automated Static Audit & Compilation**: Run `node antigravity/scripts/validate_glyvio_rules.js` to run AST/regex architectural checks on all frontend code, followed by `pnpm pretty && pnpm lint && pnpm build`, and confirm a clean build. Verify generated comments/types in `dist/bundle.d.ts`.
 5. **Live Browser Validation**: Per the "📸 Live Browser Validation" rule above — run the `test-plugin-browser` skill against the affected view, capture a numbered screenshot after each meaningful step in the project root, and actually read each one before declaring the task done. A clean build alone is not sufficient for any task that touched `plugin/app/src` rendering.

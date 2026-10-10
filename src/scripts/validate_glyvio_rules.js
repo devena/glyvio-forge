@@ -103,6 +103,59 @@ for (const filePath of tsFiles) {
   }
 }
 
+// Rule 7: every view whose route is registered must be exported from index.ts.
+// The app opens `<namespace>.<getRouteNameObject()>`; a class missing from the bundle's exports
+// compiles cleanly but does not open at runtime.
+const indexFile = path.join(targetDir, 'index.ts');
+if (fs.existsSync(indexFile)) {
+  const exported = new Set();
+  const visited = new Set();
+  const resolveModule = (fromFile, spec) => {
+    const base = path.resolve(path.dirname(fromFile), spec);
+    for (const candidate of [base + '.ts', base + '.tsx', path.join(base, 'index.ts'), base]) {
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
+    }
+    return undefined;
+  };
+  const collectExports = (file) => {
+    if (visited.has(file)) return;
+    visited.add(file);
+    const src = fs
+      .readFileSync(file, 'utf-8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    for (const m of src.matchAll(/export\s+(?:declare\s+)?(?:abstract\s+)?(?:class|interface|function|const|let|enum|type)\s+(\w+)/g)) {
+      exported.add(m[1]);
+    }
+    for (const m of src.matchAll(/export\s*\{([^}]*)\}/g)) {
+      for (const part of m[1].split(',')) {
+        const name = part.trim().split(/\s+as\s+/).pop();
+        if (name) exported.add(name.replace(/^type\s+/, ''));
+      }
+    }
+    for (const m of src.matchAll(/export\s*\*\s*from\s*['"](\.[^'"]+)['"]/g)) {
+      const target = resolveModule(file, m[1]);
+      if (target) collectExports(target);
+    }
+  };
+  collectExports(indexFile);
+
+  for (const filePath of tsFiles) {
+    // Comments are stripped: JSDoc examples also declare getRouteNameObject().
+    const content = fs
+      .readFileSync(filePath, 'utf-8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    for (const m of content.matchAll(/getRouteNameObject\(\)[^{]*\{\s*return\s*['"](\w+)['"]/g)) {
+      if (exported.has(m[1])) continue;
+      const relPath = path.relative(process.cwd(), filePath);
+      console.error(`❌ [${relPath}] View class '${m[1]}' (getRouteNameObject) is not exported from index.ts.`);
+      console.error(`   Fix: Add \`export * from './${path.relative(targetDir, filePath).replace(/\\/g, '/').replace(/\.tsx?$/, '')}';\` to index.ts (or to a barrel it re-exports).\n`);
+      errorCount++;
+    }
+  }
+}
+
 console.log(`[glyvio-linter] Validation complete: ${errorCount} errors, ${warningCount} warnings.`);
 
 if (errorCount > 0) {

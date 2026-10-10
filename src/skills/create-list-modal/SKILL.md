@@ -61,7 +61,7 @@ The agent must perform the following actions:
 
 Create a new file `src/views/modals/<entity_snake_case>_list_modal.ts` inside the target plugin's codebase and write the implementation using the blueprint below.
 
-### Step 2: Register the Route
+### Step 2: Register the Route and Export the View
 
 Add the route class to the routing configuration array (typically inside `src/index.ts` where other routes are loaded):
 
@@ -70,6 +70,12 @@ glyvio_core.routerService.loadRoutes([
   // ... other routes
   YourEntityListModalRoute,
 ]);
+```
+
+Then **export the view class** from `src/index.ts` (or from a barrel that `index.ts` re-exports). The app opens the view as `<namespace>.<getRouteNameObject()>`: a route that is registered but whose class is not exported compiles cleanly and still does not open (the console shows `A rota ... aponta para ..., mas o plugin não exporta essa classe`).
+
+```typescript
+export * from './views/modals/<entity_snake_case>_list_modal';
 ```
 
 ---
