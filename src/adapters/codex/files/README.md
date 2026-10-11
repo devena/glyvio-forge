@@ -172,6 +172,7 @@ Todas correspondem às pastas de mesmo nome em `src/skills/`.
 - [create-table-page](skills/create-table-page/SKILL.md)
 - [create-table-page-interceptor](skills/create-table-page-interceptor/SKILL.md)
 - [create-timeline-entry](skills/create-timeline-entry/SKILL.md)
+- [create-workflow-step](skills/create-workflow-step/SKILL.md)
 - [external-user-api](skills/external-user-api/SKILL.md)
 - [fork-company-script](skills/fork-company-script/SKILL.md)
 - [format-llm-markdown-output](skills/format-llm-markdown-output/SKILL.md)

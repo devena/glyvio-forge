@@ -314,6 +314,7 @@ As skills geram código seguindo os padrões do projeto. Invoque no chat com
 | `/create-sync-interceptor`         | Interceptor de operação sync    |
 | `/create-controller`               | Endpoint HTTP                   |
 | `/create-strategy`                 | Lógica de negócio encapsulada   |
+| `/create-workflow-step`            | Passo de workflow / job periódico agendado pelo plugin |
 | `/schedule-queued-operation`       | Operação deferred/enfileirada   |
 | `/create-custom-interceptor`       | Interceptor por evento nomeado  |
 | `/create-custom-page`              | Página HTML por URL (dashboard/relatório) |

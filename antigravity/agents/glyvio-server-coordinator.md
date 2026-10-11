@@ -102,6 +102,7 @@ Before writing any TypeScript manually, check whether a dedicated skill covers t
 | Interceptor that doesn't fit the four hooks above (e.g. extending a third-party plugin's base interceptor class) | **`create-custom-interceptor`** |
 | New `@Strategy` (server-side, queued/deduplicated business logic) | **`create-strategy`** |
 | New `@Controller` (HTTP endpoint, including HTML report controllers) | **`create-controller`** |
+| New workflow step (`@WorkflowStep`) for company workflows, or a periodic job the plugin schedules itself (`schedule` workflow) | **`create-workflow-step`** |
 | Deferred/deduplicated operation via `QueueList` | **`schedule-queued-operation`** |
 | Any `manifest.json` change (entities, fields, permissions, sequences) | **`modify-manifest`** (always followed by `run_helper.sh`) |
 | On-demand read/trigger against a third-party datasource already registered in `glyvio-plugin-sync` (ad-hoc query, force a task now, ignore a record) — **not** reactive to inbound sync data | **`query-external-datasource`** |
