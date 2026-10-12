@@ -347,6 +347,7 @@ As skills geram código seguindo os padrões do projeto. Invoque no chat com
 | `/configure-report-record` | Relatório configurado no app (sem deploy) |
 | `/test-plugin-browser` | Testar o plugin no app publicado via AI bridge |
 | `/fork-company-script` | Verificar código do server sem publicar |
+| `/generate-plugin-docs` | Manual do usuário em HTML: modelo de dados, telas com print e rotinas |
 
 ---
 

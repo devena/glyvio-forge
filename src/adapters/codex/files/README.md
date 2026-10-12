@@ -176,6 +176,7 @@ Todas correspondem às pastas de mesmo nome em `src/skills/`.
 - [external-user-api](skills/external-user-api/SKILL.md)
 - [fork-company-script](skills/fork-company-script/SKILL.md)
 - [format-llm-markdown-output](skills/format-llm-markdown-output/SKILL.md)
+- [generate-plugin-docs](skills/generate-plugin-docs/SKILL.md)
 - [modify-manifest](skills/modify-manifest/SKILL.md)
 - [query-external-datasource](skills/query-external-datasource/SKILL.md)
 - [release-project](skills/release-project/SKILL.md)
