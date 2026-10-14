@@ -149,6 +149,7 @@ Todas correspondem às pastas de mesmo nome em `src/skills/`.
 - [create-import-wizard](skills/create-import-wizard/SKILL.md)
 - [create-kanban-page](skills/create-kanban-page/SKILL.md)
 - [create-kanban-page-interceptor](skills/create-kanban-page-interceptor/SKILL.md)
+- [create-mail-template-from-file](skills/create-mail-template-from-file/SKILL.md)
 - [create-list-modal](skills/create-list-modal/SKILL.md)
 - [create-list-modal-interceptor](skills/create-list-modal-interceptor/SKILL.md)
 - [create-list-page](skills/create-list-page/SKILL.md)
