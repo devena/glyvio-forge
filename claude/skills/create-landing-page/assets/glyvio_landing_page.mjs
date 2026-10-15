@@ -16,8 +16,8 @@
 //     "slug": "feira-agro-2026",                 // address in the link (default: from the name)
 //     "title": "...", "description": "...",      // browser tab / sharing
 //     "publish": false,                          // true (or --publish): visible at the public URL
-//     "campaign": "000123",                      // campaign code: visits and forms count on it
-//     "setAsCampaignLanding": true,              // the campaign's templates link to this page
+//     "campaign": "000123",                      // campaign code: the campaign uses this page (its templates
+//                                                //   link here; anonymous visits count on it while it is active)
 //     "userGroup": "Vendas",                     // name or id: owns the page, gets the form notifications
 //     "theme": { "primaryColor": "#1F9D63", "textColor": "#1F2430", "backgroundColor": "#FFFFFF",
 //                "altBackgroundColor": "#F4F6FA", "fontFamily": "...", "radius": 10 },
@@ -433,7 +433,9 @@ function check(spec) {
     names.add(`${l?.name ?? ''}`.trim().toLowerCase());
     if (l?.kiosk && spec.form.redirectUrl) add('warning', `link "${l.name}": no modo quiosque o redirectUrl é ignorado`);
   });
-  if (spec.setAsCampaignLanding && !spec.campaign) add('danger', '"setAsCampaignLanding" sem "campaign"');
+  if (spec.setAsCampaignLanding !== undefined) {
+    add('warning', '"setAsCampaignLanding" não existe mais: "campaign" já faz a campanha usar esta página');
+  }
 
   const seen = new Set();
   for (const r of allRefs(spec)) {
@@ -551,7 +553,7 @@ async function cmdInfo(_arg, opt) {
     `select name, slug, status, visits, submissions from landing_page where deleted = false order by created_at desc limit 50`,
   );
   const campaigns = await g.query(
-    `select c.code, c.name, c.is_active, c.final_date, p.slug as landing_slug from campaign c
+    `select c.code, c.name, c.is_active, c.initial_date, c.final_date, p.slug as landing_slug from campaign c
      left join landing_page p on p.id = c.landing_page_id
      where c.deleted = false order by c.created_at desc limit 30`,
   );
@@ -640,7 +642,6 @@ async function cmdSave(file, opt) {
     redirect_url: spec.form.redirectUrl || null,
     consent_text: spec.form.consentText ?? null,
     kiosk_reset_seconds: spec.form.kioskResetSeconds ?? 8,
-    campaign_id: campaign?.id ?? null,
     user_group_id: groupId,
   });
 
@@ -701,7 +702,8 @@ async function cmdSave(file, opt) {
     });
     savedLinks.push({ name, code, kiosk: !!l.kiosk, campaign: linkCampaign?.code ?? null });
   }
-  if (spec.setAsCampaignLanding && campaign) {
+  // The campaign points to the page (the page has no campaign of its own).
+  if (campaign) {
     items.push({ entityName: 'campaign', entity: { id: campaign.id, landing_page_id: state.pageId } });
   }
   log(`salvando a landing page${savedLinks.length ? ` e ${savedLinks.length} link(s)` : ''}`);
@@ -720,7 +722,7 @@ async function cmdSave(file, opt) {
     previewUrl: landingUrl(base, g.companyId, { s: spec.slug, p: state.pageId }),
     links: savedLinks.map((l) => ({ ...l, url: landingUrl(base, g.companyId, { l: l.code }) })),
     linksNotInSpec: unknownLinks.map((e) => e.name),
-    campaign: campaign ? { code: campaign.code, name: campaign.name, templatesLinkHere: !!spec.setAsCampaignLanding } : null,
+    campaign: campaign ? { code: campaign.code, name: campaign.name, usesThisPage: true } : null,
     files: uploaded,
     baseUrlConfigured: !!param[0]?.landing_base_url,
     warnings: issues.filter((i) => i.level != 'danger').map((i) => i.text),

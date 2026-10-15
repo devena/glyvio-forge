@@ -70,7 +70,7 @@ Ask only what you cannot infer from what the user gave:
 | Form | Which data to capture (see field types). Default: name, e-mail, phone. Which are required |
 | Consent (LGPD) | Default: "Concordo em receber contato e com o tratamento dos meus dados conforme a LGPD." |
 | After sending | Thank-you message, or a page to redirect to |
-| Campaign | Code of the campaign (see `info`): visits and forms count on it. Whether its e-mail/WhatsApp templates should link to this page (`setAsCampaignLanding`) |
+| Campaign | Code of the campaign that uses this page (see `info`). The campaign points to the page — the page itself has no campaign |
 | Origin links | One per place the link/QR code goes: fair booth, flyer, Instagram... Kiosk mode for a tablet at a booth (the form resets after each send, no per-visitor limit) |
 | Group | User group that owns the page and receives the "new form" notifications (default `core_public`) |
 | Look | Colors (or take them from the logo/art), font, light or dark sections |
@@ -84,7 +84,8 @@ Run `info`:
 - `baseUrlConfigured: false` → the links use the server URL; tell the user they can set the public URL
   in **Landing pages → engrenagem**.
 - the slug must not be in `landingPages` (unless updating that page, with `--update`);
-- the campaign code must be in `campaigns`;
+- the campaign code must be in `campaigns`; if that campaign already uses another page (`landing_slug`),
+  ask before replacing it;
 - the group, when given, must be in `userGroups`.
 
 ### 3. Design the page
@@ -170,9 +171,13 @@ leads to become people/clients.
   `kiosk`). Each gets its own URL and QR code; visits and forms are counted per link.
 - QR codes: in the Glyvio screen (**Landing pages → the page → Links e QR codes**). The link's code
   never changes on `save`, so printed QR codes keep working.
-- `campaign`: the campaign whose counters the page feeds. `setAsCampaignLanding: true` makes it the
-  campaign's landing page: the campaign templates get the variable **Link da landing page**, an
-  individual link per recipient and channel, so the page knows who came from which message.
+- `campaign` (spec root): the campaign that **uses** this page (`campaign.landing_page_id`, the
+  same field as **Landing page** in the campaign's cart). Its templates get the variable **Link da
+  landing page** — an individual link per recipient and channel, so the page knows who came from which
+  message — and anonymous visits/forms (no link campaign, no `utm_campaign`) count on it while it is
+  active and in its period. Several campaigns may use the same page; the page has no campaign field.
+- A link's `campaign`: that origin link (a fair's QR code) always counts on this campaign, whatever
+  campaigns use the page.
 
 ### 6. Check, save and report
 
@@ -182,7 +187,7 @@ leads to become people/clients.
 4. When the user approves: `save --publish` (and `--update` only for a page that already existed
    before this spec).
 5. Report in business terms: the page's public link, each origin link (and that its QR code is in
-   the Glyvio screen), the campaign it feeds, how many images were published, and the warnings kept.
+   the Glyvio screen), the campaign that uses it, how many images were published, and the warnings kept.
 
 ### spec.json
 
@@ -193,7 +198,6 @@ leads to become people/clients.
   "title": "Feira Agro 2026 — condições especiais",
   "description": "Cadastre-se e receba a proposta com taxa zero.",
   "campaign": "000123",
-  "setAsCampaignLanding": true,
   "userGroup": "Vendas",
   "theme": { "primaryColor": "#1F9D63", "textColor": "#1F2430", "backgroundColor": "#FFFFFF", "altBackgroundColor": "#F2F7F4", "radius": 12 },
   "blocks": [
