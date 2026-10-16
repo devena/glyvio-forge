@@ -19,11 +19,18 @@
 //     "campaign": "000123",                      // campaign code: the campaign uses this page (its templates
 //                                                //   link here; anonymous visits count on it while it is active)
 //     "userGroup": "Vendas",                     // name or id: owns the page, gets the form notifications
+//     "type": "leads",                           // generic | leads (creates client/person/tag) | other plugin's type id
+//     "typeConfig": { "tagName": "..." },        // options of the type
 //     "theme": { "primaryColor": "#1F9D63", "textColor": "#1F2430", "backgroundColor": "#FFFFFF",
-//                "altBackgroundColor": "#F4F6FA", "fontFamily": "...", "radius": 10 },
+//                "altBackgroundColor": "#F4F6FA", "fontFamily": "...", "headingFontFamily": "...", "radius": 10,
+//                "buttonStyle": "pill", "shadow": "strong" },
+//     "mode": "blocks",                          // or "html" with "fullHtmlFile"/"fullHtml" (form at <!-- glyvio:form -->)
+//     "customCss": "...", "tracking": { "metaPixelId": "...", "ga4Id": "G-...", "gtmId": "GTM-..." },
+//     "ogImageUrl": "img/share.jpg", "faviconUrl": "img/icon.png",
 //     "blocks": [
 //       { "type": "html", "file": "blocos/topo.html" },      // free HTML (advanced), full width
-//       { "type": "hero", "title": "...", "imageUrl": "img/banner.jpg", "buttonLabel": "...", "buttonUrl": "#form" },
+//       { "type": "hero", "variant": "form", "title": "...", "background": "gradient" },   // layouts: see VARIANTS
+//       { "type": "stats", "items": [ { "title": "+500", "text": "clientes" } ] },
 //       { "type": "form", "title": "Receba a proposta" },
 //       { "type": "html", "html": "<footer class=\"x\">...</footer>" }
 //     ],
@@ -49,8 +56,22 @@ const COMPANY_PARAMETER_ID = '1';
 const MAX_IMAGE_BYTES = 1024 * 1024;
 const MAX_HTML_BYTES = 300 * 1024;
 const BLOCK_TYPES = ['header', 'hero', 'text', 'richText', 'image', 'video', 'benefits', 'testimonials', 'faq',
-  'countdown', 'cta', 'form', 'footer', 'html'];
-const LIST_BLOCKS = ['benefits', 'testimonials', 'faq'];
+  'countdown', 'cta', 'form', 'logos', 'stats', 'steps', 'gallery', 'map', 'divider', 'whatsapp', 'footer', 'html'];
+const LIST_BLOCKS = ['benefits', 'testimonials', 'faq', 'logos', 'stats', 'steps', 'gallery'];
+/** Layouts of each block type ("variant"); the first is the default. */
+const VARIANTS = {
+  hero: ['centered', 'split', 'image', 'form'],
+  benefits: ['cards', 'icons', 'list'],
+  testimonials: ['cards', 'highlight'],
+  form: ['card', 'split', 'banner'],
+  stats: ['plain', 'cards'],
+  steps: ['numbers', 'timeline'],
+  gallery: ['grid', 'carousel'],
+  divider: ['wave', 'slant', 'curve'],
+};
+const BACKGROUNDS = ['default', 'alt', 'primary', 'gradient', 'dark', 'image'];
+const PAGE_TYPES = { generic: 'crm_full.generic', leads: 'crm_full.leads' };
+const FORM_MARKER = '<!-- glyvio:form -->';
 const FIELD_TYPES = ['name', 'email', 'phone', 'company', 'document', 'city', 'state', 'text', 'textarea',
   'number', 'select', 'boolean', 'date'];
 const THEME_COLORS = ['primaryColor', 'textColor', 'backgroundColor', 'altBackgroundColor'];
@@ -264,6 +285,12 @@ function readSpec(file) {
     }
     return block;
   });
+  let fullHtml = spec.fullHtml ?? null;
+  if (spec.fullHtmlFile) {
+    const htmlFile = path.resolve(dir, spec.fullHtmlFile);
+    if (!fs.existsSync(htmlFile)) throw new SpecError(`fullHtmlFile: arquivo ${spec.fullHtmlFile} não existe`);
+    fullHtml = fs.readFileSync(htmlFile, 'utf8');
+  }
   const form = spec.form ?? {};
   const fields = (form.fields ?? []).map((f) => ({
     ...f,
@@ -277,6 +304,8 @@ function readSpec(file) {
     dir,
     slug: slugify(spec.slug || spec.name),
     blocks,
+    fullHtml,
+    fullHtmlDir: spec.fullHtmlFile ? path.dirname(path.resolve(dir, spec.fullHtmlFile)) : dir,
     form: { ...form, fields },
     links: spec.links ?? [],
     envFile: path.resolve(dir, spec.env ?? '.env'),
@@ -321,6 +350,7 @@ function blockFileRefs(block) {
   };
   add(block.imageUrl, 'imageUrl');
   add(block.logoUrl, 'logoUrl');
+  add(block.backgroundImageUrl, 'backgroundImageUrl');
   (block.items ?? []).forEach((item, i) => add(item?.imageUrl, `items[${i}].imageUrl`));
   return out;
 }
@@ -330,6 +360,11 @@ function allRefs(spec) {
   for (const b of spec.blocks) {
     if (b.type == 'html' || b.type == 'richText') refs.push(...htmlRefs(b.html ?? '', b._dir));
     refs.push(...blockFileRefs(b));
+  }
+  if (spec.fullHtml) refs.push(...htmlRefs(spec.fullHtml, spec.fullHtmlDir));
+  for (const key of ['ogImageUrl', 'faviconUrl']) {
+    const r = `${spec[key] ?? ''}`.trim();
+    if (r && !isExternal(r)) refs.push({ ref: r, file: path.resolve(spec.dir, decodeRef(r)), where: key });
   }
   return refs;
 }
@@ -401,6 +436,15 @@ function check(spec) {
       if (/src\s*=\s*["']http:/i.test(html)) add('warning', `${n}: recurso em http (sem https) é bloqueado na página https`);
     }
     if (LIST_BLOCKS.includes(b.type) && !(b.items ?? []).length) add('warning', `${n}: sem itens`);
+    if (b.variant && !(VARIANTS[b.type] ?? []).includes(b.variant)) {
+      add('danger', `${n}: layout (variant) "${b.variant}" não existe; use ${(VARIANTS[b.type] ?? ['(nenhum)']).join(', ')}`);
+    }
+    if (b.background && !BACKGROUNDS.includes(b.background)) add('danger', `${n}: background "${b.background}"; use ${BACKGROUNDS.join(', ')}`);
+    if (b.background == 'image' && !b.backgroundImageUrl && !(b.type == 'hero' && b.imageUrl)) add('warning', `${n}: background "image" sem backgroundImageUrl`);
+    if (['logos', 'gallery'].includes(b.type) && (b.items ?? []).some((it) => !it?.imageUrl)) add('warning', `${n}: item sem imageUrl não aparece`);
+    if (b.type == 'map' && !b.address?.trim()) add('warning', `${n}: sem "address": o mapa não aparece`);
+    if (b.type == 'whatsapp' && `${b.phone ?? ''}`.replace(/\D/g, '').length < 10) add('danger', `${n}: "phone" com DDI e DDD (ex.: 5511999998888)`);
+    if (b.type == 'hero' && b.variant == 'form' && formBlocks) add('warning', `${n}: o hero já mostra o formulário; o bloco "form" fica oculto`);
     if (b.type == 'video' && !/youtu|vimeo|^https:/i.test(b.videoUrl ?? '')) add('warning', `${n}: link de vídeo do YouTube ou Vimeo`);
     if (b.type == 'image' && !b.imageUrl) add('danger', `${n}: sem imageUrl`);
   });
@@ -421,6 +465,20 @@ function check(spec) {
   if (fieldsCount && !spec.form.consentText) add('warning', 'sem texto de consentimento (LGPD)');
   if (spec.form.redirectUrl && !/^https:\/\//i.test(spec.form.redirectUrl)) add('warning', 'redirectUrl deve começar com https://');
 
+  if (spec.mode == 'html') {
+    if (!spec.fullHtml?.trim()) add('danger', 'mode "html" sem "fullHtml"/"fullHtmlFile"');
+    else {
+      if (!spec.fullHtml.includes(FORM_MARKER)) add('warning', `HTML completo sem ${FORM_MARKER}: o formulário vai para o fim da página`);
+      if (/<form[\s>]/i.test(spec.fullHtml)) add('danger', 'HTML completo com <form> próprio: não é registrado; use o marcador do formulário');
+    }
+  }
+  if (spec.type && !Object.keys(PAGE_TYPES).includes(spec.type) && !/\./.test(spec.type)) {
+    add('danger', `type "${spec.type}": use ${Object.keys(PAGE_TYPES).join(', ')} ou o id de um tipo de outro plugin`);
+  }
+  const t = spec.tracking ?? {};
+  if (t.metaPixelId && !/^\d{5,20}$/.test(t.metaPixelId)) add('warning', 'tracking.metaPixelId: só números; ignorado');
+  if (t.ga4Id && !/^G-[A-Z0-9]{4,15}$/.test(t.ga4Id)) add('warning', 'tracking.ga4Id: formato G-XXXX; ignorado');
+  if (t.gtmId && !/^GTM-[A-Z0-9]{4,12}$/.test(t.gtmId)) add('warning', 'tracking.gtmId: formato GTM-XXXX; ignorado');
   for (const key of THEME_COLORS) {
     const v = spec.theme?.[key];
     if (v && !/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)) add('warning', `tema: ${key} "${v}" não é uma cor #RRGGBB`);
@@ -503,6 +561,7 @@ function storedBlocks(spec, urlOf) {
     if (out.html) out.html = replaceHtmlRefs(out.html, _dir, urlOf);
     if (out.imageUrl) out.imageUrl = local(out.imageUrl);
     if (out.logoUrl) out.logoUrl = local(out.logoUrl);
+    if (out.backgroundImageUrl) out.backgroundImageUrl = local(out.backgroundImageUrl);
     if (out.items) out.items = out.items.map((it) => (it?.imageUrl ? { ...it, imageUrl: local(it.imageUrl) } : it));
     return out;
   });
@@ -620,6 +679,14 @@ async function cmdSave(file, opt) {
   const campaign = await campaignByCode(g, spec.campaign);
   const groupId = spec.userGroup ? await resolveGroup(g, spec.userGroup) : current?.user_group_id ?? DEFAULT_GROUP;
   const status = opt.publish || spec.publish == true ? 'published' : spec.publish == false ? 'draft' : current?.status ?? 'draft';
+  // Public URL of each local file uploaded below (filled before the final save).
+  const urls = new Map();
+  const urlOfFile = (f) => urls.get(f);
+  const pageImage = (ref) => {
+    const r = `${ref ?? ''}`.trim();
+    if (!r) return null;
+    return isExternal(r) ? r : urls.get(path.resolve(spec.dir, decodeRef(r))) ?? null;
+  };
   const record = (blocks) => ({
     id: state.pageId,
     name: spec.name.trim(),
@@ -642,6 +709,15 @@ async function cmdSave(file, opt) {
     redirect_url: spec.form.redirectUrl || null,
     consent_text: spec.form.consentText ?? null,
     kiosk_reset_seconds: spec.form.kioskResetSeconds ?? 8,
+    type: PAGE_TYPES[spec.type] ?? spec.type ?? current?.type ?? PAGE_TYPES.generic,
+    type_config: spec.typeConfig ?? {},
+    mode: spec.mode == 'html' ? 'html' : 'blocks',
+    full_html: spec.fullHtml ? replaceHtmlRefs(spec.fullHtml, spec.fullHtmlDir, urlOfFile) : null,
+    custom_css: spec.customCss ?? null,
+    tracking: spec.tracking ?? {},
+    og_image_url: pageImage(spec.ogImageUrl),
+    favicon_url: pageImage(spec.faviconUrl),
+    preview_content: null,
     user_group_id: groupId,
   });
 
@@ -653,7 +729,6 @@ async function cmdSave(file, opt) {
   writeState(spec.stateFile, state);
 
   const links = [{ entityName: 'landing_page', entityId: state.pageId }];
-  const urls = new Map();
   const uploaded = [];
   for (const r of allRefs(spec)) {
     if (urls.has(r.file)) continue;

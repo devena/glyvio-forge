@@ -98,23 +98,51 @@ HTML hero and showcase, then the ready-made `form` and `faq` blocks.
 | type | Fields |
 |---|---|
 | `header` | `title` (brand), `logoUrl`, `buttonLabel`, `buttonUrl` |
-| `hero` | `title`, `subtitle`, `imageUrl` (image beside the text), `buttonLabel`, `buttonUrl`, `background`, `align` |
+| `hero` | `title`, `subtitle`, `text`, `imageUrl`, `buttonLabel`, `buttonUrl`; `variant`: `centered`, `split` (image beside), `image` (photo background), `form` (the page's form beside the text — the layout that converts the most; the `form` block is then hidden) |
 | `text` | `title`, `subtitle`, `text` (line breaks kept), `buttonLabel`, `buttonUrl` |
 | `richText` | `title`, `subtitle`, `html` (simple formatted text; centered column up to 860 px) |
 | `image` | `imageUrl` (required), `imageAlt`, `title`, `text` (caption) |
 | `video` | `videoUrl` (YouTube/Vimeo link), `title` |
-| `benefits` | `title`, `subtitle`, `items: [{ icon (emoji), title, text, imageUrl }]` |
-| `testimonials` | `title`, `items: [{ title (name), subtitle (role/company), text (quote), imageUrl (photo) }]` |
+| `benefits` | `title`, `subtitle`, `items: [{ icon (emoji), title, text, imageUrl }]`; `variant`: `cards`, `icons`, `list` (checklist) |
+| `testimonials` | `title`, `items: [{ title (name), subtitle (role/company), text (quote), imageUrl (photo) }]`; `variant`: `cards`, `highlight` |
 | `faq` | `title`, `items: [{ title (question), text (answer) }]` |
 | `countdown` | `title`, `endsAt` (`YYYY-MM-DD` or ISO; empty = the campaign's final date), `buttonLabel`, `buttonUrl` |
 | `cta` | `title`, `text`, `buttonLabel`, `buttonUrl` (primary-color band) |
-| `form` | `title`, `subtitle`, `text` — where the form goes (one per page; without it, at the end) |
+| `form` | `title`, `subtitle`, `text` — where the form goes (one per page; without it, at the end); `variant`: `card`, `split` (text beside), `banner` (gradient band) |
+| `logos` | `title`, `items: [{ title (client name), imageUrl (logo) }]` (grayscale, color on hover) |
+| `stats` | `title`, `items: [{ title (the number: "+500"), text (what it counts) }]`; `variant`: `plain`, `cards` |
+| `steps` | `title`, `subtitle`, `items: [{ title, text, icon (optional, instead of the number) }]`; `variant`: `numbers`, `timeline` |
+| `gallery` | `title`, `items: [{ imageUrl, title (caption) }]`; `variant`: `grid`, `carousel` |
+| `map` | `title`, `text`, `address` (searched on Google Maps), `buttonLabel`, `buttonUrl` |
+| `divider` | `variant`: `wave`, `slant`, `curve`; `background` = color of the shape (the next section's) |
+| `whatsapp` | `phone` (country + area code, e.g. `5511999998888`), `text` (first message), `buttonLabel` — floating button |
 | `footer` | `logoUrl`, `text` |
 | `html` | `file` (an HTML file of the folder) or `html` — **free HTML, advanced mode** (below). Needs crm_full 0.3.70+ |
 
-`background`: `default`, `alt` (alternative color) or `primary`. `align`: `center` (default) or
-`left`. `buttonUrl: "#form"` scrolls to the form. Image fields take a local path (`img/banner.jpg`,
-uploaded) or an `https://` URL.
+Style of any section block: `background` (`default`, `alt`, `primary`, `gradient`, `dark`, `image` +
+`backgroundImageUrl`), `spacing` (`compact`, `normal`, `airy`), `width: "full"` (image, gallery, map,
+richText, video), `align` (`center`, `left`), `hidden: true` (kept in the editor, not shown).
+`buttonUrl: "#form"` scrolls to the form. Image fields take a local path (`img/banner.jpg`, uploaded)
+or an `https://` URL. Layouts, styles and the new blocks need crm_full 0.3.82+.
+
+Theme: `primaryColor`, `textColor`, `backgroundColor`, `altBackgroundColor`, `fontFamily`,
+`headingFontFamily`, `radius`, `buttonStyle` (`rounded`, `pill`, `square`, `outline`), `shadow`
+(`none`, `soft`, `strong`). The page exposes them as CSS variables for free HTML: `var(--lp-primary)`,
+`--lp-text`, `--lp-bg`, `--lp-alt`, `--lp-radius`, `--lp-btn-radius`, `--lp-font`, `--lp-heading-font`,
+`--lp-shadow`.
+
+**Page type** (`type`): `generic` (the form is only recorded) or `leads` (each form becomes client,
+person, contacts and a tag on the client; `typeConfig: { "tagName": "...", "clientStatusId": "..." }`),
+or the id of a type registered by another plugin.
+
+**Full HTML mode** (`"mode": "html"`, `fullHtmlFile: "pagina.html"` or `fullHtml`): the whole page is
+your HTML document; the form (with visit and send tracking, consent, anti-spam) goes where
+`<!-- glyvio:form -->` is, and the form styles, tags and script are added to it. Local files in it are
+uploaded like in free blocks. The blocks are kept but not shown.
+
+**Advanced**: `customCss` (added after the page CSS), `tracking: { metaPixelId, ga4Id, gtmId }` (the
+send is also reported as `Lead` / `generate_lead` / `glyvio_landing_submit`), `ogImageUrl` (share
+image, 1200×630) and `faviconUrl` — local paths or `https://` URLs.
 
 **Free HTML blocks — rules** (the page shows them as written, full width, no wrapper):
 
@@ -198,14 +226,21 @@ leads to become people/clients.
   "description": "Cadastre-se e receba a proposta com taxa zero.",
   "campaign": "000123",
   "userGroup": "Vendas",
-  "theme": { "primaryColor": "#1F9D63", "textColor": "#1F2430", "backgroundColor": "#FFFFFF", "altBackgroundColor": "#F2F7F4", "radius": 12 },
+  "type": "leads",
+  "typeConfig": { "tagName": "Feira Agro 2026" },
+  "theme": { "primaryColor": "#1F9D63", "textColor": "#1F2430", "backgroundColor": "#FFFFFF", "altBackgroundColor": "#F2F7F4", "radius": 12, "buttonStyle": "pill", "shadow": "strong" },
+  "tracking": { "metaPixelId": "123456789012345" },
+  "ogImageUrl": "img/compartilhar.jpg",
   "blocks": [
     { "type": "html", "file": "blocos/topo.html" },
-    { "type": "benefits", "title": "Por que aproveitar", "items": [
+    { "type": "stats", "variant": "cards", "background": "alt", "items": [
+      { "title": "+30 anos", "text": "no campo" }, { "title": "+2 mil", "text": "máquinas entregues" } ] },
+    { "type": "benefits", "variant": "icons", "title": "Por que aproveitar", "items": [
       { "icon": "🚜", "title": "Pronta entrega", "text": "Em até 7 dias." },
       { "icon": "💰", "title": "Taxa zero", "text": "Em 12x no cartão." } ] },
-    { "type": "form", "title": "Receba sua proposta", "subtitle": "Retornamos em 1 dia útil." },
+    { "type": "form", "variant": "split", "title": "Receba sua proposta", "subtitle": "Retornamos em 1 dia útil." },
     { "type": "faq", "title": "Dúvidas", "items": [ { "title": "Preciso ir à feira?", "text": "Não, vale online." } ] },
+    { "type": "whatsapp", "phone": "5511999998888", "text": "Olá! Vim pela página da feira.", "buttonLabel": "Fale conosco" },
     { "type": "footer", "logoUrl": "img/logo.png", "text": "© Acme Máquinas" }
   ],
   "form": {
