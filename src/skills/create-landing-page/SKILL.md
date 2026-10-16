@@ -132,7 +132,8 @@ Theme: `primaryColor`, `textColor`, `backgroundColor`, `altBackgroundColor`, `fo
 `--lp-shadow`.
 
 **Page type** (`type`): `generic` (the form is only recorded) or `leads` (each form becomes client,
-person, contacts and a tag on the client; `typeConfig: { "tagName": "...", "clientStatusId": "..." }`),
+person, contacts, the main address — from an `address` field, geocoded when the company has Photon —
+and a tag on the client; `typeConfig: { "tagName": "...", "clientStatusId": "..." }`),
 or the id of a type registered by another plugin.
 
 **Full HTML mode** (`"mode": "html"`, `fullHtmlFile: "pagina.html"` or `fullHtml`): the whole page is

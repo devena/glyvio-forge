@@ -72,7 +72,7 @@ const VARIANTS = {
 const BACKGROUNDS = ['default', 'alt', 'primary', 'gradient', 'dark', 'image'];
 const PAGE_TYPES = { generic: 'crm_full.generic', leads: 'crm_full.leads' };
 const FORM_MARKER = '<!-- glyvio:form -->';
-const FIELD_TYPES = ['name', 'email', 'phone', 'company', 'document', 'city', 'state', 'text', 'textarea',
+const FIELD_TYPES = ['name', 'email', 'phone', 'company', 'document', 'address', 'city', 'state', 'text', 'textarea',
   'number', 'select', 'boolean', 'date'];
 const THEME_COLORS = ['primaryColor', 'textColor', 'backgroundColor', 'altBackgroundColor'];
 const CONTENT_TYPES = {
