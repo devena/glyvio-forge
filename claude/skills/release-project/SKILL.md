@@ -25,6 +25,10 @@ Se o pedido significa **"comita o que está pendente, incrementa a versão e faz
 
 Follow every step in order. Do **not** skip a step. Do **not** proceed to the next step if the current one fails — stop and report the error to the user.
 
+Talk to the user as `.glyvio/user-profile.md` says. In the **simple** profile the person does not
+know git or builds: run every step yourself, never show commands, diffs or logs, and describe
+everything by what changes in Glyvio for the people who use it.
+
 ---
 
 ### Step 1 — Confirm working directory
@@ -106,6 +110,36 @@ Entry format (newest on top, right below the `# Changelog` heading):
 
 ---
 
+### Step 6.5 — Explain what will change and confirm
+
+Publishing changes what the company's users see, so describe the release **by its effect**, from
+the diff read in Step 5:
+
+- screens, menus, buttons and fields added, changed or removed;
+- rules that now run automatically (e.g. "ao salvar um pedido, o estoque é baixado");
+- who gains or loses access (permissions);
+- **changes to stored data** — new tables or fields, or a migration in `manifest.json`
+  `dbVersions`. Always mention these explicitly: they are applied to the company's database and
+  cannot simply be undone by publishing an older version.
+
+**Simple profile:** show that list in plain words (no file names, no code) and ask for an explicit
+"yes" before continuing, e.g.:
+
+> Vou publicar a versão 0.3.9. O que muda para quem usa o Glyvio:
+> - Nova tela **Pedidos** no menu Vendas, com filtro por cliente.
+> - O campo **Prazo de entrega** passa a existir nos pedidos (isso altera o banco de dados).
+>
+> Posso publicar?
+
+If the answer is not a clear yes, undo only the version and CHANGELOG edits of Steps 3 and 6
+(and unstage them), leave the rest of the work untouched, and stop.
+
+**Developer profile:** show the same list in one compact block and continue — the release request
+is the authorization — unless it contains a `dbVersions` change the user did not mention, which
+needs a confirmation.
+
+---
+
 ### Step 7 — Commit
 
 Write the exact commit message to a temporary file outside the staged set,
@@ -133,7 +167,10 @@ git push origin <current-branch>
 
 ### Step 9 — Report to the user
 
-Print a short summary:
+**Simple profile:** one or two sentences, no git terms — e.g. "Pronto! A versão 0.3.9 foi enviada
+e fica disponível no Glyvio assim que a verificação automática terminar (alguns minutos)."
+
+**Developer profile:** print a short summary:
 
 ```
 ✔ Build ok
@@ -149,7 +186,7 @@ Print a short summary:
 
 | Situation | Action |
 |-----------|--------|
-| Build fails | Print full error, abort, do not stage/commit/push |
+| Build fails | Abort, do not stage/commit/push. Developer profile: print the full error. Simple profile: try to fix it (skill `glyvio-doctor`, check 9) and explain only what is blocking |
 | Nothing to commit (`git status` clean after add) | Skip Steps 5-8, inform user there are no changes |
-| Push rejected (non-fast-forward) | Print the rejection, do not force-push, ask the user how to proceed |
+| Push rejected (non-fast-forward) | Do not force-push. **Developer profile:** print the rejection and ask how to proceed. **Simple profile:** run `git pull --rebase origin <branch>`; if it applies cleanly, rebuild (Step 2) and push again. If it conflicts, run `git rebase --abort` and explain in plain words that someone else changed the same project at the same time and the Glyvio team (or whoever maintains the project) must combine the two changes — the person's work is saved on their computer. |
 | Any other git error | Print the error, stop, ask the user |

@@ -49,7 +49,8 @@ pnpm build
 pnpm lint
 ```
 
-**Primeira vez numa máquina ou num projeto:** siga a skill `glyvio-onboarding` — baixa o
+**Primeira vez numa máquina ou num projeto:** siga a skill `glyvio-onboarding` — pergunta como
+o assistente deve conversar (perfil simples ou de desenvolvedor), baixa o
 `glyvio-dev-helper`, cria o `.env` (`G_APP_URL`, `G_AUTH_URL`, `G_COMPANY_ID`, `G_USERNAME`,
 `G_PASSWORD`), instala o `run_helper.sh`/`run_helper.ps1` e gera os `@types`.
 
@@ -342,7 +343,8 @@ As skills geram código seguindo os padrões do projeto. Invoque no chat com
 
 | Skill              | Quando usar                                    |
 | ------------------ | ---------------------------------------------- |
-| `/glyvio-onboarding` | Primeiro acesso: helper, `.env`, `run_helper` e geração dos `@types` |
+| `/glyvio-onboarding` | Primeiro acesso: perfil de comunicação, helper, `.env`, `run_helper` e geração dos `@types` |
+| `/glyvio-doctor` | "Não está funcionando": diagnostica e corrige ambiente, tipos, build e git |
 | `/modify-manifest` | Adicionar permissões ou migrações no manifesto |
 | `/release-project` | Build → bump de versão → commit → push         |
 | `/configure-report-record` | Relatório configurado no app (sem deploy) |

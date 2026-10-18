@@ -4,6 +4,13 @@ These instructions apply when developing a Glyvio plugin or documenting Glyvio C
 When maintaining this instruction package, edit its sources; do not run plugin builds
 or access live Glyvio services merely to validate documentation changes.
 
+## How to talk to the user
+
+At the start of every session read `.glyvio/user-profile.md` in the project root (personal, not
+committed) and follow it in every message to the user — it overrides the tone, and any "ask the
+user to run…" instruction, of skills and roles. If the file does not exist, run step 0 of the
+`glyvio-onboarding` skill before anything else.
+
 ## Select the relevant role
 
 Read only the matching `developer_instructions` in the TOML file below. Paths are

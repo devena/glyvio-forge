@@ -10,6 +10,13 @@ In that installation, resolve a package path written as `.opencode/<path>` to
 `~/.config/opencode/<path>`. In a project-local installation, use the literal
 `.opencode/<path>` path in that project instead.
 
+## How to talk to the user
+
+At the start of every session read `.glyvio/user-profile.md` in the project root (personal, not
+committed) and follow it in every message to the user — it overrides the tone, and any "ask the
+user to run…" instruction, of skills and roles. If the file does not exist, run step 0 of the
+`glyvio-onboarding` skill before anything else.
+
 ## Select the relevant role
 
 Use the OpenCode agent matching the requested layer. For a multi-layer task, apply the
