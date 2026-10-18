@@ -40,7 +40,7 @@ function unwrap(v) {
   await page.mouse.click(1291, 33); // chat icon
   await page.waitForTimeout(5000);
 
-  // click first Jeannie row ("Jeannie Rodolfo Zacche de Aguiar", ~y=372)
+  // click first Jeannie row (~y=372)
   await page.mouse.click(250, 372);
   await page.waitForTimeout(4000);
   let screens = await page.evaluate(() => window.__GLYVIO_AI__.describeCurrentScreens());

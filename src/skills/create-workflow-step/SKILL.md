@@ -9,8 +9,8 @@ core's workflow engine runs like its own steps (`notify`, `save`, `query`…). I
 screen, in the company's `glyvio_workflow.d.ts` and in dry runs.
 
 Optional part (**B**): the plugin **creates and publishes its own `schedule` workflow** that calls the step
-every N minutes/hours/days, so nobody has to set it up by hand. Validated live (call center sweep, Bressan
-PROD, 2026-10): publication, scheduling and the resume chain.
+every N minutes/hours/days, so nobody has to set it up by hand. Validated live (call center sweep in a
+production company, 2026-10): publication, scheduling and the resume chain.
 
 ---
 
