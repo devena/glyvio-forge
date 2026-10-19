@@ -21,7 +21,7 @@ the thing is authored, never by the word.**
 | Query lives in | The controller's `handle()` | The record's `dataQueries` field |
 | Requires a deploy | Yes | No |
 | URL segment | `/custom/{access}/**page**/…` | `/custom/{access}/**report**/…` |
-| Appears in the app's report button | No (see the bridge below) | Yes, via `screenPaths` |
+| Appears in the app's report button | Only as a report's **"Página" output** (Step 6) | Yes, via `screenPaths` |
 
 ### If the user has not said which one, ASK — do not guess
 
@@ -51,11 +51,13 @@ If the user wants to configure it in the app without publishing, they want a **R
 switch to the **`configure-report-record`** skill, which covers the record's fields, why a report
 does not show up on a screen (`screenPaths`), and when a custom processor is needed.
 
-**The bridge**: a Custom Page never shows up in the native report button, which lists only
-`Report` records whose `screenPaths` match the current screen. To put one there you need *both* a
-controller *and* a `Report` record whose `processor` returns the page's URL — see
-`configure-report-record` §5. Only do this when the user explicitly asks for it; a plain button
-calling `openCustomPage` is simpler and leaves no record to maintain.
+**The bridge — a page as a report (PDF)**: a Report Record can have an HTML Report output whose
+origin is **"Página em código"**: the report engine runs *this controller* on the server (the queries
+stay in `handle()`), passes the report's parameters as `requestParams`, and the HTML Report service
+returns the page as a file — HTML, or **PDF** through Gotenberg. The report then shows up in the
+screens' report button, in the send modal (e-mail/WhatsApp attachment) and in the run history, with
+the file attached to the record. See Step 6. A plain button calling `openCustomPage` is still the
+simplest way to just open the page.
 
 ---
 
@@ -304,8 +306,48 @@ if (action.key === 'open<PageName>') {
 - Return `'STATE_FREEZED'`, not `'STATE_UPDATE'`: opening a page is navigation, it mutates nothing.
 - `openCustomPage` covers `private` and `public`. `external` pages are handed out as links, not
   opened from inside a view.
-- Do **not** use `this.extensionsManager.registerReport(...)` — that is the Report Record picker and
-  will never list your controller.
+- Do **not** use `this.extensionsManager.registerReport(...)` for this button — that is the Report
+  Record picker; it lists the page only after it becomes a report output (Step 6).
+
+### Step 6 — Offer it as a report / PDF (ASK when the page is printable)
+
+When the page is something people print, attach or send (a document, a summary, a monthly
+dashboard), ask:
+
+> "Quer que essa página também possa ser gerada como **PDF** pelo botão de relatórios das telas e
+> anexada no envio por e-mail/WhatsApp? Ela continua abrindo pelo botão, como hoje."
+
+If yes, the page becomes the **"Página" output** of a Report Record — no extra code beyond making the
+page printable:
+
+1. **The record** (app → Relatórios, or the `configure-report-record` skill): an output of the
+   **HTML Report** processor with *Origem do HTML* = **Página em código** and *Página* = this
+   controller's `path` (e.g. `sales_dashboard`); format **PDF** (paper, landscape and margin in the
+   same output) or **HTML** (a static snapshot of the page). Register the screens in *Onde aparece*.
+2. **Parameters** — declare them in the record's *Parâmetros* with the **same names** the controller
+   reads from `requestParams`:
+   - a value from the screen (e.g. the open sale) → source **Tela**, type **Entidade**: the record's id
+     arrives as `requestParams.<name>` and the PDF is also attached to that record;
+   - a value the user picks → source **Filtro**; a period arrives as `<name>_min` / `<name>_max`;
+   - everything arrives as a **string** (lists comma-separated) — the Step 3.5 rules still apply.
+3. **Make the page complete on load** — nobody clicks in a PDF:
+   - no data loaded later by `fetch` to other controllers (it would need the session token): all data
+     goes into the HTML from `handle()`;
+   - filters chosen inside the page do not exist in the PDF — turn them into report parameters;
+   - charts: set `window.glyvioReady = true` after the last chart is drawn (Plotly:
+     `Promise.all(plots).then(() => { window.glyvioReady = true; })`); otherwise the PDF waits a fixed
+     delay;
+   - print CSS: `@page { size: A4 landscape; margin: 10mm; }` (the output's paper settings apply
+     when there is no `@page`), `thead { display: table-header-group; }`,
+     `.card, tr { break-inside: avoid; }`;
+   - scripts and fonts from public CDNs only (the PDF engine blocks internal addresses and has no
+     session); embed images as `data:` URIs or public URLs.
+4. **Limits**: the page runs inside the report request (keep it under ~20 s, or the user gets a "ready"
+   notification instead of the file); `external` / public-only controllers cannot be outputs (the
+   controller needs `allowPrivateAccess: true`); outputs of this kind are generated from the app — the
+   Jeannie (environment) path refuses them.
+5. **Test**: generate it from the report button (or "Gerar" in the Relatórios list) and open the PDF;
+   the run is listed in "Gerados recentemente".
 
 ---
 
@@ -335,3 +377,7 @@ what the page looks like.
       hand-built URL) and its handler returns `'STATE_FREEZED'`.
 - [ ] Every parameter read from `requestParams` is treated as a **string** and as **untrusted**:
       parsed, validated, bound via SQL `params`, and re-authorized against the session.
+- [ ] **Asked whether the page should also be a report/PDF** when it is printable; if yes: the record
+      has an HTML Report output with origin "Página em código" and this `path`, its parameters use the
+      names `handle()` reads, the page is complete on load (no `fetch`), sets `window.glyvioReady`
+      after the charts, and has print CSS.
