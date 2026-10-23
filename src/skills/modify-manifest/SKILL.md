@@ -49,6 +49,7 @@ The executing agent MUST strictly adhere to these rules:
 6. **Name length limits (confirmed, not documented anywhere else)**: The type generator (run via `run_helper.sh`) rejects an entity `friendlyName` longer than roughly **20 characters** and a field `friendlyName` longer than roughly **30 characters**, throwing `Entity name X is too big (N)` (or the field equivalent) at generation time. Confirmed independently in two unrelated plugins — `purchase_invoice_stats` had to be shortened to `prchse_invoice_stats`, and `financial_cost_center` to `financial_costcenter`/`financial_entry_split` to `financial_split`. **Check the length of every new entity/field `friendlyName` against these limits before writing the manifest change** — going over is a hard generator failure, not a lint warning.
    - **The generator still enforces this on a `"deleted": true` entity/field in a later version** — soft-deleting an over-length entity and recreating it under a new version does **not** work around the limit; the old name is still validated. If an existing entity/field is already over the limit, the only fix is renaming it in place (a schema change to that field's own definition, following rule #1), which then requires manually updating every `.ts` file referencing the old class/property name (imports, `AllEntities.<name>`, entity class name) — there is no automated rename tool.
 7. **Verify a column actually exists before building on it, for *existing* entities**: `manifest.json` can drift from the actually-deployed schema for a given company/environment (a field declared in the manifest but never actually migrated/applied there). Confirmed multiple times in one project (`story.acceptance_criteria`, `story.story_points`, `project_task.parent_task_id` all declared but absent from a live schema, failing with `column "..." does not exist` on raw SQL). Before writing code against a field of an **existing** entity that you didn't just add yourself in this same task, do a low-cost sanity check (a scalar-only `SELECT` or a quick raw query) rather than trusting the manifest file alone.
+8. **`parentPermission` is not cumulative — repeat it whenever you redeclare the entity**: fields and indexes of an entity add up across versions, but entity-level settings such as `parentPermission` follow the entity's latest declaration. Redeclaring an entity that has `parentPermission` (to add a field or an index) without repeating it removes the permission inheritance: the server then requires the row's own `user_group_id`, and every save that relied on the parent's group fails with `server_core_field_must_be_not_null`. Dropping it is a valid choice — make it on purpose, not by omission.
 
 ---
 
@@ -255,3 +256,33 @@ Add a sequence declaration in the version block, and bind it inside a field's co
   ]
 }
 ```
+
+### 6. Visibility Through Another Entity (`views.customPermissions`)
+
+An entity's rows can be made visible to whoever sees a row of another entity that points to them. Each
+item names the other entity and the column pairs that join the two (`foreignField` on the other
+entity, `field` on this one). Example: an `attachment` is seen by whoever sees an `attachment_entity`
+whose `attachment_id` is the attachment's `id`:
+
+```json
+{
+  "versionNumber": <NextVersionNumberInteger>,
+  "entities": [
+    {
+      "friendlyName": "attachment",
+      "views": {
+        "customPermissions": [
+          {
+            "foreignEntity": "attachment_entity",
+            "fields": [{ "foreignField": "attachment_id", "field": "id" }]
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+Pair it with a link entity that takes the group of the record it points to (server layer:
+`@glyvio_core.EntityLink`; app layer: `glyvio_core.entityLinkService.linkInput`), so that whoever sees
+the linked record sees the link, and through it this entity.

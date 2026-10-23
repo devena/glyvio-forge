@@ -143,6 +143,65 @@ async removeLink(state: <OwnerName>SidebarState, id: string, _entityName: string
 }
 ```
 
+### Step 4b (optional): links that follow the group of the linked record
+
+`addLink` above gives the join row the **owner's** user group: whoever sees the complaint sees its
+links. Some join tables need the opposite — the row belongs to the record it points to
+(`entityName`/`entityId`), so whoever sees that record sees the link, and through it the owner. The
+core's `attachment_entity`, `task_entity` and `timeline_entity` work this way: an attachment, a task
+or a timeline entry linked to a sale is seen by whoever sees the sale.
+
+Pick one model per join table — never both. For the second one:
+
+1. **Server layer** — declare the join entity as a link. When a save changes a record's
+   `user_group_id`, the core moves the links pointing to it to the new group (same transaction, no
+   permission check), for any entity:
+
+   ```typescript
+   // plugin/server/src/... — no imports needed, all symbols are global.
+   @glyvio_core.EntityLink({ entity: glyvio_entity.<JoinEntityName> })
+   export class <JoinEntityName>Link {}
+   ```
+
+   Pass `entityNameField` / `entityIdField` when the columns are not `entity_name` / `entity_id`.
+
+2. **App layer** — create the row with the linked record's group. When you have the record loaded,
+   pass its group as `userGroupId` in the target and nothing is queried; without it, the group is read
+   from the record (one query per link). Don't pass a group you are not sure is current — a link
+   born with an old group stays with it:
+
+   ```typescript
+   async addLink(state: <OwnerName>SidebarState, structureName: string, id: string): Promise<void> {
+     await glyvio_core.entityService.saveList([
+       {
+         structureName: glyvio_structure.AllEntities.<joinEntityCamelCase>.getStructureName(),
+         id: await glyvio_core.uuidService.v4(),
+         input: await glyvio_core.entityLinkService.linkInput(
+           { entityName: structureName, entityId: id },
+           { <ownerFieldSnakeCase>: state.<ownerNameCamelCase>!.id },
+           state.<ownerNameCamelCase>!.userGroupId, // used only when the record is not found
+         ),
+       },
+     ]);
+     this.callRefreshState();
+   }
+   ```
+
+   The core's own link descriptors take the same optional `userGroupId`: the `links` of
+   `attachmentService.saveAttachment`, the `linkEntities` (and `entityUserGroupId` for the main
+   entity) of the timeline routes, the `entities` of `TaskEditModalRoute` and of
+   `TimelineSaveWithLinksStrategy`, and `entityUserGroupId` on the attachment section, side panel and
+   sidebar routes. Pass it whenever you open them for a record you have.
+
+   Links created in the **server layer** (an interceptor, a strategy, a workflow step) use the same
+   contract, synchronous: `glyvio_core.entityLinkService.linkInput(target, input, fallbackUserGroupId)`
+   returns the row's input, to save with `entityService.saveInput`/`saveList` under the link
+   entity's structure name. It only queries entities that exist and have a `user_group_id` column —
+   on the server a failing query aborts the transaction.
+
+3. **Manifest** (only when whoever sees the link must also see the owner) — give the owner entity
+   visibility through the join table with `views.customPermissions` (see `modify-manifest`).
+
 ### Step 5: Design — the section
 
 Insert into `sectionsDesign`/`sectionsContentDesign` (position per input #5 above):
@@ -203,3 +262,4 @@ Add to both `.arb` files, following the plugin's own key prefix convention:
 - [ ] Is the links query batch-loaded (one query, not N+1) anywhere it's needed for multiple owners at once (e.g. a list page preview)? → Fix if looping per-record.
 - [ ] Are both `.arb` files updated with plugin-specific (not copy-pasted) wording? → Fix.
 - [ ] Does the add-link button's `visible` gate on the join entity's own insert permission, scoped to the owner's `userGroupId`? → Fix if ungated or wrongly scoped.
+- [ ] If the join table follows the linked record's group (Step 4b): is it declared with `@glyvio_core.EntityLink`, and does `addLink` build the row with `entityLinkService.linkInput` instead of the owner's `userGroupId`? → Fix if it mixes the two models.

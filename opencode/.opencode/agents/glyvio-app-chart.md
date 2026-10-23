@@ -108,15 +108,30 @@ borderWidth?: number;                          // default 0
 titleStyle?: ChartTextStyle;
 titleAlignment?: ChartAlignment;               // default 'CENTER'
 showLegend?: boolean;                          // default true
-legendPosition?: ChartLegendPosition;          // default 'AUTO'
+legendPosition?: ChartLegendPosition;          // default 'AUTO' (bottom; right for pie/doughnut/radial or TABLE when wide)
 legendAlignment?: ChartAlignment;              // default 'CENTER'
-legendOverflowMode?: ChartLegendOverflowMode;  // default 'SCROLL'
+legendOverflowMode?: ChartLegendOverflowMode;  // default: 'WRAP' at top/bottom, 'SCROLL' on the sides
 legendTextStyle?: ChartTextStyle;
+legendStyle?: ChartLegendStyle;                // default 'DOT'
+legendShowValue?: boolean;                     // default: true for 'TABLE', false otherwise
+legendShowPercent?: boolean;                   // default: true for 'TABLE', false otherwise
+legendInteractive?: boolean;                   // default false — tap hides a series, hover highlights it
+legendMaxItems?: number;                       // groups the rest into "Outros (N)" (legend only)
 showTooltip?: boolean;                         // default true
+tooltipShared?: boolean;                       // default true (false for scatter/bubble) — every series of the hovered X
+tooltipShowTotal?: boolean;                    // default: true for stacked series (stack + line combo: sums the stack only)
+tooltipShowPercent?: boolean;                  // default true — slice share / funnel conversion / STACKED_100 share
+tooltipShowDelta?: boolean;                    // default false — change vs the previous point, colored
+tooltipCrosshair?: boolean;                    // default: true for line/area charts without columns
+tooltipFormat?: string;                        // labelFormat for tooltip values, instead of the axis'
 showDataLabel?: boolean;                       // default true (cartesian defaults false at chart level)
 onTapAction?: glyvio_core.Action;
 minimal?: boolean;                             // sparkline mode: draws only the plot, nothing else
 ```
+
+> ℹ️ **Legend**: the marker of each item follows the series (stroke for line/spline, square for column/bar, filled area for area, dot for scatter; a section's `legendIconType` overrides it). `legendStyle: 'CHIP'` tints each item as a pill; `'TABLE'` lists name, value, percent and a proportion bar — the natural pick beside a pie, doughnut or funnel (with `legendPosition: 'AUTO'` it moves to the right when there is room). The value is the slice in part-of-whole charts and the sum of the series in cartesian ones; the percent is of the total, except in a funnel, where it is of the first stage (conversion from the top). Use `legendMaxItems` when a pie has a long tail of small slices, and `legendInteractive: true` when the user should be able to compare series by toggling them. Waterfall roles and gauge ranges never toggle.
+
+> ℹ️ **Tooltip**: a header with the X value (dates with the year) and one row per series with its marker, name and exact value (the full number, not the axis abbreviation). Part-of-whole charts show the slice value and percent; a funnel shows the conversion from the top. Keep the defaults unless the user asks; use `tooltipShowDelta: true` for time series where the change matters, `tooltipFormat: 'currency'` when the axis is compact but the exact amount should read as money, `tooltipShowTotal: true` to sum grouped (non-stacked) columns or one series per seller/agent, and a pattern with a literal unit when the value is not BRL (`'US$ #,##0.00'`, `"#,##0 'm²'"`, `"#,##0.# 'h'"`).
 
 > ℹ️ **`minimal` (sparkline mode)**: use it when the chart lives inside a table cell, a card, or a KPI where the surrounding context (title, axes, legend, data labels, padding) is already written next to it and would eat the little room there is without adding anything new. Title, legend, data labels and markers default to off in this mode but can still be turned on explicitly — e.g. a single marker dot on the last value of a sparkline line is a common, useful exception.
 
@@ -143,6 +158,7 @@ ChartFontWeight = 'normal' | 'bold' | 'w100' | 'w300' | 'w400' | 'w500' | 'w600'
 ChartAlignment          = 'NEAR' | 'CENTER' | 'FAR';
 ChartLegendPosition     = 'AUTO' | 'TOP' | 'BOTTOM' | 'LEFT' | 'RIGHT';
 ChartLegendOverflowMode = 'SCROLL' | 'WRAP' | 'NONE';
+ChartLegendStyle        = 'DOT' | 'CHIP' | 'TABLE';
 ChartLegendIconType     = 'SERIES_TYPE' | 'CIRCLE' | 'RECTANGLE' | 'PENTAGON' | 'DIAMOND'
                         | 'TRIANGLE' | 'INVERTED_TRIANGLE' | 'HORIZONTAL_LINE' | 'VERTICAL_LINE';
 ChartMarkerType         = 'CIRCLE' | 'RECTANGLE' | 'PENTAGON' | 'DIAMOND' | 'TRIANGLE'
