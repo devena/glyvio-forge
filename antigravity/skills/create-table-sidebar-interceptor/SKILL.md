@@ -13,6 +13,8 @@ Hooks of `glyvio_core.SimpleTableSidebarInterceptor<S, E, GS>`:
 | `getDesignForRow(state, item, design: TableLayoutRowDesign)` | add the cells of your new columns (`design.cells.push(...)`), restyle cells |
 | `getDesignForGroup(state, group, design: TableLayoutGroupDesign)` | restyle a group header |
 | `populateQueryBuilder(state, queryBuilder)` | extra restrictions, joins your cells need |
+| `applyColumnSort(state, queryBuilder, sort): boolean` | ORDER BY of a `sortable` column you added (`true` = applied) |
+| `populateGroupOrderBy(state, queryBuilder)` | group ORDER BY, ahead of the user's column sorting |
 | `populateJeannieContext(state, context)` | assistant context |
 
 Plus the common hooks (`antigravity/rules/references/views_and_interceptors.md` §3). Quick filters are not
@@ -30,6 +32,8 @@ already fixes the generics and `getListenerRoute()`), **extend that one**.
    `TableLayoutCellDesign` (same `columnName`) in `getDesignForRow`. Namespace the column name (`'<plugin>_score'`).
 3. Data your cell shows must be in the row: add the join in `populateQueryBuilder`
    (`addLeftJoinEntity(...)`) and read it with `$S{item.<relation>.<field>}`.
+   A column added once can be optional (`defaultHidden: true`) and/or `sortable: true` — never vary the
+   column count yourself (`antigravity/rules/references/table_columns.md`).
 4. Register in `index.ts`.
 
 ---

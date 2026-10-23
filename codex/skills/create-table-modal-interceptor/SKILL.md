@@ -125,6 +125,7 @@ The executing agent MUST strictly adhere to these rules:
 6. **Determine Parent Class**:
    - Search the `.d.ts` declaration files for the abstract interceptor class associated with the target route (where `getListenerRoute()` returns the target route class).
    - If a class contains the JSDoc comment `"You MUST extend this instead."`, you **must** extend this class instead of the standard parent class. Never invent a parent interceptor.
+7. **Columns you add**: add the column (in `design.mainColumns`) and its cell once — never vary the column count reactively. Make it optional with `defaultHidden: true` (the user shows it from "Personalizar colunas") and/or `sortable: true` with an `applyColumnSort(state, qb, sort)` override returning `true` for your column. Grouping you add needs `populateGroupOrderBy(state, qb)`. See `codex/references/table_columns.md`.
 
 ---
 

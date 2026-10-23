@@ -72,22 +72,8 @@ The executing agent MUST strictly adhere to these rules:
    - `$D{...}` → **DateTime only**. NEVER use for Decimal or numeric fields.
    - `$N{...}` → Decimal/Number (counts, amounts, any `Decimal` type).
    - `$T{...}` → Translation/i18n key.
-7. **`TableLayoutColumnDesign`/`TableLayoutCellDesign` have NO `visible` property (NON-NEGOTIABLE — confirmed, not a typing oversight)**: unlike `RowLayoutFieldDesign`/`ColumnLayoutFieldDesign`/`FormLayoutFieldDesign`, which do expose `visible`, the table-specific column/cell classes don't. A user-toggleable "show/hide this column" feature therefore **cannot** be built by conditionally setting `.visible = false` on a column or cell — that property doesn't exist there, so TypeScript itself will already reject it if you try.
-   - **The trap this leads to**: varying the *length* of `design.columns` (or a row's `cells` array in `getDesignForRow`) reactively based on `state.filtersSidebar` (as opposed to `state.routeParams`, which only changes on a full page remount) breaks the table widget with a column-count-mismatch error — the header row and the data rows must always have the same number of entries, every render.
-   - **The safe pattern**: keep the `columns`/`cells` array length **constant** across every render. To hide a column's content based on a sidebar filter, keep the column slot present but swap its header/cell `child` to a blank placeholder (e.g. an empty `StringTextDesign`) when the field should be hidden, instead of removing the array entry:
-     ```typescript
-     const showEstimate = state.filtersSidebar?.columnFields?.includes('ESTIMATE') ?? true;
-     new glyvio_core.TableLayoutColumnDesign({
-       columnName: 'estimate',
-       width: showEstimate ? 120 : 0,
-       key: 'estimate.column',
-       child: showEstimate
-         ? new glyvio_core.StringTextDesign({ value: 'Estimate' })
-         : new glyvio_core.StringTextDesign({ value: '' }),
-     }),
-     ```
-     and mirror the same ternary in the matching cell inside `getDesignForRow`. Pair a `width: 0` with the blanked content to also collapse the visual space.
-
+7. **Never vary the column set yourself — let the user do it**: `TableLayoutColumnDesign`/`TableLayoutCellDesign` have **no** `visible` property, and changing the *length* of `design.columns` (or of a row's `cells`) reactively from `state.filtersSidebar` breaks the table widget (header and rows must always have the same entries). For a user-toggleable "show/hide this column", use the built-in **"Personalizar colunas"** picker instead: declare every column (and its cell), mark optional ones `defaultHidden: true` and must-show ones `hideable: false` — the base removes hidden columns and their cells consistently. See `.opencode/references/table_columns.md` §1.
+8. **Sorting by column header is server-side**: mark columns `sortable: true` and map them in `applyColumnSort` (see the optional section below). Never sort rows on the client — the table is paginated.
 ---
 
 ## 📋 Execution Steps
@@ -159,6 +145,8 @@ base blueprint below — reach for them only when the request actually needs the
      loaded page). Returning `[]` (the default) disables grouping entirely.
   3. Override `getDesignForGroup(state, groupState)` to turn each aggregate into a
      `TableLayoutGroupDesign`, and set `groupName` on matching rows in `getDesignForRow`.
+  4. Put the ORDER BY that keeps each group's rows together (e.g. the status order) in
+     `populateGroupOrderBy(state, qb)` — it runs before the user's column sorting.
 
   ```typescript
   export interface <EntityName>TableGroupState extends glyvio_core.SimpleTablePageGroupState {
@@ -205,6 +193,22 @@ base blueprint below — reach for them only when the request actually needs the
   The returned `TableLayoutGroupDesign` (and its `child` tree) is interpolated against
   `{ stateGroup: groupState, state }`, so `$S{stateGroup.xxx}` reaches any field on your
   `GS` entry.
+
+---
+
+## 🧩 Optional: User column customization & header sorting
+
+Built into the base — no host code, saved per user when `state.userConfigKey` is set
+(the blueprint sets it). Details and compiled examples: `.opencode/references/table_columns.md`.
+
+- **"Personalizar colunas"** (app bar ⋮): the user hides/shows and reorders columns. Optional
+  column fields: `label` (picker name), `hideable: false` (always shown), `defaultHidden: true`
+  (optional column the user can add — still declare its cell in `getDesignForRow`).
+- **Click-to-sort**: `sortable: true` on the column + override `applyColumnSort(state, qb, sort)`
+  returning `true` when it added the ORDER BY (`sort.column` is the `columnName`,
+  `sort.direction` `'ASC' | 'DESC'`). Your own ORDER BY in `populateQueryBuilder` becomes the tie-break.
+- **Grouped or tree pages**: put the group ORDER BY in `populateGroupOrderBy(state, qb)`, not in
+  `populateQueryBuilder`; without that override, column sorting is turned off on grouped/tree pages.
 
 ---
 

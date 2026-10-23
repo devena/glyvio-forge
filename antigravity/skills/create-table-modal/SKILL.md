@@ -53,6 +53,7 @@ The executing agent MUST strictly adhere to these rules:
    - `$D{...}` → **DateTime only**. NEVER use for Decimal or numeric fields.
    - `$N{...}` → Decimal/Number (counts, amounts, any `Decimal` type).
    - `$T{...}` → Translation/i18n key.
+7. **Column customization & sorting are built in**: the user hides/shows/reorders columns from "Personalizar colunas" (⋮ of the app bar you build in `getDesign` — no app bar, no item) and sorts by clicking `sortable: true` headers. Map sortable columns in `applyColumnSort(state, qb, sort)`; when the modal groups rows, put the group ORDER BY in `populateGroupOrderBy`. The modal keeps them as `mainHiddenColumns`/`mainShownColumns`/`mainSort` (set `state.userConfigKey` to save them per user). Never vary `mainColumns` length yourself. See `antigravity/rules/references/table_columns.md`.
 
 ---
 

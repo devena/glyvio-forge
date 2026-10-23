@@ -19,8 +19,12 @@ full-page table use `create-table-page`, for a picker use `create-table-modal`.
 | `getEntityToTracking(item)` | yes | `{ structureName, objectId }` for live row refresh |
 | `getQuickFilters(state)` | no | `{ key, label }[]` chips; selected key goes to `state.quickFilter` |
 | `refreshGroupsState(state)` / `getDesignForGroup(state, group)` | no | group headers (use `qb.findGrouped(...)` for counts) |
+| `populateGroupOrderBy(state, qb)` | with groups | ORDER BY that keeps each group together; runs before the user's column sorting (without it, grouped sidebars can't sort by column) |
+| `applyColumnSort(state, qb, sort): boolean` | with `sortable` columns | ORDER BY of the header the user clicked; `true` when applied |
 
 > Contract: `antigravity/rules/references/views_and_interceptors.md`. Filters: `antigravity/rules/references/filters_and_headers.md` §3.
+> Columns: the user hides/shows/reorders them ("Personalizar colunas" in the app bar ⋮) and sorts by
+> clicking `sortable: true` headers — `antigravity/rules/references/table_columns.md`.
 
 ---
 
@@ -204,6 +208,7 @@ and set `groupName` on each row to the key of its group. Group headers may use `
 
 - [ ] Search (`state.text`) and quick filter (`state.quickFilter`) applied in `populateQueryBuilder`.
 - [ ] Column and cell `columnName`s match; keys kept on columns and cells.
+- [ ] Optional columns `defaultHidden: true`; sortable columns mapped in `applyColumnSort`; group order in `populateGroupOrderBy` when grouping.
 - [ ] Custom actions handled before `return super.events(state, action)`.
 - [ ] Route registered and exported (no menu); opened from the host with `pushSidebar`.
 - [ ] Texts in every `.arb`; `pnpm build` clean; checked with `test-plugin-browser`.
