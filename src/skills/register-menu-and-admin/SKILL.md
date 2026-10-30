@@ -24,8 +24,11 @@ is deprecated too — use `adminRegistryService`.
 
 1. The **route(s)** to expose and their **permissions** (an item whose route needs a permission the user lacks is hidden automatically).
 2. **Menu vs. admin** for each one (operational screens → menu; configuration/auxiliary registrations → admin).
-3. **Group/section**: key, name (`$T{}`), position, color.
-4. **Item**: key (stable, unique), title/subtitle (`$T{}`), icon (`fa_*`/`ma_*`/`sax_*`), color.
+3. **Group/section**: key, name (`$T{}`), position, color; optional subtitle (`$T{}`), icon and
+   `flow` (its place in the company's flow, for the full menu's "Fluxo" view).
+4. **Item**: key (stable, unique), title/subtitle (`$T{}` — the subtitle says what the user does
+   there; the full menu and the command palette show it), icon (`fa_*`/`ma_*`/`sax_*`), color;
+   whether it is one of the section's 3–4 `primary` options; its sidebar version (`sideRoute`), if any.
 
 ---
 
@@ -45,6 +48,22 @@ is deprecated too — use `adminRegistryService`.
 6. Texts are `$T{}` keys in every `.arb`.
 7. Offline: only for screens whose data/actions work without a connection,
    `glyvio_core.routerService.addOfflineAvailableRoutes([<Route>])`.
+8. `sideRoute` (optional, a `CoreSidebarRoute`): give it to a screen that has a sidebar version with the
+   same records (e.g. a table sidebar, skill create-table-sidebar). The hosts then offer "abrir ao lado"
+   (Ctrl/⌘ ↵ in the command palette, Ctrl/⌘+click in the full menu), opening that sidebar beside the
+   current page. Never a page or modal route there. It is offered only to users with the sidebar
+   route's own permission.
+9. Full menu (native in the apps since 30/10/2026): each section shows 3–4 **primary** options, the
+   rest behind "Exibir mais". Mark them with `primary: true` (a quick action with `primary: true` is
+   the section's main button). A section that flags none falls back to the user's favourites and
+   recents. Give the group a `subtitle`, an `iconName` and a `flow` number.
+10. Live numbers (optional): `menuRegistryService.addMetric(itemKey, { watch, ttlSeconds, load })`
+    shows a number on the item's card, and `addGroupSummary(groupKey, …)` a live line under the
+    section's name. Only actionable numbers (due today, overdue, waiting…), already formatted, at most
+    one value and one badge; `tone: 'urgent'` only for something overdue or at risk. `load` runs as the
+    user (respects user groups), is cut after 2 s and cached for `ttlSeconds` (60); list in `watch` the
+    entities whose changes make it stale. Keep each `load` to one cheap query (≤ ~300 ms): the
+    Flutter app asks the numbers one at a time.
 
 ---
 
@@ -57,7 +76,10 @@ glyvio_core.routerService.loadRoutes([<Entity>ListPageRoute, <Plugin>SettingsPag
 glyvio_core.menuRegistryService.addGroup({
   key: '<plugin>.main',
   name: '$T{<plugin>_menu_group}',
+  subtitle: '$T{<plugin>_menu_groupSubtitle}',
+  iconName: 'sax_linear_document_text',
   position: 100,
+  flow: 30,
   colorTheme: 'BLUE',
   items: [
     {
@@ -67,8 +89,18 @@ glyvio_core.menuRegistryService.addGroup({
       subtitle: '$T{<plugin>_menu_<entity>ListSubtitle}',
       colorTheme: 'BLUE',
       route: new <Entity>ListPageRoute(),
+      primary: true, // one of the section's 3–4 main options in the full menu
+      // Optional: a sidebar version of the screen. The command palette (Ctrl/⌘ K) offers it as
+      // "abrir ao lado" (Ctrl/⌘ ↵): it opens over whatever page is on screen, which stays.
+      sideRoute: new <Entity>TableSidebarRoute(),
     },
   ],
+});
+
+// Optional live number on the item's card in the full menu (rule 10)
+glyvio_core.menuRegistryService.addMetric('push-<plugin>-<entity>-list', {
+  watch: ['<entity>'],
+  load: async () => ({ value: '3', label: '$T{<plugin>_menu_<entity>Overdue}', tone: 'urgent' }),
 });
 
 // An item that opens a server-rendered Custom Page (skill create-custom-page)
