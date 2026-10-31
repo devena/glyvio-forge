@@ -64,7 +64,9 @@ is deprecated too — use `adminRegistryService`.
     one value and one badge; `tone: 'urgent'` only for something overdue or at risk. `load` runs as the
     user (respects user groups), is cut after 2 s and cached for `ttlSeconds` (60); list in `watch` the
     entities whose changes make it stale. Keep each `load` to one cheap query (≤ ~300 ms): the
-    Flutter app asks the numbers one at a time.
+    Flutter app asks the numbers one at a time. A trend: register with `chart: true` and return
+    `series` (7–30 numbers, oldest first) — the card draws a small line and the section is laid out
+    wide. Use it only where the trend is the point (cash over the week, open orders per day).
 
 ---
 
