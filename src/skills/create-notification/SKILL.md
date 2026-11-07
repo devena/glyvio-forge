@@ -1,6 +1,6 @@
 ---
 name: create-notification
-description: "Generates code that delivers an in-app notification (title, description, optional click-through routing to a sidebar or modal) to a user group or an explicit list of users via crm.GenerateNotificationStrategy, normally embedded inside an existing AfterInterceptor or Strategy."
+description: "Generates code that delivers an in-app notification (title, description, optional click-through routing to a sidebar or modal) to a user group or an explicit list of users via crm.GenerateNotificationStrategy, normally embedded inside an existing AfterInterceptor or Strategy. Also registers the notification's type (colored tag and filter tab on the notification list) with notificationTypeRegistryService.register."
 ---
 # Agent Skill: Create Notification in Glyvio
 
@@ -110,6 +110,53 @@ Insert the `pushToQueue`/`pushToQueueForUsers` call inside `handleAfter`, after 
 
 Compile the server workspace (`pnpm run build` / project's webpack build) to confirm types resolve.
 
+### Step 5 (Optional): Register the Type
+
+If this is a new kind of notification, register its type on the app side (see **Notification Types**) and compile the app workspace too.
+
+---
+
+## 🏷️ Notification Types (Tag and Filter Tab)
+
+The notification list (`/notification-list`) groups rows by day and can show a colored tag per type, plus one filter tab per type. A plugin declares its types **once, on the app side**, with `glyvio_core.notificationTypeRegistryService.register`. It is optional: without it the notification still works, with no tag.
+
+`GenerateNotificationStrategy` has **no type argument** and the `notification` entity has no type column. The type comes from the screen the notification opens, so a registered type also applies to notifications saved before the registration.
+
+```typescript
+// plugin/app/src/index.ts, at load time (same place as menuRegistryService)
+glyvio_core.notificationTypeRegistryService.register({
+  key: '<plugin>.sale',
+  label: '$T{<plugin>_notification_type_sale}',
+  colorTheme: 'GREEN',
+  paths: ['/sale-view'],
+});
+```
+
+```typescript
+// plugin/server: the path above is the one the notification routes to
+crm.GenerateNotificationStrategy.pushToQueueForUsers(
+  {
+    title: `<Notification title>`,
+    routeSidebar: { sidebarPath: '/sale-view', sidebarParams: { id: value.id! } },
+  },
+  [userId],
+);
+```
+
+| Field | Meaning |
+| --- | --- |
+| `key` | Unique and stable; namespace it with the plugin. Registering the same key again replaces the type. |
+| `label` | Text of the tag and of the tab. Use a `$T{}` key present in every `.arb`. |
+| `colorTheme` | Theme name of the tag (`GREEN`, `VIOLET`, `ORANGE`...). Read rows show the tag in grey. |
+| `paths` | Every screen this type opens: the exact `sidebarPath` / `modalPath` / `cartPath` of the notification, or the path of a plain route. |
+
+Rules:
+
+1. **Match the path exactly**: `paths: ['/sale-view']` does not match `sidebarPath: 'sale-view'` or `'/sale-view-edit'`. Search the plugin's `routeSidebar` / `routeModal` calls and list each path used.
+2. **One path, one type**: if two types claim a path, the tag shows the first one registered and the "Outras" counter goes wrong, because it is the total minus the sum of the types.
+3. **What the user sees**: tabs appear only when a registered type has notifications. A type with no rows has no tab. A notification with no route, or whose screen no plugin registered, shows no tag and falls under "Outras".
+4. **Core version**: `notificationTypeRegistryService` exists from core 0.10.19 on. On an older core the call throws while the plugin loads, so release the plugin only after that version is published.
+
 ---
 
 ## 📄 Code Blueprint (Template)
@@ -154,4 +201,5 @@ crm.GenerateNotificationStrategy.pushToQueue(
 - [ ] Any related entities needed for recipients or message content fetched via `.findById(...)`, never read directly off `value.<relation>`.
 - [ ] At most one of `routeSidebar` / `routeModal` set, with param keys matching the real target route.
 - [ ] No try-catch unless explicitly requested.
+- [ ] If the notification has a type: `register` called once on the app side, every routed path listed exactly, and the label key in every `.arb`.
 - [ ] Build passes.
