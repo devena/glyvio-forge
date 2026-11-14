@@ -50,7 +50,16 @@ fast ones.
 8. `Decimal`/`DateTime` for business values; format with `$N{}`/`$D{}` in designs.
 9. Large aggregations belong on the server: call a controller (`restService.postController`,
    skill `create-controller`) from `fetchItem` instead of loading thousands of rows into the app.
-10. **Dates in the company's time zone**: compute "today" and date windows with `glyvio_core.DateTime` calendar methods (`toCalendarDay`, `startOfDay`/`endOfDay`, `startOfWeek`, `startOfMonth`/`endOfMonth`, `isSameDay`) — never `new Date()`, `clearTime()` (midnight UTC) or `getDay()`/`getMonth()` (machine zone). Date-only fields are stored as 00:00 UTC: read them with `format(p, false)`/`toCalendarDay(false)`. Guide: `antigravity/rules/references/dates_and_timezones.md`. Server aggregations by day/month follow the SQL rule in that guide.
+10. **The page look is `style: 'v2'`** (the default in current cores; older cores need
+    `design.style = 'v2'` — check the `.d.ts`; `'v1'` is only a temporary way back): a chart that is a cell's direct
+    child gets a card with its title in the header (do NOT wrap it in `SurfaceDesign`/`DashboardCellDesign`,
+    and do not repeat the title in a text above it), a row is 112 px tall (`rows: 3` = 360 px; change it
+    per section with `rowHeight`), and an `autoHeight` table has no empty room under its rows. Put the
+    number the chart is about in `headline: { value, caption?, trend? }` instead of a separate KPI next
+    to it. A period that every cell reads goes in `design.periodOptions` (header segmented control,
+    value in `state.period`, cells re-fetched on change); a side-panel filter for the same period is
+    named `state.period`. Leave colours to the theme: no hex on series (see the checklist).
+11. **Dates in the company's time zone**: compute "today" and date windows with `glyvio_core.DateTime` calendar methods (`toCalendarDay`, `startOfDay`/`endOfDay`, `startOfWeek`, `startOfMonth`/`endOfMonth`, `isSameDay`) — never `new Date()`, `clearTime()` (midnight UTC) or `getDay()`/`getMonth()` (machine zone). Date-only fields are stored as 00:00 UTC: read them with `format(p, false)`/`toCalendarDay(false)`. Guide: `antigravity/rules/references/dates_and_timezones.md`. Server aggregations by day/month follow the SQL rule in that guide.
 
 ---
 
@@ -111,6 +120,11 @@ export class <Feature>DashboardPage extends glyvio_core.SimpleDashboardPage<<Fea
 
   getDesign(state: <Feature>DashboardState, design: glyvio_core.SimpleDashboardPageDesign): void {
     design.appBarDesign = new glyvio_core.SimpleAppBarDesign({ title: '$T{<plugin>_<feature>_title}' });
+    design.style = 'v2'; // default in current cores; explicit for older ones
+    design.periodOptions = [
+      { key: '30d', label: '$T{<plugin>_<feature>_period30}' },
+      { key: '12m', label: '$T{<plugin>_<feature>_period12}' },
+    ]; // read state.period in fetchItem
     design.filterSectionsDesign?.push(
       glyvio_core.FilterSidebar.section('<feature>.filters', '$T{<plugin>_<feature>_filters}', [
         new glyvio_core.StringTextfieldDesign({
@@ -211,6 +225,7 @@ Verify the `SurfaceDesign` fields, `FilterSidebar.section` signature and the
 
 - [ ] Every key in `childrenKeys` is handled in `fetchItem` and `getDesignForCell`.
 - [ ] `columnSize` values are ≥ 60 and match the content (KPI ~240, chart ~450, full width 9999).
+- [ ] Page in `style: 'v2'` (not `'v1'`); charts are the cell's direct `child` (no extra card), one title per block.
 - [ ] `fetchItem` does I/O only; `getDesignForCell` is pure and handles `undefined` data.
 - [ ] Filters: `allowFilters = false` when there are none; chips + `clearFilter` when there are.
 - [ ] Route registered, class exported, menu item added; texts in every `.arb`.

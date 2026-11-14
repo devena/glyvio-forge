@@ -114,12 +114,12 @@ title?: string;                                // chart title text (all types ex
 padding?: string;                              // 'ALL' | 'H V' | 'L T R B', e.g. '8' | '8 8' | '8 8 8 8'
 xType?: ChartDataType;                         // how X values are parsed (see below) — absent on GaugeChartDesign
 yType?: ChartDataType;                         // how Y values are parsed — absent on GaugeChartDesign
-palette?: string[];                            // series colors, hex, e.g. ['#2196F3', '#4CAF50']
+palette?: string[];                            // series colors — OMIT it: the theme gives the palette (see 🎨)
 backgroundColor?: string;                      // hex, e.g. '#FFFFFF'
 borderColor?: string;                          // hex
 borderWidth?: number;                          // default 0
 titleStyle?: ChartTextStyle;
-titleAlignment?: ChartAlignment;               // default 'CENTER'
+titleAlignment?: ChartAlignment;               // default 'NEAR' (left)
 showLegend?: boolean;                          // default true
 legendPosition?: ChartLegendPosition;          // default 'AUTO' (bottom; right for pie/doughnut/radial or TABLE when wide)
 legendAlignment?: ChartAlignment;              // default 'CENTER'
@@ -140,6 +140,8 @@ tooltipFormat?: string;                        // labelFormat for tooltip values
 showDataLabel?: boolean;                       // default true (cartesian defaults false at chart level)
 onTapAction?: glyvio_core.Action;
 minimal?: boolean;                             // sparkline mode: draws only the plot, nothing else
+headline?: ChartHeadline;                      // { value, caption?, trend?, trendDirection? } — the figure the chart is about, under the title, only inside a card
+card?: boolean;                                // draws the chart in a card (title + headline in its header); set automatically in a SimpleDashboardPage with style 'v2'
 ```
 
 > ℹ️ **Legend**: the marker of each item follows the series (stroke for line/spline, square for column/bar, filled area for area, dot for scatter; a section's `legendIconType` overrides it). `legendStyle: 'CHIP'` tints each item as a pill; `'TABLE'` lists name, value, percent and a proportion bar — the natural pick beside a pie, doughnut or funnel (with `legendPosition: 'AUTO'` it moves to the right when there is room). The value is the slice in part-of-whole charts and the sum of the series in cartesian ones; the percent is of the total, except in a funnel, where it is of the first stage (conversion from the top). Use `legendMaxItems` when a pie has a long tail of small slices, and `legendInteractive: true` when the user should be able to compare series by toggling them. Waterfall roles and gauge ranges never toggle.
@@ -243,6 +245,8 @@ CircularChartSectionDesign = {
   dataLabel?: ChartDataLabelDesign;
 };
 CircularChartSectionType = 'DOUGHNUT' | 'DOUGHUNT' | 'PIE' | 'RADIAL';
+// on the chart itself:
+centerLabel?: string | false;       // doughnut: the total of the slices is drawn in the centre with "Total"; a string replaces the caption, false hides it (use false for percentages/averages, which do not add up)
 ```
 
 ### 3. `FunnelChartDesign`
@@ -388,7 +392,7 @@ CartesianChartDesign.generateSectionsFromColumns(
   data,                                   // any[] of rows (e.g. [{ month: 'Jan', revenue: 100, target: 90 }])
   { key: 'month' },                       // xConfig
   [                                       // columnConfigs (one per series):
-    { key: 'revenue', label: 'Faturamento', type: 'COLUMN', color: '#07D79C' },
+    { key: 'revenue', label: 'Faturamento', type: 'COLUMN' },
     { key: 'target', label: 'Meta', type: 'SPLINE', color: '#EB933B', useSecondaryAxis: true },
   ],
 ): CartesianChartSectionDesign[];
@@ -447,59 +451,38 @@ DashboardLayoutFieldDesign = {
 
 ---
 
-## 🎨 Glyvio Color Palette (PREFER these for `palette` / per-point `color`)
+## 🎨 Colours — leave them to the theme
 
-Charts take **raw hex strings** (`palette: string[]`, `ChartDataPoint.color`), **not** the semantic
-`colorTheme` names used by other widgets. To keep charts on-brand, **prefer the Glyvio palette below**
-over arbitrary hex like `'#2196F3'`. Each entry is the saturated accent of the matching semantic theme,
-so a chart color lines up visually with the chip/box of the same name elsewhere in the app.
+Since the dashboard visual v2 the host gives every chart a **series palette derived from the user's
+colour theme** (the theme's hue first, every colour in the same lightness band, readable in light and
+dark mode, red out of the first slots). It applies only when the chart brings **no** colour. So:
 
-**Brand green = `#07D79C`** (`GREEN`) — use it as the primary/highlight series.
+- **Omit `palette` and per-point/per-series `color`** by default. A hex colour is fixed: it ignores the
+  user's theme and may vanish in dark mode (`#004d40` on a dark card) — it is the most common visual bug
+  in generated dashboards.
+- Colour **only by meaning**, and then with **theme names**, which the host draws in a tone that reads in
+  light and dark: `'GREEN'`/`'EMERALD'` positive or on target, `'RED'`/`'ROSE'` negative or late,
+  `'AMBER'`/`'ORANGE'` warning, `'GREY'`/`'LIGHT_GREY'` neutral or "others". Gauge bands and the
+  positive/negative of a waterfall are the typical cases.
+- One series = one colour: never colour each bar of a single series differently (the eye reads it as
+  categories that mean something).
+- Use hex only when the user explicitly supplies brand colours of their own.
+- Never set a colour in `legendTextStyle`/`titleStyle`/axis `labelStyle` (e.g. `'#000000'`): it breaks dark mode.
 
-### Full palette (22 colors — accent hex)
+## ✅ Visual checklist (dashboard visual v2)
 
-| Theme           | Hex       | Theme        | Hex       |
-| --------------- | --------- | ------------ | --------- |
-| `GREEN` (brand) | `#07D79C` | `MAGENTA`    | `#C85AC0` |
-| `BLUE`          | `#2299EA` | `PINK`       | `#E373A8` |
-| `SKY`           | `#23ACE3` | `ROSE`       | `#E1627F` |
-| `CYAN`          | `#26B7D3` | `RED`        | `#E8605B` |
-| `TEAL`          | `#37C2BB` | `CORAL`      | `#E97B58` |
-| `EMERALD`       | `#3EC87D` | `ORANGE`     | `#EB933B` |
-| `LIME`          | `#A5D859` | `YELLOW`     | `#DCBC33` |
-| `INDIGO`        | `#6076DE` | `BROWN`      | `#836140` |
-| `VIOLET`        | `#9769DC` | `GREY`       | `#5B6663` |
-| `PURPLE`        | `#9E66D7` | `LIGHT_GREY` | `#9AA4A1` |
-| `MAGENTA`       | `#C85AC0` | `REGULAR`    | `#5B6663` |
-
-### Ready-to-use ordered palette
-
-Default multi-series palette (high contrast, brand-first). Drop straight into `palette`:
-
-```ts
-palette: [
-  '#07D79C', // GREEN (brand)
-  '#2299EA', // BLUE
-  '#EB933B', // ORANGE
-  '#9E66D7', // PURPLE
-  '#E8605B', // RED
-  '#26B7D3', // CYAN
-  '#DCBC33', // YELLOW
-  '#E373A8', // PINK
-  '#6076DE', // INDIGO
-  '#3EC87D', // EMERALD
-];
-```
-
-**Guidance**
-
-- Pick colors **by meaning** when the data has semantics (success/positive → `GREEN`/`EMERALD`;
-  danger/error → `RED`/`ROSE`; warning → `YELLOW`/`ORANGE`; neutral → `GREY`/`LIGHT_GREY`).
-- For a **single series** or a highlighted KPI series, lead with brand `#07D79C`.
-- For **N independent series**, take the first N from the ordered palette above (already de-conflicted).
-- Only step outside this palette if the user explicitly supplies brand/hex colors of their own.
-
----
+- [ ] No hex on series, points, palette or chart texts (colour only by meaning, with theme names).
+- [ ] **One title per block**: if the section/card already says "Faturamento por ano", the chart has no
+      `title` (or the section has none) — never section → card → chart titles saying the same thing.
+- [ ] In a `SimpleDashboardPage` use `style: 'v2'` and make the chart the cell's **direct** `child`: the host
+      draws the card with its title; do not wrap it in `SurfaceDesign`/`RichCardCellDesign`/`DashboardCellDesign`.
+      Put the number the chart is about in `headline`.
+- [ ] Chart type by the number of categories: share of a whole with ≤ 6 slices → doughnut (more → bar,
+      sorted, with "Outros"); time series → line/area/column; 7+ categories (e.g. 12 months) → column/bar,
+      **never radial**; radial only for ≤ 6 items each against a maximum.
+- [ ] Enough height: a cartesian chart ≥ 300 px (`rows: 3` in a v2 dashboard = 360 px); never squeeze it into a
+      low `SizedBoxDesign`.
+- [ ] A doughnut of percentages/averages has `centerLabel: false`.
 
 ## 🧪 Canonical Examples
 
@@ -519,7 +502,6 @@ const chart = new glyvio_core.CartesianChartDesign({
   title: 'Revenue by Product',
   xType: 'TEXT',
   yType: 'DECIMAL',
-  palette: ['#07D79C', '#2299EA', '#EB933B'], // brand-first Glyvio palette
   legendPosition: 'BOTTOM',
   showMarkers: true,
   yAxis: { title: 'Revenue', gridLines: true, labelFormat: '#,##0' },
@@ -596,8 +578,8 @@ const radial = new glyvio_core.RadialChartDesign({
       gap: '15%',
       cornerStyle: 'BOTH_CURVE',
       data: [
-        { x: 'Sales', y: 78, color: '#07D79C' },
-        { x: 'Support', y: 54, color: '#2299EA' },
+        { x: 'Sales', y: 78 },
+        { x: 'Support', y: 54 },
       ],
     },
   ],
@@ -615,9 +597,9 @@ const gauge = new glyvio_core.GaugeChartDesign({
   max: 100,
   label: '% da meta',
   ranges: [
-    { from: 0, to: 50, color: '#E8605B', label: 'Crítico' },
-    { from: 50, to: 80, color: '#DCBC33', label: 'Atenção' },
-    { from: 80, to: 100, color: '#07D79C', label: 'Bom' },
+    { from: 0, to: 50, color: 'RED', label: 'Crítico' },
+    { from: 50, to: 80, color: 'AMBER', label: 'Atenção' },
+    { from: 80, to: 100, color: 'GREEN', label: 'Bom' },
   ],
 });
 ```
@@ -638,7 +620,6 @@ const heatmap = new glyvio_core.HeatmapChartDesign({
   title: 'Atendimentos',
   xType: 'TEXT',
   yType: 'INTEGER',
-  colorScale: ['#FFFFFF', '#07D79C'],
   section: glyvio_core.HeatmapChartDesign.generateSectionFromRawData(
     rows,
     { key: 'weekday' },
@@ -661,7 +642,6 @@ const radar = new glyvio_core.RadarChartDesign({
     {
       type: 'AREA',
       label: 'Atual',
-      color: '#07D79C',
       data: [
         { x: 'Preço', y: 8 },
         { x: 'Suporte', y: 6 },
