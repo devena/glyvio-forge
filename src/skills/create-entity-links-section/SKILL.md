@@ -1,265 +1,151 @@
 ---
 name: create-entity-links-section
-description: "Adds a \"Links\" section to an existing sidebar (or tab-sidebar), letting the user attach/remove polymorphic links to other entities via a generic pick-a-type-then-pick-a-record flow (EntityLinksDesign), backed by a dedicated `owner_entity` join table."
+description: "Adds a \"Links\" (Vínculos) card to an existing sidebar or tab-sidebar with the core's ready-made EntityLinksSection: links to records of any type through the core link picker (one search over every type, several at once), shown as cards grouped by type, removed with Undo, backed by a dedicated `<owner>_entity` join table."
 ---
-# Agent Skill: Add a Polymorphic Entity Links Section in Glyvio
+# Agent Skill: Add an Entity Links Card in Glyvio
 
-This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to add a "Links" (Vínculos) section to an existing `SimpleSidebar`/`TabSidebar` — a generic, entity-type-agnostic way to attach/detach references to other records (e.g. a Complaint linked to a Sale and a Client, a Task linked to a Meeting).
+This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to add a "Links" (Vínculos) card to an existing `SimpleSidebar`/`TabSidebar` — a generic way to link a record to records of any other type (a complaint linked to a sale and a client, a meeting linked to a person).
 
-This exact ~110-line workflow has already been hand-copied at least three times across independent plugins (the core `TaskSidebar`/`TimelinePage` as the original reference, then re-implemented for `ComplaintSidebar` in `glyvio-plugin-crm` and for `MeetingSidebar` in `glyvio-plugin-travel`, each citing "same pattern as TaskSidebar/core" in its commit message). This skill exists so the next occurrence is a skill invocation instead of a fourth from-scratch copy.
+The core ships the whole flow as one class, `glyvio_core.EntityLinksSection`: the card, the picker, saving, removing with Undo and the user group of each link. A screen only configures it and wires three calls. **Do not hand-write the old "pick a type, then pick a record" flow** (`SimpleChoiceModalRoute` over `AllEntities.allEntities()` + an entity modal): it listed technical structure names and is replaced by the core picker.
+
+The core's own task sidebar uses it (`taskLinks`), as do the complaint sidebar of the CRM plugin (`complaintLinks`) and the meeting sidebar of the travel plugin (`meetingLinks`).
 
 ---
 
 ## 🎯 Skill Metadata
 
 - **Name**: `create_entity_links_section`
-- **Description**: Adds a "Links" section to an existing sidebar, backed by a polymorphic `<owner>_entity` join table and the generic `EntityLinksDesign` widget, letting the user attach/detach links to any other linkable entity type.
+- **Description**: Adds a "Links" card to an existing sidebar with `glyvio_core.EntityLinksSection`, backed by a polymorphic `<owner>_entity` join table.
 - **Audience**: AI agents or developers with write access to a Glyvio plugin codebase.
 
 ---
 
 ## 📥 Required Input Parameters
 
-To run this skill, the agent must obtain or ask for the following inputs:
-
-1. **Owner Entity Name** (e.g., `Complaint`, `Meeting`): The entity whose sidebar gets the new "Links" section.
-2. **Join Entity Name** (e.g., `ComplaintEntity`, `MeetingEntity`): The polymorphic join entity — `{ <owner>Id, entityId, entityName, deleted }`. Confirm it already exists in `@types` (`glyvio_entity.<JoinEntityName>`, `glyvio_structure.AllEntities.<joinEntityCamelCase>`) before starting; if it doesn't, this is a schema change (`modify-manifest`) that must land and publish first — this skill only wires the app-layer UI against an already-existing join table.
-3. **Target Sidebar File**: The existing sidebar (`SimpleSidebar` or `TabSidebar` subclass) to add the section to.
-4. **Add-link Permission** (e.g., `glyvio_permissions.core_complaint_entity_insert`): The permission gating the "add link" button and the join entity's own insert permission — usually already exists if the join entity itself has permission scaffolding; otherwise add it via `modify-manifest` following the `<owner>_entity_insert` naming convention.
-5. **Section Placement**: Where in the sidebar's existing `sectionsDesign`/`sectionsContentDesign` array the new section goes (this skill doesn't dictate position — follow the target sidebar's own convention, typically right after the main details section).
+1. **Owner Entity** (e.g., `Complaint`, `Meeting`): the entity whose sidebar gets the card.
+2. **Join Entity** (e.g., `ComplaintEntity`, `MeetingEntity`): the polymorphic join table — `{ <owner>_id, entity_name, entity_id, user_group_id, deleted }`. Confirm it exists in `@types` (`glyvio_entity.<JoinEntityName>`, `glyvio_structure.AllEntities.<joinEntityCamelCase>`). If it doesn't, this is a schema change (`modify-manifest`) that must be published first.
+3. **Target Sidebar File**: the existing `SimpleSidebar`/`TabSidebar` subclass.
+4. **Add-link Permission** (e.g., `glyvio_permissions.core_complaint_entity_insert`): the join entity's insert permission, checked in the owner's group.
+5. **Card Placement**: where in the sidebar's sections the card goes (follow the sidebar's own layout; usually after the main details).
+6. **Allowed types** (optional): restrict the picker to some types (e.g. a complaint links only `client` and `sale`). Default: every linkable type the user may open.
 
 ---
 
 ## 🚫 Environment Constraints & Rules
 
-The executing agent MUST strictly adhere to these rules:
-
-1. **No External Imports for Glyvio Globals**: Use `new glyvio_core.EntityLinksDesign(...)`, `glyvio_core.SimpleChoiceModalRoute`, etc. — never import them.
-2. **This is app-layer only — never invent a new hook on the sidebar's interceptor for this**: adding a section to an existing sidebar's own `getDesign` is already possible via the base `TabSidebarInterceptor`/`SimpleSidebarInterceptor` `getDesign` hook if you're extending from another plugin; if you own the sidebar's file directly, just edit `getDesign` in place. Either way, no new base-class capability is required.
-3. **The "type picker → record picker" flow must stay entity-agnostic — never hardcode a switch over specific entity types**: the whole point of `EntityLinksDesign` is that it works for *any* linkable entity without the plugin author enumerating them. Build the type list by filtering `glyvio_structure.AllEntities.allEntities()` down to those with a registered `ENTITY_MODAL` route (see Step 3 below) — do not write `if (structureName === 'sale') ... else if (structureName === 'client') ...` anywhere in this flow.
-4. **`events()` — EventReturn rule**: state-mutating handlers (`addLink`, `removeLink` triggering a refresh) return `'STATE_UPDATE'`; navigation handlers (opening the type-picker or record-picker modal) return `'STATE_FREEZED'`.
-5. **Removing a link is a soft-delete of the join row, never of the linked entity itself**: `removeLink` sets `deleted: true` on the `<owner>_entity` row (via `entityService.saveInput`), and must never touch the linked entity (`Sale`, `Client`, etc.) itself.
-6. **Cross-client leak check (when relevant)**: if the linkable entities carry a client/company-scoping concept and a record could plausibly already be linked to a different owner's records inappropriately, confirm with the user whether a link should be blocked when the target is already linked elsewhere — this isn't automatic, and most owner/target pairs don't need it, but ask rather than silently allow or silently block.
-7. **Batch-load links without N+1**: when the sidebar (or a related list view) needs link counts/previews for *many* owner records at once (not just the single open sidebar), query the join entity once with `addFilterOperator(joinEntity.<ownerField>, ownerIds)` and group client-side — never loop one query per owner record.
+1. **No imports for Glyvio globals**: `new glyvio_core.EntityLinksSection(...)`, `glyvio_core.entityLinkService`, never imported.
+2. **Requires a core that has `EntityLinksSection`**: check `plugin/app/@types/glyvio_core.d.ts` for `class EntityLinksSection`. If it is missing, the core this plugin compiles against is older; update the types before writing the code. A plugin using it must not be released before that core is published.
+3. **Never hardcode entity types in the flow**: the picker searches every registered type through each type's own entity modal (its query, filters and interceptors). To offer a type the core does not know, **register it** (Step 5) — never add `if (structureName === 'sale')` branches.
+4. **One instance per render, built from the state**: create the section in a method (`linksSection(state)`) and call it from `refreshState`, `events` and the design — it holds no state of its own; its data lives in `state[key]`.
+5. **`events()` return**: when `handle` returns `true`, return `'STATE_UPDATE'` (it changed the state). Keep any old action keys other code may send (`addLink`) by forwarding them to `<key>.add`.
+6. **Removing a link soft-deletes the join row only** — the section does this; never delete the linked record.
+7. **A link has the group of the record it points to** (the section saves it that way). Declare the join table with `@glyvio_core.EntityLink` on the server (Step 4) so links follow when that record changes group.
 
 ---
 
 ## 📋 Execution Steps
 
-### Step 1: State
+### Step 1: The section
 
-Add the links array to the sidebar's state interface:
+Add to the sidebar class:
 
 ```typescript
-export interface <OwnerName>SidebarState extends glyvio_core.TabSidebarState<<OwnerName>SidebarRouteParams> {
-  // ...existing fields...
-  <ownerNameCamelCase>Entities?: glyvio_entity.<JoinEntityName>[] | null;
+/** The "Links" card: the <owner>'s `<owner>_entity` links (core picker, cards, undo). */
+linksSection(state: <OwnerName>SidebarState): glyvio_core.EntityLinksSection {
+  const owner = state.<ownerNameCamelCase>;
+  return new glyvio_core.EntityLinksSection({
+    key: '<ownerNameCamelCase>Links',
+    linkStructure: glyvio_structure.AllEntities.<joinEntityCamelCase>,
+    ownerField: '<ownerNameSnakeCase>_id',
+    ownerId: owner?.id,
+    ownerEntityName: glyvio_structure.AllEntities.<ownerNameCamelCase>.getStructureName(),
+    ownerUserGroupId: owner?.userGroupId,
+    ownerLabel: owner?.name ?? undefined,
+    title: '$T{<pluginNamespace>_sidebar_<ownerNameSnakeCase>_links}',
+    // allowedTypes: ['client', 'sale'],
+    canEdit:
+      !!owner &&
+      owner.deleted == false &&
+      glyvio_core.permissionService.hasPermissionInGroup(
+        glyvio_permissions.<ownerNameSnakeCase>_entity_insert,
+        owner.userGroup?.id ?? owner.userGroupId,
+      ),
+  });
 }
 ```
 
-### Step 2: Query and load the links
+`ownerField` and the optional `entityNameField` / `entityIdField` are **column names** of the join table (snake_case). `ownerEntityName` keeps the record itself out of the picker. `suggestions` (optional) offers records before anything is typed, each with a short reason (`{ entityName, entityId, reason }`).
 
-Add a query method and call it from `refreshState`, right after the owner entity itself is loaded:
-
-```typescript
-getLinksQuery(state: <OwnerName>SidebarState): glyvio_core.QueryBuilder<glyvio_entity.<JoinEntityName>> {
-  return glyvio_core.QueryBuilder.fromEntity<glyvio_entity.<JoinEntityName>>(
-    glyvio_structure.AllEntities.<joinEntityCamelCase>,
-  ).addFilterOperator(glyvio_structure.AllEntities.<joinEntityCamelCase>.deleted, false);
-}
-
-// inside refreshState, after state.<ownerNameCamelCase> is loaded:
-state.<ownerNameCamelCase>Entities = await this.getLinksQuery(state)
-  .addFilterOperator(glyvio_structure.AllEntities.<joinEntityCamelCase>.<ownerFieldCamelCase>, state.routeParams.id)
-  .findAll();
-```
-
-### Step 3: Events — add/remove link (entity-agnostic type picker)
+### Step 2: Load, handle, draw
 
 ```typescript
-// in events(state, action):
-if (action.key === 'addLink') {
-  await this.pushModal(
-    new glyvio_core.SimpleChoiceModalRoute({
-      title: '$T{<pluginNamespace>_sidebar_<ownerNameSnakeCase>_entities}',
-      // Entity-agnostic: only entities with a registered ENTITY_MODAL route are pickable.
-      options: glyvio_structure.AllEntities.allEntities()
-        .filter((e) => glyvio_core.routerService.getRouteForEntity(e.getStructureName(), 'ENTITY_MODAL') != undefined)
-        .map((e) => ({ key: e.getStructureName(), label: e.getStructureName() })),
-      popActionKey: 'addLinkStructureBack',
-    }),
-  );
+// refreshState, after the owner is loaded:
+await this.linksSection(state).load(state);
+
+// events(state, action), before the screen's other keys:
+if (action.key == 'addLink') {
+  // Kept for callers of the old key.
+  await this.linksSection(state).handle(this, state, new glyvio_core.Action({ key: '<ownerNameCamelCase>Links.add', data: {} }));
   return 'STATE_FREEZED';
 }
-
-if (action.key === 'addLinkStructureBack') {
-  const structureName = action.data.key as string;
-  const route = glyvio_core.routerService.getRouteForEntity(structureName, 'ENTITY_MODAL');
-  if (!route) {
-    return undefined;
-  }
-  await this.pushModal(
-    new route({
-      popActionKey: 'addLinkEntityBack',
-      popActionData: { structureName },
-    }),
-  );
-  return 'STATE_FREEZED';
-}
-
-if (action.key === 'addLinkEntityBack') {
-  await this.addLink(state, action.data.structureName, action.data.id);
+if (await this.linksSection(state).handle(this, state, action)) {
   return 'STATE_UPDATE';
 }
 
-if (action.key === 'removeLink') {
-  await this.removeLink(state, action.data.id, action.data.entityName, action.data.entityId);
-  return 'STATE_UPDATE';
-}
-```
-
-### Step 4: `addLink`/`removeLink` methods
-
-```typescript
-async addLink(state: <OwnerName>SidebarState, structureName: string, id: string): Promise<void> {
-  await glyvio_core.entityService.saveEntity(
-    await glyvio_entity.<JoinEntityName>.new({
-      userGroupId: state.<ownerNameCamelCase>!.userGroupId,
-      <ownerFieldCamelCase>: state.<ownerNameCamelCase>!.id,
-      entityId: id,
-      entityName: structureName,
-    }),
-  );
-  this.callRefreshState();
-}
-
-async removeLink(state: <OwnerName>SidebarState, id: string, _entityName: string, _entityId: string): Promise<void> {
-  await glyvio_core.entityService.saveInput(
-    { deleted: true },
-    glyvio_structure.AllEntities.<joinEntityCamelCase>.getStructureName(),
-    id,
-  );
-  this.callRefreshState();
-}
-```
-
-### Step 4b (optional): links that follow the group of the linked record
-
-`addLink` above gives the join row the **owner's** user group: whoever sees the complaint sees its
-links. Some join tables need the opposite — the row belongs to the record it points to
-(`entityName`/`entityId`), so whoever sees that record sees the link, and through it the owner. The
-core's `attachment_entity`, `task_entity` and `timeline_entity` work this way: an attachment, a task
-or a timeline entry linked to a sale is seen by whoever sees the sale.
-
-Pick one model per join table — never both. For the second one:
-
-1. **Server layer** — declare the join entity as a link. When a save changes a record's
-   `user_group_id`, the core moves the links pointing to it to the new group (same transaction, no
-   permission check), for any entity:
-
-   ```typescript
-   // plugin/server/src/... — no imports needed, all symbols are global.
-   @glyvio_core.EntityLink({ entity: glyvio_entity.<JoinEntityName> })
-   export class <JoinEntityName>Link {}
-   ```
-
-   Pass `entityNameField` / `entityIdField` when the columns are not `entity_name` / `entity_id`.
-
-2. **App layer** — create the row with the linked record's group. When you have the record loaded,
-   pass its group as `userGroupId` in the target and nothing is queried; without it, the group is read
-   from the record (one query per link). Don't pass a group you are not sure is current — a link
-   born with an old group stays with it:
-
-   ```typescript
-   async addLink(state: <OwnerName>SidebarState, structureName: string, id: string): Promise<void> {
-     await glyvio_core.entityService.saveList([
-       {
-         structureName: glyvio_structure.AllEntities.<joinEntityCamelCase>.getStructureName(),
-         id: await glyvio_core.uuidService.v4(),
-         input: await glyvio_core.entityLinkService.linkInput(
-           { entityName: structureName, entityId: id },
-           { <ownerFieldSnakeCase>: state.<ownerNameCamelCase>!.id },
-           state.<ownerNameCamelCase>!.userGroupId, // used only when the record is not found
-         ),
-       },
-     ]);
-     this.callRefreshState();
-   }
-   ```
-
-   The core's own link descriptors take the same optional `userGroupId`: the `links` of
-   `attachmentService.saveAttachment`, the `linkEntities` (and `entityUserGroupId` for the main
-   entity) of the timeline routes, the `entities` of `TaskEditModalRoute` and of
-   `TimelineSaveWithLinksStrategy`, and `entityUserGroupId` on the attachment section, side panel and
-   sidebar routes. Pass it whenever you open them for a record you have.
-
-   Links created in the **server layer** (an interceptor, a strategy, a workflow step) use the same
-   contract, synchronous: `glyvio_core.entityLinkService.linkInput(target, input, fallbackUserGroupId)`
-   returns the row's input, to save with `entityService.saveInput`/`saveList` under the link
-   entity's structure name. It only queries entities that exist and have a `user_group_id` column —
-   on the server a failing query aborts the transaction.
-
-3. **Manifest** (only when whoever sees the link must also see the owner) — give the owner entity
-   visibility through the join table with `views.customPermissions` (see `modify-manifest`).
-
-### Step 5: Design — the section
-
-Insert into `sectionsDesign`/`sectionsContentDesign` (position per input #5 above):
-
-```typescript
+// design, where the card goes:
 new glyvio_core.FormSectionDesign({
   key: 'links.section',
-  appBarDesign: new glyvio_core.SimpleAppBarDesign({
-    title: '$T{<pluginNamespace>_sidebar_<ownerNameSnakeCase>_links}',
-    buttons: [
-      new glyvio_core.ActionButtonDesign({
-        key: 'addLink.button',
-        type: 'SECONDARY',
-        iconName: 'fa_link',
-        tooltip: '$T{<pluginNamespace>_sidebar_<ownerNameSnakeCase>_addLinkTooltip}',
-        visible: glyvio_core.permissionService.hasPermissionInGroup(
-          glyvio_permissions.<ownerNameSnakeCase>_entity_insert,
-          state.<ownerNameCamelCase>?.userGroupId,
-        ) && !state.<ownerNameCamelCase>?.deleted,
-        action: new glyvio_core.Action({ key: 'addLink', data: {} }),
-      }),
-    ],
-  }),
-  padding: '16',
-  childDesign: new glyvio_core.ColumnLayoutDesign({
-    children: [
-      new glyvio_core.ColumnLayoutFieldDesign({
-        child: new glyvio_core.EntityLinksDesign({
-          links: glyvio_core.EntityLinksDesign.generateLinkItems(
-            state.<ownerNameCamelCase>Entities?.map((e) => ({
-              id: e.id!,
-              entityName: e.entityName!,
-              entityId: e.entityId!,
-            })) ?? [],
-          ),
-          actionKeyRemoveLink: 'removeLink',
-        }),
-      }),
-    ],
-  }),
+  cleanDesign: true,
+  childDesign: this.linksSection(state).design(state),
 }),
 ```
 
+The card has its own title and "Link" button; do not wrap it in an app bar with another title.
+
+### Step 3: Remove the old flow (when migrating)
+
+Delete the hand-written `addLink` → `SimpleChoiceModalRoute` → `addLinkStructureBack` → entity modal → `addLinkEntityBack` chain, any helper that built the type list, and the `EntityLinksDesign` section. Keep public methods other plugins may override (`addLink`/`removeLink`) and the `<owner>Entities` state if interceptors or the Jeannie context read it.
+
+### Step 4: Server — links follow the linked record's group
+
+```typescript
+// plugin/server/src/... — no imports needed, all symbols are global.
+@glyvio_core.EntityLink({ entity: glyvio_entity.<JoinEntityName> })
+export class <JoinEntityName>Link {}
+```
+
+Pass `entityNameField` / `entityIdField` when the columns are not `entity_name` / `entity_id`. When whoever sees the link must also see the owner, give the owner `views.customPermissions` through the join table (see `modify-manifest`).
+
+Links created elsewhere use the same contract: in the app, `glyvio_core.entityLinkService.linkInput(target, input, fallbackUserGroupId)` (async); in the server layer, the same call is synchronous.
+
+### Step 5 (optional): make your plugin's types linkable
+
+The picker offers the types the core registers (client, person, sale, product, supplier, purchase, campaign, complaint, task, conversation, meeting, project…) that exist in the company and whose entity modal the user may open. Register your own records once, in the plugin's app entry:
+
+```typescript
+glyvio_core.entityLinkService.registerType({
+  entityName: 'inspection',
+  label: '$T{<pluginNamespace>_entityLink_inspection}',
+  icon: 'sax_linear_clipboard_text',
+  color: 'INDIGO',
+  order: 45,
+});
+```
+
+The entity needs an entity modal (`/<entity>-entity` route): the picker searches and labels records through it (`_fetchItems` and its chip). The same call changes the label or icon of a type the core already registers.
+
 ### Step 6: i18n
 
-Add to both `.arb` files, following the plugin's own key prefix convention:
-
-- `<pluginNamespace>_sidebar_<ownerNameSnakeCase>_links` — section title (e.g. "Vínculos"/"Links").
-- `<pluginNamespace>_sidebar_<ownerNameSnakeCase>_addLinkTooltip` — add-button tooltip (e.g. "Vincular entidade"/"Link entity").
-- `<pluginNamespace>_sidebar_<ownerNameSnakeCase>_entities` — type-picker modal title (e.g. "Vincular a"/"Link to") — write plugin-specific copy, don't copy another plugin's wording verbatim.
+Only the card title is the plugin's (`<pluginNamespace>_sidebar_<ownerNameSnakeCase>_links`, e.g. "Vínculos"/"Links") plus the labels of any type registered in Step 5. The picker, the buttons, Undo and the core's type names come translated from the core. Add the keys to every `.arb` of the plugin.
 
 ---
 
 ## ✅ Self-Correction Checklist
 
-- [ ] Does the type-picker list come from filtering `AllEntities.allEntities()` by a registered `ENTITY_MODAL` route — no hardcoded per-entity `if`/`switch`? → Fix if hardcoded.
-- [ ] Does `removeLink` soft-delete the **join row** (`<owner>_entity`), never the linked entity itself? → Fix if wrong.
-- [ ] Is the links query batch-loaded (one query, not N+1) anywhere it's needed for multiple owners at once (e.g. a list page preview)? → Fix if looping per-record.
-- [ ] Are both `.arb` files updated with plugin-specific (not copy-pasted) wording? → Fix.
-- [ ] Does the add-link button's `visible` gate on the join entity's own insert permission, scoped to the owner's `userGroupId`? → Fix if ungated or wrongly scoped.
-- [ ] If the join table follows the linked record's group (Step 4b): is it declared with `@glyvio_core.EntityLink`, and does `addLink` build the row with `entityLinkService.linkInput` instead of the owner's `userGroupId`? → Fix if it mixes the two models.
+- [ ] Does `@types/glyvio_core.d.ts` have `EntityLinksSection`? → Update the types (and wait for that core to be published before releasing).
+- [ ] Is the section built in one method and used in `refreshState` (`load`), `events` (`handle`) and the design (`design`)? → Fix.
+- [ ] Are `ownerField` / `entityNameField` / `entityIdField` column names (snake_case)? → Fix.
+- [ ] Is `canEdit` the join entity's insert permission in the owner's group, false for a deleted owner? → Fix.
+- [ ] Was the old type-list flow removed, with no hardcoded entity switch left? → Fix.
+- [ ] Is the join table declared with `@glyvio_core.EntityLink` on the server? → Add it.
+- [ ] Do the plugin's own linkable records appear in the picker (Step 5) and have translated labels? → Register them.
