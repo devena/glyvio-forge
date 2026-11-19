@@ -103,9 +103,12 @@ code, `await glyvio_core.aiService.isAvailable()`.
 
 ## 🧩 Pattern — AI button of an HTML field
 
-`HtmlTextfieldDesign.contextAi` — what the text is for — turns on the editor's AI button in both hosts. The core
-handles it (action `_AI_FIELD`): it sends the user's request, the current HTML and `contextAi` to `ask` and writes
-the new HTML in the field's state. Nothing to code; the button disappears when the AI is unavailable.
+`HtmlTextfieldDesign.contextAi` — what the text is for — turns on the editor's AI panel in both hosts: ready-made
+requests (fix, more formal, shorter, friendlier; "write with AI" when the field is empty), free text, and the AI's
+**proposal** with Apply · Try again · Discard, then Undo. The core handles it (action `_AI_FIELD`, skill
+`glyvio-campo-html`): name marks (`@PERSON_NAME@`), template marks and image/link addresses are protected, the answer
+is cleaned to the field's body, and nothing reaches the field before Apply. Nothing to code; the button disappears
+when the AI is unavailable. The pending proposal lives in `state.aiProposals` — do not save that key.
 
 ```typescript
 new glyvio_core.HtmlTextfieldDesign({
