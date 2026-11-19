@@ -433,6 +433,7 @@ Map every request to one of these skills. **Each "create" skill has a matching "
 - `create-table-modal` / `create-table-modal-interceptor` — data-table search/select with row actions.
 - `create-send-modal` / `create-send-modal-interceptor` — message sending (email/WhatsApp, attachments, reports).
 - `create-wizard-modal` — generic step-by-step modal (`SimpleWizardModal`) for guided flows.
+- `use-ai-service` — one AI call from a screen (summary, suggestions, rewrite) with the prompt as a manifest skill, the AI button hidden when the company has none, and the AI button of HTML fields (`contextAi`).
 - `use-builtin-dialogs` — toasts, confirmations, progress, option picker and single-value input modals without writing a modal.
 - `create-table-entity-modal-interceptor` — customize an existing table-rendered entity picker.
 - `create-batch-filter-modal-interceptor` — add filters to an existing batch filter modal.

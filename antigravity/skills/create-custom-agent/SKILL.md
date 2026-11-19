@@ -3,6 +3,9 @@ name: create-custom-agent
 description: "Generates a custom AI Agent (custom_chat_agent) registered in manifest.json, equips it with Custom Tools, and orchestrates its execution via JeannieV2Client."
 ---
 <!-- Generated from src/skills/create-custom-agent/SKILL.md by tools/generate.py. Edit the source, not this file. -->
+> For a single AI call without tools or memory (summarize, classify, rewrite a text) use **`use-ai-service`**
+> (`glyvio_core.aiService`, Jeannie 3.1 `ask`) instead of an agent.
+
 # Agent Skill: Create Custom Agent in Glyvio
 
 This document defines a structured AI agent skill. Other AI coding agents or developers can load and execute this skill to generate and register a **Custom Agent** (`custom_chat_agent`) in the Glyvio plugin system. Custom Agents are specialized LLM instances equipped with their own system prompts, permissions, and custom tools to perform complex orchestrations, background processing, or multi-step logic (e.g., web scraping, sql execution, calculations).

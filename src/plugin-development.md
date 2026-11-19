@@ -321,6 +321,7 @@ As skills geram código seguindo os padrões do projeto. Invoque no chat com
 | `/use-execution-flags`             | Coordenar regras dentro da requisição |
 | `/use-lock-service`                | Lock distribuído (fail-fast)    |
 | `/use-cache-service`               | Cache manual entre requisições  |
+| `/use-ai-service`                  | Pergunta à IA (ask da Jeannie 3.1) com skill no manifesto |
 | `/create-plugin-service`           | Contratos de serviço entre plugins |
 | `/generate-sequence-number`        | Numeração sequencial            |
 | `/create-notification`             | Notificação para usuários       |

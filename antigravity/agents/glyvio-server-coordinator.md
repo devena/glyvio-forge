@@ -112,6 +112,7 @@ Before writing any TypeScript manually, check whether a dedicated skill covers t
 | Let a trusted flow pass a guard interceptor, suppress an automatic interceptor, dedupe re-entrant work in one request | **`use-execution-flags`** |
 | Serialize concurrent writes on the same resource (reservations, claims) | **`use-lock-service`** |
 | Cache derived, read-heavy data across requests (with eviction interceptors) | **`use-cache-service`** |
+| One AI call (summary, classification, extraction) from server code, prompt kept as a `prose` skill in the manifest | **`use-ai-service`** |
 | Cross-plugin provider contract (define one, or implement another plugin's) | **`create-plugin-service`** |
 | Human-readable sequential numbers (order/invoice numbers) | **`generate-sequence-number`** |
 | Call an operation in the customer's environment (external API, local network) from server code | **`create-environment-action`** |
