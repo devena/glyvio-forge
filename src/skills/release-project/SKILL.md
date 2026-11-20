@@ -109,6 +109,46 @@ Entry format (newest on top, right below the `# Changelog` heading):
 
 ---
 
+### Step 6.2 — Update the release notes for the company's administrators
+
+`CHANGELOG.md` is for the developers. The company's administrator reads a second file, published with every
+version (the deploy uploads everything under `assets/`) and shown in Glyvio's plugin manager — "Histórico" and the
+"O que muda" tab of the update modal: **`assets/release-notes/pt_BR.md`**. Prepend this version to it (create it with
+a `# Notas de versão · <plugin name>` heading first):
+
+```markdown
+## <version> · <YYYY-MM-DD from `date +%F`>
+Requer core <x.y.z>
+
+### Novidades
+- <what the users can do now, one line each>
+
+### Melhorias
+- <what got better in something that already existed>
+
+### Correções
+- <what was wrong and now works>
+
+### Banco de dados
+- <entities/fields created or changed, in plain words, and the manifest version: "O contato da pessoa ganha o valor normalizado indexado (manifest v70)">
+
+### Permissões
+- <permissions added, removed or given to new profiles, by their label>
+```
+
+- Same facts as the CHANGELOG entry, written for an **administrator of the company**: technical but open — screen,
+  field and permission names as the users see them, the manifest version of a database change; never file paths,
+  class or function names, SQL or internal tickets.
+- Only the sections that have something; keep these exact headings (Glyvio reads them to tag and count the entries).
+- `Banco de dados` is mandatory whenever the release has a new `dbVersions` entry in `manifest.json`;
+  `Permissões` whenever the manifest's `permissions` changed.
+- `Requer core <x.y.z>` only when the release uses something of a recent core; leave the line out otherwise.
+- Other languages: if `assets/release-notes/<lang>.md` already exists for another language (`en_US.md`…), add the
+  same entry translated.
+- Stage it with the release: `git add assets/release-notes/`.
+
+---
+
 ### Step 6.5 — Explain what will change and confirm
 
 Publishing changes what the company's users see, so describe the release **by its effect**, from
