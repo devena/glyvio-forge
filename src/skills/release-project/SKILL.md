@@ -140,9 +140,14 @@ Requer core <x.y.z>
   field and permission names as the users see them, the manifest version of a database change; never file paths,
   class or function names, SQL or internal tickets.
 - Only the sections that have something; keep these exact headings (Glyvio reads them to tag and count the entries).
+  A release with nothing an administrator would notice (an internal refactor) still gets its entry, with one line
+  under `### Melhorias` ("Ajustes internos, sem mudança no uso").
 - `Banco de dados` is mandatory whenever the release has a new `dbVersions` entry in `manifest.json`;
   `Permissões` whenever the manifest's `permissions` changed.
-- `Requer core <x.y.z>` only when the release uses something of a recent core; leave the line out otherwise.
+- `Requer core <x.y.z>` only when the release uses something of a recent core; leave the line out otherwise. The
+  project does not record the core's version number (the manifest depends on `latest`), so **never guess it**: use
+  the number the developer gave; if the release needs a recent core and nobody said which, ask (developer profile)
+  or leave the line out (simple profile).
 - Other languages: if `assets/release-notes/<lang>.md` already exists for another language (`en_US.md`…), add the
   same entry translated.
 - Stage it with the release: `git add assets/release-notes/`.
@@ -170,8 +175,9 @@ the diff read in Step 5:
 >
 > Posso publicar?
 
-If the answer is not a clear yes, undo only the version and CHANGELOG edits of Steps 3 and 6
-(and unstage them), leave the rest of the work untouched, and stop.
+If the answer is not a clear yes, undo only the version, CHANGELOG and release-notes edits of
+Steps 3, 6 and 6.2 (and unstage them; a `CHANGELOG.md` or `assets/release-notes/` file created by
+this run is removed), leave the rest of the work untouched, and stop.
 
 **Developer profile:** show the same list in one compact block and continue — the release request
 is the authorization — unless it contains a `dbVersions` change the user did not mention, which
@@ -215,6 +221,7 @@ e fica disponível no Glyvio assim que a verificação automática terminar (alg
 ✔ Build ok
 ✔ Version bumped to <version>
 ✔ CHANGELOG.md updated
+✔ Release notes updated (assets/release-notes/)
 ✔ Committed: "<first line of commit message>"
 ✔ Pushed to origin/<branch>
 ```

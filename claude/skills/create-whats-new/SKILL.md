@@ -21,16 +21,30 @@ stay in **Meu perfil › Novidades**.
 
 ## 📥 Required Input Parameters
 
-1. **Which versions** the novelties cover. Default: the CHANGELOG entries after the last release already registered
-   in `plugin/app/src/whats_new.ts` (its keys are `<plugin>.<version>`); ask if there is none.
+1. **What the novelties cover.** Default: the work not released yet (the diff since the last version) plus the
+   CHANGELOG entries after the last release already registered in `plugin/app/src/whats_new.ts` (its keys are
+   `<plugin>.<version>`); ask if there is none. Several versions become **one** release here, under the key of the
+   version that will carry it (see "When to run").
 2. The **plugin's short name** for the tag on the cards ("CRM", "Agenda").
 3. For each novelty that has a screen: **the route** that shows it, and the **permission** needed to open it.
 
 ---
 
+## ⏱️ When to run
+
+**Before `release-project`**, in the same working tree: the novelties travel in the plugin's bundle, so the users
+only get them with the version that carries the registration.
+
+- **Version of the key** = the version the next release will produce: the `version` of `package.json` with the patch
+  + 1 (`0.3.133` → key `<plugin>.0.3.134`). `release-project` then bumps to exactly that.
+- **date** = today (`date +%F`).
+- If `package.json` was already bumped for this release and not pushed yet, use that version as it is.
+
+---
+
 ## 🧭 Process
 
-1. Read the CHANGELOG entries of those versions (and the diff, if needed to understand a change).
+1. Read the pending diff and the CHANGELOG entries covered (see the inputs).
 2. **Pick what the end user perceives**: a new screen, button, field, shortcut, a rule that now saves them work, a
    problem they felt that is gone. Leave out refactors, internal fixes, performance nobody notices, database and
    permission details (those belong to the administrator's notes).
@@ -44,7 +58,8 @@ stay in **Meu perfil › Novidades**.
 4. **Show the items to the developer and wait for approval** — titles and texts as the user will read them, in
    Portuguese. Adjust until approved.
 5. Write them (blueprint below): the registration in `plugin/app/src/whats_new.ts`, called from the plugin's
-   `index.ts`, and the texts in **every** `.arb` of the plugin, translated.
+   `index.ts`, and the texts in **every** `.arb` of the plugin, translated; `node ~/.claude/scripts/i18n_check.mjs .`
+   must pass.
 6. Build, and check in `test-plugin-browser`: Meu perfil › Novidades shows the cards; "Mostrar como" opens the screen.
 
 ---
@@ -55,13 +70,15 @@ stay in **Meu perfil › Novidades**.
    there, stop and say so.
 2. **Release key** `<plugin>.<version>` (e.g. `crm.0.3.133`), stable: the users' "seen" list keeps it. Never reuse or
    rename a published key — everyone would see it again.
-3. **date** = the release date (`YYYY-MM-DD`). Keep the older releases in the file: they make the history in Meu perfil.
+3. **date** = today, the day the release goes out (`YYYY-MM-DD`; see "When to run"). Keep the older releases in the
+   file: they make the history in Meu perfil.
 4. Plain language: no "bug", "refactor", "endpoint", "sync", "manifest", class or entity names. A fix becomes what the
    user feels ("Os e-mails agora chegam vinculados ao cliente certo").
 5. Texts are `$T{}` keys, `<plugin>_whatsNew_<version with _>_<item>_title` / `_text`, in every `.arb`.
 6. Pictures: `imageUrl` takes a full public URL only. Without one the card shows the icon on the item's color — that
    is the default; do not invent URLs.
-7. One release per call. Never register novelties without the developer asking for them.
+7. One release (one key) per call, even when it covers several versions. Never register novelties without the
+   developer asking for them.
 
 ---
 
@@ -75,9 +92,9 @@ import { <Entity>ListPageRoute } from './views/<entity>/<entity>_list_page';
 /** End-user novelties of each release (skill create-whats-new). Newest first; keep the old ones. */
 export function registerWhatsNew(): void {
   glyvio_core.whatsNewRegistryService.add({
-    key: '<plugin>.0.3.133',
+    key: '<plugin>.0.3.133', // the version the next release produces
     pluginLabel: '<Plugin>',
-    date: '2026-11-19',
+    date: '2026-11-19', // today
     items: [
       {
         key: 'offline',
@@ -122,6 +139,6 @@ registerWhatsNew();
 
 - [ ] `whatsNewRegistryService` exists in the plugin's `@types/glyvio_core.d.ts`.
 - [ ] 1–4 items, picked for what the end user perceives, **approved by the developer**.
-- [ ] Release key `<plugin>.<version>`, date of the release; older releases kept.
-- [ ] Routes and permissions on the items that open a screen; icons checked; texts in every `.arb`.
+- [ ] Run before `release-project`: release key `<plugin>.<next version>`, date of today; older releases kept.
+- [ ] Routes and permissions on the items that open a screen; icons checked; texts in every `.arb` (`i18n_check` passes).
 - [ ] Seen in `test-plugin-browser` (Meu perfil › Novidades), "Mostrar como" opens the screen.
