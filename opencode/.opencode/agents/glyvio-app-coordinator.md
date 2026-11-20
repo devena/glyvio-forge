@@ -469,6 +469,7 @@ Map every request to one of these skills. **Each "create" skill has a matching "
 ### Menu & Quick Actions
 
 - `register-menu-and-admin` — full-menu groups/items (`menuRegistryService`), admin-screen items (`adminRegistryService`), Custom Page menu items, offline routes.
+- `register-welcome-step` — a step of the plugin in the welcome wizard (`welcomeRegistryService.addStep`): something each user sets up once on first access (e-mail signature, working hours), also reachable from Meu perfil › Configuração inicial.
 - `create-quick-action` — register a menu **action** (`menuRegistryService.addAction`) that runs code from whatever screen the user is on (open a cart, pick a record and open its sidebar); it can be favorited/pinned and appears in the full menu, side menu, command palette (Ctrl/⌘+K) and the Jeannie home. Plain "open this screen" shortcuts stay as route menu items.
 
 ### Schema

@@ -290,6 +290,7 @@ As skills geram código seguindo os padrões do projeto. Invoque no chat com
 | `/use-builtin-dialogs`        | Toasts, confirmações, progresso, escolha e inputs prontos |
 | `/use-view-extensions`        | Arquivos, uploads, planilhas, galeria, relatórios |
 | `/register-menu-and-admin`    | Menu, tela de administração, itens de Custom Page, rotas offline |
+| `/register-welcome-step`      | Passo do plugin nas boas-vindas (primeiro acesso do usuário)     |
 | `/intercept-core-screen`      | Catálogo das telas prontas do Glyvio e seus interceptors |
 | `/create-offline-support`     | Entidades e telas offline               |
 | `/use-device-location`        | GPS do aparelho                         |
