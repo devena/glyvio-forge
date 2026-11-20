@@ -26,6 +26,9 @@ stay in **Meu perfil › Novidades**.
    version that will carry it (see "When to run").
 2. The **plugin's short name** for the tag on the cards ("CRM", "Agenda").
 3. For each novelty that has a screen: **the route** that shows it, and the **permission** needed to open it.
+4. **Pictures: always ask** — "Quer colocar uma imagem em algum cartão, ou seguimos só com ícones?". A picture is a
+   full public URL the developer gives (a wide screenshot, about 700 × 260: it fills the card's width and is cropped
+   to 260 px of height). No answer or "só ícones": every card takes its icon.
 
 ---
 
@@ -74,8 +77,9 @@ only get them with the version that carries the registration.
 4. Plain language: no "bug", "refactor", "endpoint", "sync", "manifest", class or entity names. A fix becomes what the
    user feels ("Os e-mails agora chegam vinculados ao cliente certo").
 5. Texts are `$T{}` keys, `<plugin>_whatsNew_<version with _>_<item>_title` / `_text`, in every `.arb`.
-6. Pictures: `imageUrl` takes a full public URL only. Without one the card shows the icon on the item's color — that
-   is the default; do not invent URLs.
+6. Pictures: `imageUrl` takes a full public URL only, and only the one the developer gave when asked (input 4).
+   Without one the card shows the icon on the item's color — that is the default; do not invent URLs, and do not
+   point to a file of the repository (it has no public address).
 7. One release (one key) per call, even when it covers several versions. Never register novelties without the
    developer asking for them.
 
@@ -139,5 +143,6 @@ registerWhatsNew();
 - [ ] `whatsNewRegistryService` exists in the plugin's `@types/glyvio_core.d.ts`.
 - [ ] 1–4 items, picked for what the end user perceives, **approved by the developer**.
 - [ ] Run before `release-project`: release key `<plugin>.<next version>`, date of today; older releases kept.
+- [ ] Asked about pictures; `imageUrl` only with a URL the developer gave.
 - [ ] Routes and permissions on the items that open a screen; icons checked; texts in every `.arb` (`i18n_check` passes).
 - [ ] Seen in `test-plugin-browser` (Meu perfil › Novidades), "Mostrar como" opens the screen.
