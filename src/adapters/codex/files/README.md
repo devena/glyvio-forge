@@ -146,6 +146,8 @@ Todas correspondem às pastas de mesmo nome em `src/skills/`.
 - [create-grid-page](skills/create-grid-page/SKILL.md)
 - [create-grid-page-interceptor](skills/create-grid-page-interceptor/SKILL.md)
 - [create-import-wizard](skills/create-import-wizard/SKILL.md)
+- [create-jeannie-skill](skills/create-jeannie-skill/SKILL.md)
+- [create-jeannie-term](skills/create-jeannie-term/SKILL.md)
 - [create-kanban-page](skills/create-kanban-page/SKILL.md)
 - [create-kanban-page-interceptor](skills/create-kanban-page-interceptor/SKILL.md)
 - [create-landing-page](skills/create-landing-page/SKILL.md)
