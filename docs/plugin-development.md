@@ -318,6 +318,7 @@ As skills geram código seguindo os padrões do projeto. Invoque no chat com
 | `/create-controller`               | Endpoint HTTP                   |
 | `/create-strategy`                 | Lógica de negócio encapsulada   |
 | `/create-workflow-step`            | Passo de workflow / job periódico agendado pelo plugin |
+| `/survey-workflow-candidates`      | Levantar o que o plugin deveria oferecer ao motor de workflow (só relatório) |
 | `/schedule-queued-operation`       | Operação deferred/enfileirada   |
 | `/create-custom-interceptor`       | Interceptor por evento nomeado  |
 | `/create-custom-page`              | Página HTML por URL (dashboard/relatório) |
